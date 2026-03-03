@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Disallow internal/utility pages
+Disallow: /projects/project-detail.html
+
+# Sitemap location
+Sitemap: https://studgine.vercel.app/sitemap.xml

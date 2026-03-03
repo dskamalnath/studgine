@@ -1,34 +1,67 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Studgine – Free Engineering Learning Resources</title>
-<meta name="description" content="Studgine provides free and open-access engineering books, notes, and learning resources for students worldwide.">
-<meta name="keywords" content="Studgine, engineering books, free engineering resources, engineering notes">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 
+       STUDGINE — index.html
+       Charset and Viewport must be the first two tags
+   -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- SEO -->
-  <title>Studgine â€“ Powering Engineering Minds</title>
-  <meta name="description" content="Studgine is the all-in-one platform for engineering students â€” projects, scholarships, books, internships, and career growth." />
-  <meta name="keywords" content="engineering students, projects, scholarships, books, internships, studgine, engineering platform" />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="index.html" />
+  <!-- 
+       Primary SEO
+   -->
+  <title>Studgine – Powering Engineering Minds</title>
+  <meta name="description" content="Studgine is the all-in-one platform for engineering students — curated projects, budget electronics guides, scholarships, free books, internships, and tools." />
+  <meta name="keywords" content="engineering students, electronics projects, scholarships, free engineering books, internships, studgine, arduino projects, ESP32 guides, raspberry pi" />
+  <meta name="author" content="Studgine" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <link rel="canonical" href="https://studgine.vercel.app/" />
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="Studgine â€“ Powering Engineering Minds" />
-  <meta property="og:description" content="Your all-in-one platform for projects, scholarships, books, and career growth." />
-  <meta property="og:type" content="website" />
+  <!-- 
+       Open Graph  (Facebook  LinkedIn  WhatsApp)
+   -->
+  <meta property="og:type"         content="website" />
+  <meta property="og:site_name"    content="Studgine" />
+  <meta property="og:locale"       content="en_US" />
+  <meta property="og:url"          content="https://studgine.vercel.app/" />
+  <meta property="og:title"        content="Studgine – Powering Engineering Minds" />
+  <meta property="og:description"  content="141+ free engineering projects, budget electronics guides, scholarships, and career resources — all in one place." />
+  <meta property="og:image"        content="https://studgine.vercel.app/assets/og-cover.png" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt"    content="Studgine – Free Engineering Learning Platform" />
 
-  <!-- Google Fonts -->
+  <!-- 
+       Twitter Card
+   -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:site"        content="@studgine" />
+  <meta name="twitter:title"       content="Studgine – Powering Engineering Minds" />
+  <meta name="twitter:description" content="141+ free engineering projects, budget electronics guides, scholarships, and more." />
+  <meta name="twitter:image"       content="https://studgine.vercel.app/assets/og-cover.png" />
+
+  <!-- 
+       Browser / PWA
+   -->
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="color-scheme" content="light" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png" />
+
+  <!-- 
+       Performance — Fonts  (preconnect before stylesheet)
+   -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" />
 
-  <!-- Stylesheet -->
+  <!-- 
+       Site Stylesheet
+   -->
   <link rel="stylesheet" href="css/style.css" />
-</head>
-<body>
+</head><body>
   <header>
     <nav class="navbar" role="navigation" aria-label="Main Navigation">
       <div class="container">
@@ -39,6 +72,8 @@
     </nav>
     <div class="mobile-menu"><a href="index.html" class="nav-link">Home</a><a href="projects.html" class="nav-link">Projects</a><a href="budget-electronics.html" class="nav-link">Electronics</a><a href="resources.html" class="nav-link">Resources</a><a href="about.html" class="nav-link">About</a></div>
   </header>
+
+  <main>
 
   <section class="hero">
     <div class="container">
@@ -56,6 +91,42 @@
           <div class="stat"><span class="stat-number">100%</span><span class="stat-label">Free</span></div>
           <div class="stat"><span class="stat-number">5</span><span class="stat-label">Categories</span></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEO Intro Section -->
+  <section class="section seo-intro-section">
+    <div class="container">
+      <div class="seo-intro-content">
+        <h2>Your Free Hub for Engineering Projects, Resources, and Learning</h2>
+        <p>
+          Studgine was built with one mission: to make quality engineering education completely free and accessible for every student. Whether you are a first-year looking for <strong>beginner electronics projects</strong> or a final-year student searching for an advanced capstone idea, you will find everything you need right here — no sign-up, no paywall, no cost.
+        </p>
+
+        <h3>141+ Documented Engineering Projects</h3>
+        <p>
+          Our <a href="projects.html">engineering projects library</a> covers the full spectrum from simple LED circuits to industrial IoT systems and machine-learning-powered robots. Every project includes a complete components list, estimated budget, step-by-step build instructions, and source code. Projects are tagged by difficulty — beginner, intermediate, and advanced — so you can instantly filter by what matches your skill level. Popular categories include <strong>Arduino project ideas for engineering students</strong>, ESP32 IoT builds, Raspberry Pi computer vision systems, robotics, FPGA design, and renewable energy projects.
+        </p>
+
+        <h3>Budget Electronics Buying Guides</h3>
+        <p>
+          Tight on budget? Our <a href="budget-electronics.html">budget electronics guide</a> compares the best microcontrollers, sensors, and modules available for engineering students. Find the cheapest Arduino, ESP32, and Raspberry Pi deals without sacrificing quality. We break down price-to-performance ratios so you can make informed buying decisions and stretch every rupee or dollar further.
+        </p>
+
+        <h3>Scholarships, Free Books, and Tools</h3>
+        <p>
+          Beyond hardware, Studgine's <a href="resources.html">resources section</a> curates 20+ engineering scholarships and fellowships updated regularly, a library of <strong>free engineering textbooks and PDFs</strong>, online circuit simulation tools, calculators, and career development guides. Whether you need funding for your studies or free reference material for your next exam, the resources hub has you covered.
+        </p>
+
+        <h3>Free Engineering Learning Platform — Studgine Learn</h3>
+        <p>
+          Studgine Learn is our in-browser learning platform where engineering students can study structured subject notes, practise past-exam questions, and explore topic deep-dives — all without leaving the site. Currently covering Computer Science Engineering topics, with more departments being added continuously. Visit <a href="learn.html">Studgine Learn</a> to start studying today.
+        </p>
+
+        <p>
+          Join thousands of engineering students worldwide who rely on Studgine as their go-to free resource for project ideas, electronics buying advice, scholarships, and academic tools. Bookmark this page and come back whenever you need engineering inspiration or support — everything here stays free, forever.
+        </p>
       </div>
     </div>
   </section>
@@ -108,9 +179,9 @@
         <article class="project-card card">
           <div class="project-card-header">
             <span class="badge badge-green">Beginner</span>
-            <span class='budget-tag'>$80 â€“ $150</span>
+            <span class='budget-tag'>$80 – $150</span>
           </div>
-          <h3>3</h3>
+          <h3>3-Axis Mini CNC Machine</h3>
           <p>Build a Cartesian CNC router with Arduino Mega + CNC Shield + NEMA-17 steppers and a 300W spindle. Mill PCBs, wood,...</p>
           <div class="project-card-footer">
             <a href="projects/3-axis-mini-cnc-machine.html" class="btn btn-sm btn-ghost">Read More &#8594;</a>
@@ -119,9 +190,9 @@
         <article class="project-card card">
           <div class="project-card-header">
             <span class="badge badge-red">Advanced</span>
-            <span class='budget-tag'>$60 â€“ $115</span>
+            <span class='budget-tag'>$60 – $115</span>
           </div>
-          <h3>3D Structured</h3>
+          <h3>3D Structured Light Scanner</h3>
           <p>Project Gray-code stripe patterns onto an object; a Pi Camera captures deformations and OpenCV triangulates a dense...</p>
           <div class="project-card-footer">
             <a href="projects/3d-structured-light-scanner.html" class="btn btn-sm btn-ghost">Read More &#8594;</a>
@@ -141,9 +212,9 @@
         <article class="project-card card">
           <div class="project-card-header">
             <span class="badge badge-green">Beginner</span>
-            <span class='budget-tag'>$45 â€“ $90</span>
+            <span class='budget-tag'>$45 – $90</span>
           </div>
-          <h3>5</h3>
+          <h3>5-DOF Robotic Arm</h3>
           <p>Build a 5-servo 3D-printed robotic arm controlled via inverse kinematics from a Raspberry Pi touchscreen. Teaches I...</p>
           <div class="project-card-footer">
             <a href="projects/5-dof-robotic-arm.html" class="btn btn-sm btn-ghost">Read More &#8594;</a>
@@ -152,7 +223,7 @@
         <article class="project-card card">
           <div class="project-card-header">
             <span class="badge badge-red">Advanced</span>
-            <span class='budget-tag'>$80 â€“ $140</span>
+            <span class='budget-tag'>$80 – $140</span>
           </div>
           <h3>Adaptive MPPT Solar Controller (FPGA)</h3>
           <p>Implement Perturb-and-Observe MPPT in VHDL on a Lattice iCE40 FPGA at 1MHz, measuring solar panel P-V curves with I...</p>
@@ -163,7 +234,7 @@
         <article class="project-card card">
           <div class="project-card-header">
             <span class="badge badge-red">Advanced</span>
-            <span class='budget-tag'>$55 â€“ $100</span>
+            <span class='budget-tag'>$55 – $100</span>
           </div>
           <h3>Adaptive Traffic Light (CV)</h3>
           <p>A Pi Camera detects vehicle queue density per lane using YOLOv8 and dynamically allocates green-light duration prop...</p>
@@ -211,6 +282,8 @@
       <a href="projects.html" class="btn btn-white btn-lg">Browse All Projects</a>
     </div>
   </section>
+
+  </main>
 
   <footer class="footer">
     <div class="container">
