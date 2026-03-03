@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IR Remote Fan Controller – Beginner Project | Studgine</title>
+  <meta name="description" content="Control a 5V fan's speed with any TV remote using an IR receiver and PWM output on Arduino. Teaches IR decoding, PWM, and relay wiring." />
+  <meta name="keywords" content="IR remote Arduino fan controller, PWM fan speed control, IR receiver Arduino, beginner project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="ir-remote-fan-controller.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-fan-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .anim-fan-body { width:80px; height:80px; border-radius:50%; border:4px solid #555; background:#222;
+                     display:flex; align-items:center; justify-content:center; position:relative; }
+    .anim-fan-blade { position:absolute; width:28px; height:10px; background:#4488cc;
+                      border-radius:5px; transform-origin:40px 5px;
+                      animation: fan-spin var(--spd, 0.5s) linear infinite; }
+    .anim-fan-blade:nth-child(1){ transform: rotate(0deg)   translateX(12px); }
+    .anim-fan-blade:nth-child(2){ transform: rotate(90deg)  translateX(12px); }
+    .anim-fan-blade:nth-child(3){ transform: rotate(180deg) translateX(12px); }
+    .anim-fan-blade:nth-child(4){ transform: rotate(270deg) translateX(12px); }
+    @keyframes fan-spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    .anim-fan-blades { width:80px; height:80px; animation: fan-spin .35s linear infinite; position:relative; }
+    .blade { position:absolute; width:30px; height:9px; background:#4488cc; border-radius:4px; top:35px; left:25px; }
+    .blade:nth-child(1){transform-origin:15px 4.5px; transform: rotate(0deg)   translateX(20px)}
+    .blade:nth-child(2){transform-origin:15px 4.5px; transform: rotate(90deg)  translateX(20px)}
+    .blade:nth-child(3){transform-origin:15px 4.5px; transform: rotate(180deg) translateX(20px)}
+    .blade:nth-child(4){transform-origin:15px 4.5px; transform: rotate(270deg) translateX(20px)}
+    .anim-fan-speed { font-family:monospace; color:#0af; font-size:.9rem; }
+    .anim-bar-wrap { width:140px; }
+    .anim-bar-track { background:#222; border-radius:6px; height:14px; width:100%; overflow:hidden; border:2px solid #444; }
+    .anim-bar-fill  { height:100%; background:linear-gradient(90deg,#0099ff,#00ccff); border-radius:4px;
+                      animation: bar-pulse 2s ease-in-out infinite alternate; }
+    @keyframes bar-pulse { 0%{width:30%} 100%{width:90%} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine"><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="obstacle-avoidance-robot.html">Obstacle Robot</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

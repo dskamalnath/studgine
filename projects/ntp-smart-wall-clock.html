@@ -1,0 +1,269 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NTP Smart Wall Clock – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an NTP-synced smart wall clock with ESP8266 or ESP32. Auto-sync time over Wi-Fi, display on a 7-segment LED matrix or TFT, show weather, and handle timezone and DST." />
+  <meta name="keywords" content="NTP smart clock ESP8266, Arduino NTP wall clock, ESP32 internet clock, NTP time sync Arduino, Wi-Fi clock project" />
+  <link rel="canonical" href="ntp-smart-wall-clock.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000008 0%,#000018 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .clock-face{background:#000;border:3px solid #1a1a6a;border-radius:8px;padding:12px 22px;font-family:'Courier New',monospace;text-align:center;}
+    .clock-time{font-size:42px;font-weight:bold;color:#ff6600;letter-spacing:4px;text-shadow:0 0 16px #ff4400;}
+    .clock-date{font-size:13px;color:#6060cc;letter-spacing:2px;margin-top:2px;}
+    .clock-sync{font-size:10px;color:#3a3a6a;margin-top:4px;}
+    .weather-row{font-family:monospace;font-size:12px;color:#6080a0;display:flex;gap:16px;}
+    .tz-badge{background:#0a0a2a;border:1px solid #3a3a6a;border-radius:4px;padding:2px 10px;font-family:monospace;font-size:11px;color:#8080cc;}
+    .colon-blink{animation:colon-blink 1s step-start infinite;}
+    @keyframes colon-blink{50%{opacity:0}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>NTP Smart Wall Clock</h1>
+      <p>Use an ESP8266 to sync time from pool.ntp.org over Wi-Fi, handle your timezone and DST automatically, and display the result on a MAX7219 LED matrix or TFT screen.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">NTP Smart Wall Clock</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="clock-face">
+                  <div class="clock-time" id="clockTime">00:00:00</div>
+                  <div class="clock-date" id="clockDate">MON 01 JAN 2025</div>
+                  <div class="clock-sync" id="syncStatus">⟳ NTP sync: pool.ntp.org · OK</div>
+                </div>
+                <div class="weather-row">
+                  <span id="weatherInfo">🌤️ 22°C · 65% RH</span>
+                  <span id="sunInfo">🌅 06:42 🌇 18:31</span>
+                </div>
+                <div class="tz-badge" id="tzBadge">TZ: UTC+5:30 (IST)</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP8266+NTP+smart+wall+clock+MAX7219+LED+matrix" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Traditional digital clocks drift — a cheap crystal can lose or gain up to 30 seconds per month. Network Time Protocol (NTP) solves this completely by syncing to atomic-clock-accurate time servers over the Internet with sub-millisecond precision. The ESP8266/ESP32 has Wi-Fi built in, making it trivial to implement an NTP clock that self-corrects every hour.</p>
+              <p>This project connects to pool.ntp.org on startup, applies your local UTC offset (configurable via WiFiManager captive portal), handles Daylight Saving Time automatically using the Timezone library, and displays time and date on either a MAX7219 8-digit 7-segment module or an ILI9341 TFT. An optional DHT22 sensor adds indoor temperature and humidity to the display, and a BME280 can add weather data from the OpenWeatherMap API.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">ESP8266 NodeMCU v3</span><span class="comp-note"> — Built-in Wi-Fi for NTP sync; or ESP32 with dual-core</span></div></li>
+                <li><span class="comp-icon">🔢</span><div><span class="comp-name">MAX7219 8-Digit 7-Segment Module</span><span class="comp-note"> — SPI-driven LED display; or ILI9341 2.8″ TFT SPI for colour</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT22 Temperature + Humidity Sensor</span><span class="comp-note"> — Indoor ambient readings for weather row</span></div></li>
+                <li><span class="comp-icon">🔆</span><div><span class="comp-name">LDR + 10 kΩ (voltage divider)</span><span class="comp-note"> — Auto-dim display at night based on ambient light</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">3.3 V regulated power (USB or HLK-PM03)</span><span class="comp-note"> — 5 V USB works; MAX7219 can handle 5 V directly</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Connect and Sync with NTP</h4><p>Use <code>WiFi.begin(ssid, pass)</code>, then <code>configTime(UTC_OFFSET_SECONDS, DST_OFFSET, "pool.ntp.org")</code>. For IST (UTC+5:30): <code>configTime(5*3600 + 30*60, 0, "pool.ntp.org")</code>. Call <code>getLocalTime(&timeinfo)</code> — this blocks up to 5 s waiting for server response. Once synced, ESP8266's internal RTC holds time accurately; re-sync every 3600 seconds for drift correction.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Display on MAX7219</h4><p>Use the MD_Parola library. Initialize with <code>P.begin()</code> and set brightness 0–15. Format time as string: <code>sprintf(buf, "%02d.%02d.%02d", h, m, s)</code> with dots used as colons (MAX7219 DP pins). Scroll date text across the display every 30 s using <code>P.displayScroll(dateStr, PA_LEFT, PA_SCROLL_LEFT, 50)</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Handle DST Automatically</h4><p>Use the Arduino Timezone library with DST rules: define a <code>TimeChangeRule</code> for your region (e.g., UK BST starts last Sunday of March at 0200, ends last Sunday of October). Pass rules to a <code>Timezone</code> object; call <code>myTZ.toLocal(now())</code> for any UTC time to get correctly offset local time including DST transitions with zero manual intervention.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Auto-Dim and Wi-Fi Reconnect</h4><p>Read LDR on A0 every 10 s. Map value 0–1023 to display brightness 0–15 with <code>map(ldrVal, 200, 900, 0, 15)</code>. If <code>WiFi.status() != WL_CONNECTED</code>, call <code>WiFi.reconnect()</code> and try for 10 s; if still disconnected, continue displaying time from internal RTC with a "No Internet" indicator — the clock never stops.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;ESP8266WiFi.h&gt;
+#include &lt;time.h&gt;
+#include &lt;MD_Parola.h&gt;
+#include &lt;MD_MAX72xx.h&gt;
+#include &lt;SPI.h&gt;
+
+#define HARDWARE_TYPE MD_MAX72xx::FC16_HW
+#define MAX_DEVICES  4
+#define CS_PIN       D8
+
+MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
+
+const char* ssid = "YOUR_SSID";
+const char* pass = "YOUR_PASS";
+const long  TZ = 5.5 * 3600; // IST UTC+5:30
+
+void setup() {
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) delay(300);
+  configTime(TZ, 0, "pool.ntp.org", "time.nist.gov");
+  P.begin(); P.setIntensity(8); P.setTextAlignment(PA_CENTER);
+}
+
+char timeBuf[12];
+void loop() {
+  struct tm t;
+  if (getLocalTime(&t)) {
+    sprintf(timeBuf, "%02d.%02d.%02d", t.tm_hour, t.tm_min, t.tm_sec);
+    P.setTextEffect(PA_PRINT, PA_NO_EFFECT);
+    P.displayText(timeBuf, PA_CENTER, 0, 0, PA_PRINT, PA_NO_EFFECT);
+    P.displayAnimate();
+  }
+  delay(100);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Living Room Clock</span>
+                <span class="app-tag">🏫 Classroom Countdown Timer</span>
+                <span class="app-tag">⏰ Alarm + Reminder System</span>
+                <span class="app-tag">🌍 World Clock Multi-TZ</span>
+                <span class="app-tag">🌦️ Weather Dashboard</span>
+                <span class="app-tag">📺 TFT Touch Interface</span>
+                <span class="app-tag">⌚ Wearable Watch (ESP32)</span>
+                <span class="app-tag">🔔 Prayer Time Alert</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $10 – $22</li>
+                <li><strong>Build Time:</strong> 3 – 5 hours</li>
+                <li><strong>Platform:</strong> ESP8266 / ESP32</li>
+                <li><strong>Accuracy:</strong> ±1 ms (NTP synced)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>NTP time synchronization</li>
+                <li>ESP8266 Wi-Fi management</li>
+                <li>MAX7219 SPI LED matrix</li>
+                <li>Timezone + DST handling</li>
+                <li>LDR-based auto-dimming</li>
+                <li>WiFiManager captive portal</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">ESP8266WiFi / WiFi</span><span class="lib-desc"> — Wi-Fi connection management</span></li>
+                <li><span class="lib-name">MD_Parola + MD_MAX72xx</span><span class="lib-desc"> — MAX7219 text and scroll animation</span></li>
+                <li><span class="lib-name">Timezone</span><span class="lib-desc"> — DST rule-based UTC conversion</span></li>
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> — Indoor temp/humidity readings</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="wireless-sensor-oled-dashboard.html">Wireless Sensor OLED Dashboard</a></li>
+                <li><a href="automated-fish-feeder-rtc.html">Automated Fish Feeder (RTC)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    function updateClock() {
+      const d = new Date();
+      const h = String(d.getHours()).padStart(2,'0');
+      const m = String(d.getMinutes()).padStart(2,'0');
+      const s = String(d.getSeconds()).padStart(2,'0');
+      document.getElementById('clockTime').textContent = h + ':' + m + ':' + s;
+      const dy = days[d.getDay()], dm = String(d.getDate()).padStart(2,'0'), mo = months[d.getMonth()], yr = d.getFullYear();
+      document.getElementById('clockDate').textContent = dy + ' ' + dm + ' ' + mo + ' ' + yr;
+      document.getElementById('syncStatus').textContent = '⟳ NTP sync: pool.ntp.org · OK · next: ' + (60 - d.getMinutes() % 60) + ' min';
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>

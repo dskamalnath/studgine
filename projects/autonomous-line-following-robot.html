@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomous Line-Following Robot – Advanced Project | Studgine</title>
+  <meta name="description" content="Design a PID-controlled line-following robot using a Raspberry Pi 4, IR sensor array, and Python. Advanced project with $35–$70 budget." />
+  <meta name="keywords" content="line following robot, PID control, Raspberry Pi, IR sensor array, autonomous robot, advanced project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="autonomous-line-following-robot.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                  <div class="lr-bot">
+                    <div class="lr-box"></div>
+                    <div class="lr-wheels"><span></span><span></span></div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=raspberry+pi+line+following+robot+PID+control+tutorial" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <!-- Introduction -->
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>
+                The Autonomous Line-Following Robot is a quintessential advanced project that bridges mechanical
+                assembly, embedded systems, and control theory. Unlike simple on/off bang-bang controllers, this
+                robot uses a Proportional–Integral–Derivative (PID) algorithm to make smooth, precise corrections
+                in real time.
+              </p>
+              <p>
+                Powered by a Raspberry Pi 4 running Python, the robot processes IR sensor readings at up to 100 Hz
+                and drives two DC motors via an L298N bridge. You can also add a camera module for vision-based
+                lane detection, making it an excellent capstone or competition project.
+              </p>
+            </div>
+
+            <!-- Components -->
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🎛️</span>
+                  <div><span class="comp-name">Raspberry Pi 4 (2 GB+)</span><span class="comp-note"> — Main processor running Python</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">👁️</span>
+                  <div><span class="comp-name">5-Channel IR Sensor Array</span><span class="comp-note"> — Reads black line vs. white surface</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">⚙️</span>
+                  <div><span class="comp-name">L298N Motor Driver Module</span><span class="comp-note"> — H-bridge for two DC motors</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🔄</span>
+                  <div><span class="comp-name">DC Gear Motors × 2 (5 V)</span><span class="comp-note"> — With encoder wheels for speed feedback</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🏗️</span>
+                  <div><span class="comp-name">2WD Robot Chassis Kit</span><span class="comp-note"> — Acrylic base + caster wheel</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🔋</span>
+                  <div><span class="comp-name">7.4 V LiPo Battery Pack</span><span class="comp-note"> — Or 2× 18650 with holder</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">📷</span>
+                  <div><span class="comp-name">Pi Camera Module v2 (optional)</span><span class="comp-note"> — Camera-based lane detection</span></div>
+                </li>
+              </ul>
+            </div>
+
+            <!-- How it works -->
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">1</div>
+                  <div class="step-content">
+                    <h4>Read IR Sensor Array</h4>
+                    <p>Five IR sensors read HIGH (white surface) or LOW (black line) via the Raspberry Pi's GPIO. A weighted average of sensor positions gives a continuous error value from −2 (far left) to +2 (far right).</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">2</div>
+                  <div class="step-content">
+                    <h4>Compute PID Correction</h4>
+                    <p>The error feeds into a PID loop. The proportional term corrects immediately, the integral removes steady-state drift, and the derivative dampens oscillation. Tune Kp, Ki, Kd empirically on the track.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">3</div>
+                  <div class="step-content">
+                    <h4>Drive Motors via L298N</h4>
+                    <p>The PID output is split into left/right motor speeds. PWM signals from the Pi (RPi.GPIO or pigpio) control the L298N enable pins. Higher PID output means the robot turns harder to correct its heading.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">4</div>
+                  <div class="step-content">
+                    <h4>Test &amp; Tune on Track</h4>
+                    <p>Print a test track on A0 paper or use black insulation tape on a white board. Start with Kp only, increase until oscillation, then add Kd to smooth it out. Finally add a small Ki if drift persists on curves.</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <!-- Applications -->
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <p>PID and robot platforms open a massive range of advanced projects:</p>
+              <div class="applications-grid">
+                <span class="app-tag">🏆 Robotics Competition</span>
+                <span class="app-tag">📦 Warehouse AGV</span>
+                <span class="app-tag">📷 Vision-Based Lane Detection</span>
+                <span class="app-tag">🔢 Maze Solving Robot</span>
+                <span class="app-tag">🗺️ SLAM Navigation</span>
+                <span class="app-tag">📡 Remote Monitoring</span>
+                <span class="app-tag">🤝 Multi-Robot Coordination</span>
+                <span class="app-tag">⚡ Speed-Optimised Racing</span>
+              </div>
+            </div>
+
+            <a href="../projects.html" class="back-btn" aria-label="Back to all projects">← Back to Projects</a>
+
+          </div><!-- /.detail-main -->
+
+          <aside class="detail-sidebar" aria-label="Project details">
+
+            <div class="sidebar-card">
+              <h3>Quick Facts</h3>
+              <div class="quick-facts">
+                <div class="fact-row"><span class="fact-label">Difficulty</span><span class="fact-value"><span class="badge badge-red">Advanced</span></span></div>
+                <div class="fact-row"><span class="fact-label">Budget</span><span class="fact-value">$35 – $70 USD</span></div>
+                <div class="fact-row"><span class="fact-label">Time</span><span class="fact-value">6 – 10 hours</span></div>
+                <div class="fact-row"><span class="fact-label">Platform</span><span class="fact-value">Raspberry Pi 4</span></div>
+                <div class="fact-row"><span class="fact-label">Language</span><span class="fact-value">Python 3</span></div>
+                <div class="fact-row"><span class="fact-label">Algorithm</span><span class="fact-value">PID Control</span></div>
+              </div>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Skills You'll Learn</h3>
+              <div class="skills-list">
+                <span class="skill-tag">PID Control</span>
+                <span class="skill-tag">Motor H-Bridge</span>
+                <span class="skill-tag">PWM (Python)</span>
+                <span class="skill-tag">IR Sensor Arrays</span>
+                <span class="skill-tag">Chassis Assembly</span>
+                <span class="skill-tag">Control Tuning</span>
+              </div>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Libraries Needed</h3>
+              <div class="skills-list">
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">RPi.GPIO</span>
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">pigpio</span>
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">simple-pid</span>
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">OpenCV (optional)</span>
+              </div>
+              <p style="font-size:.75rem;color:var(--color-text-muted);margin-top:.75rem;line-height:1.6;">
+                Install with <code>pip install simple-pid RPi.GPIO</code> on Raspberry Pi OS
+              </p>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Try Next</h3>
+              <div style="display:flex;flex-direction:column;gap:.5rem;">
+                <a href="air-quality-monitoring-iot.html" class="btn btn-ghost btn-sm" style="justify-content:flex-start;border:1px solid var(--color-border);">
+                  🌫️ Air Quality IoT Node
+                </a>
+                <a href="ml-plant-disease-detector.html" class="btn btn-ghost btn-sm" style="justify-content:flex-start;border:1px solid var(--color-border);">
+                  🌿 ML Plant Disease Detector
+                </a>
+              </div>
+            </div>
+
+          </aside>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo-wrap"><svg width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="fG1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#2563EB"/><stop offset="1" stop-color="#06B6D4"/></linearGradient><linearGradient id="fG2" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#60A5FA"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><path d="M20 2L34.5 11V29L20 38L5.5 29V11Z" fill="url(#fG1)"/><path d="M20 6L31 12.5V26.5L20 33L9 26.5V12.5Z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/><path d="M24.5 14.5C24.5 14.5 22.5 11.5 19 11.5C15.5 11.5 13 13.8 13 16.5C13 19.2 15.5 20.2 20 21.2C24.5 22.2 27 23.2 27 26C27 28.8 24.5 30.8 20.5 30.8C16.5 30.8 14.5 28.5 14.5 28.5" stroke="white" stroke-width="2.7" stroke-linecap="round" fill="none"/><circle cx="28.5" cy="12" r="2.5" fill="url(#fG2)"/></svg><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="../projects.html">Projects</a></li>
+          <li><a href="../budget-electronics.html">Electronics</a></li>
+          <li><a href="../resources.html">Resources</a></li>
+          <li><a href="../about.html">About</a></li>
+        </ul></div>
+        <div class="footer-col"><h4>Projects</h4><ul>
+          <li><a href="autonomous-line-following-robot.html">Line-Following Robot</a></li>
+          <li><a href="air-quality-monitoring-iot.html">Air Quality IoT</a></li>
+          <li><a href="ml-plant-disease-detector.html">ML Plant Detector</a></li>
+          <li><a href="../projects.html">All Projects →</a></li>
+        </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+          <li><a href="../about.html">About Us</a></li>
+          <li><a href="#">Submit a Project</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

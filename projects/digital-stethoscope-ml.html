@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Stethoscope with ML – Advanced Project | Studgine</title>
+  <meta name="description" content="A MEMS microphone captures heart and lung sounds; a spectrogram-CNN on Raspberry Pi classifies normal vs. abnormal audio patterns in real time." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#050010;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .steth-info{font-family:monospace;font-size:9px;color:#ff66cc;display:flex;flex-direction:column;gap:3px;}
+    .hb-bar{width:60px;height:5px;background:#1a001a;border-radius:2px;overflow:hidden;}
+    .hb-fill{height:100%;border-radius:2px;background:#ff44aa;transition:width 0.2s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Digital Stethoscope with ML</h1>
+      <p>A high-sensitivity MEMS microphone captures heart and lung sounds amplified through a custom chest piece. A log-mel spectrogram CNN trained on the PhysioNet dataset classifies normal vs. abnormal cardiac audio patterns in real time on Raspberry Pi — a genuinely medical-grade AI demonstration.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Digital Stethoscope with ML</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="stethCanvas" width="130" height="80"></canvas>
+                <div class="steth-info">
+                  <div>BPM: <span id="stethBpm">72</span></div>
+                  <div>S1:  <span id="stethS1">68ms</span></div>
+                  <div>S2:  <span id="stethS2">55ms</span></div>
+                  <div style="margin-top:3px;">CNN RESULT</div>
+                  <div id="stethClass" style="color:#00ff88;">NORMAL</div>
+                  <div>CONF: <span id="stethConf">97.2</span>%</div>
+                  <div class="hb-bar"><div class="hb-fill" id="stethBar" style="width:97%;background:#00cc44;"></div></div>
+                  <div style="margin-top:3px;color:#ff88cc;">♥ HEARTBEAT</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+digital+stethoscope+MEMS+microphone+machine+learning+heart+sounds" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Auscultation — listening to body sounds — is a fundamental diagnostic skill requiring years of training. This project digitises the process: a MEMS microphone (ICS-43434 or SPH0645) pressed against the chest captures the S1 (lub) and S2 (dub) heart sounds at high fidelity. A log-mel spectrogram is computed on each 3-second audio window and fed to a lightweight CNN trained on the PhysioNet 2016 Heart Sound Challenge dataset (3153 recordings across 5 classes: normal, murmur, extra sounds, extrasystole, artefact). The model achieves ~88% test accuracy, making this a genuinely impressive medical AI showcase.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎤</span><div><span class="comp-name">MEMS I²S Microphone (SPH0645 or ICS-43434)</span><span class="comp-note"> — 48kHz I²S digital output; connects to Pi GPIO 18/19/20; SNR 65dB; captures 20Hz–20kHz cardiac sounds</span></div></li>
+                <li><span class="comp-icon">🩺</span><div><span class="comp-name">Acoustic Chest Piece + Tubing</span><span class="comp-note"> — 3D-print or adaptor bell chamber; silicone tubing to MEMS capsule; standard stethoscope diaphragm for acoustic coupling</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — TFLite CNN inference; sounddevice/I²S capture at 4kHz (cardiac band); pyaudio; 3.5mm output for audio playback</span></div></li>
+                <li><span class="comp-icon">📊</span><div><span class="comp-name">7" Touchscreen or HDMI Display</span><span class="comp-note"> — Show waveform + spectrogram + classification result; tkinter or pygame GUI; LED: green=normal, red=abnormal</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>I²S MEMS Audio Capture</h4><p>Configure I²S on Raspberry Pi: add <code>dtoverlay=i2s-mems-mic</code> to /boot/config.txt. Enable <code>snd_soc_hifiberry_dac</code> module. Record with sounddevice: <code>audio = sd.rec(int(3*4000), samplerate=4000, channels=1, dtype='float32')</code>. Sample at 4kHz — sufficient for 20–1000Hz cardiac band. Apply bandpass filter: <code>scipy.signal.butter(4, [20/2000, 1000/2000], btype='band')</code> to isolate heart sounds from noise.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Log-Mel Spectrogram Feature Extraction</h4><p>Compute mel spectrogram: <code>import librosa; S = librosa.feature.melspectrogram(y=audio, sr=4000, n_mels=64, hop_length=64, n_fft=512)</code>. Convert to log scale: <code>S_db = librosa.power_to_db(S, ref=np.max)</code>. Normalise: zero-mean, unit-variance over each mel band. Resize to fixed [64×64] tensor. This 2D image captures both frequency content and temporal structure of the cardiac cycle — exactly what a CNN can learn to classify.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>CNN Training on PhysioNet Dataset</h4><p>Download PhysioNet 2016 dataset (3153 WAV files + labels). Augment: time-stretch ×0.9/1.1, add white noise, random volume. Build CNN: <code>Conv2D(32)→BN→ReLU→MaxPool → Conv2D(64)→BN→ReLU→MaxPool → GlobalAvgPool → Dense(64) → Softmax(5)</code>. Train with Adam, categorical cross-entropy. 5-fold CV: ~88% balanced accuracy. Export to TFLite INT8. Inference time on Pi 4: ~15ms per 3-second window.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>BPM Detection + Real-Time Display</h4><p>S1/S2 peak detection with scipy: <code>peaks, _ = scipy.signal.find_peaks(envelope, height=0.3, distance=int(0.3*sr))</code>. BPM: <code>60 / np.mean(np.diff(peaks)/sr)</code>. GUI: scrolling waveform plot + real-time spectrogram + classification bar (green/red). Record 30-second sessions to WAV for later review. Optional: Bluetooth LE audio streaming to smartphone app for remote monitoring.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np, sounddevice as sd, librosa
+import tflite_runtime.interpreter as tflite
+import scipy.signal
+
+SAMPLE_RATE = 4000; DURATION = 3
+CLASSES = ['Normal','Murmur','Extra','Extrasystole','Artefact']
+
+interp = tflite.Interpreter('heart_sound_cnn.tflite')
+interp.allocate_tensors()
+in_d = interp.get_input_details(); out_d = interp.get_output_details()
+
+def classify_heart_sound():
+    audio = sd.rec(int(DURATION*SAMPLE_RATE), samplerate=SAMPLE_RATE,
+                   channels=1, dtype='float32')
+    sd.wait()
+    y = audio[:,0]
+    # Bandpass filter 20-500Hz
+    sos = scipy.signal.butter(4,[20/(SAMPLE_RATE/2),500/(SAMPLE_RATE/2)],
+                              btype='band', output='sos')
+    y = scipy.signal.sosfilt(sos, y)
+    # Log-mel spectrogram
+    S = librosa.feature.melspectrogram(y=y, sr=SAMPLE_RATE,
+                                        n_mels=64, hop_length=64, n_fft=512)
+    S_db = librosa.power_to_db(S, ref=np.max)
+    S_norm = (S_db - S_db.mean()) / (S_db.std() + 1e-6)
+    x = np.resize(S_norm, (64,64))[np.newaxis,...,np.newaxis].astype(np.float32)
+    interp.set_tensor(in_d[0]['index'], x)
+    interp.invoke()
+    probs = interp.get_tensor(out_d[0]['index'])[0]
+    pred = CLASSES[np.argmax(probs)]
+    return pred, float(np.max(probs))
+
+while True:
+    label, conf = classify_heart_sound()
+    print(f"Classification: {label} ({conf*100:.1f}%)")</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🫁 Lung Sound (Wheeze/Crackle)</span>
+                <span class="app-tag">📱 Bluetooth Mobile App</span>
+                <span class="app-tag">💾 EHR Session Recording</span>
+                <span class="app-tag">🔬 Phonocardiogram Overlay</span>
+                <span class="app-tag">🩺 Medical Training Simulator</span>
+                <span class="app-tag">📈 Trend Analysis Dashboard</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $90</li><li><strong>Build Time:</strong> 10 – 16 hours</li><li><strong>Model Accuracy:</strong> ~88% (5 classes)</li><li><strong>Inference:</strong> ~15ms per window</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>I²S MEMS microphone interfacing</li><li>Bandpass audio filtering</li><li>Log-mel spectrogram computation</li><li>CNN medical audio classification</li><li>PhysioNet dataset handling</li><li>TFLite INT8 deployment on Pi</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">librosa</span><span class="lib-desc"> — Mel spectrogram features</span></li><li><span class="lib-name">sounddevice</span><span class="lib-desc"> — I²S audio capture</span></li><li><span class="lib-name">tflite-runtime</span><span class="lib-desc"> — CNN inference on Pi</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const sc=document.getElementById('stethCanvas');
+    const sctx=sc.getContext('2d');
+    let sphase=0,hbPhase=0;
+    function ecgWave(t){
+      const mod=t%1;
+      if(mod<0.1) return -0.05;
+      if(mod<0.13) return -0.3;
+      if(mod<0.15) return 1.0;
+      if(mod<0.18) return -0.5;
+      if(mod<0.22) return 0.0;
+      if(mod<0.30) return 0.1*Math.sin((mod-0.22)*40);
+      if(mod<0.35) return 0.4;
+      if(mod<0.44) return 0.4*Math.exp(-(mod-0.35)*15);
+      return 0;
+    }
+    function drawSteth(){
+      sctx.fillStyle='rgba(5,0,16,0.3)';sctx.fillRect(0,0,130,80);
+      sctx.strokeStyle='#ff44aa';sctx.lineWidth=1.5;
+      sctx.beginPath();
+      for(let x=0;x<130;x++){
+        const t=(x/130+sphase);
+        const y=40-35*ecgWave(t);
+        x===0?sctx.moveTo(x,y):sctx.lineTo(x,y);
+      }
+      sctx.stroke();
+      sphase+=0.008;
+      const bpm=Math.round(68+4*Math.sin(sphase*3));
+      document.getElementById('stethBpm').textContent=bpm;
+      requestAnimationFrame(drawSteth);
+    }
+    drawSteth();
+  </script>
+</body>
+</html>

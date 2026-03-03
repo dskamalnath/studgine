@@ -1,0 +1,233 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Electronic Coin Toss – Studgine</title>
+  <meta name="description" content="Press a button for a random heads-or-tails result shown on two LEDs. Introduces randomSeed(), random(), and analogRead entropy with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:20px; }
+    .coin { width:52px; height:52px; border-radius:50%; background:radial-gradient(circle at 38% 32%, #fde68a, #d97706); border:3px solid #92400e; display:flex; align-items:center; justify-content:center; font-size:1.4rem; transition:all .3s ease; cursor:pointer; }
+    .coin.heads { background:radial-gradient(circle at 38% 32%, #fde68a, #d97706); }
+    .coin.tails { background:radial-gradient(circle at 38% 32%, #e2e8f0, #94a3b8); }
+    .coin.spinning { animation:coin-spin .6s ease; }
+    @keyframes coin-spin { 0%{transform:rotateY(0);}50%{transform:rotateY(90deg);}100%{transform:rotateY(0);} }
+    .coin-leds { display:flex; gap:10px; flex-direction:column; }
+    .c-led-row { display:flex; align-items:center; gap:8px; font-size:.7rem; color:#94a3b8; }
+    .c-led-dot { width:18px; height:18px; border-radius:50%; background:#1e293b; border:2px solid #374151; transition:background .3s, box-shadow .3s; }
+    .c-led-dot.on-gold { background:#fbbf24; border-color:#d97706; box-shadow:0 0 8px #fbbf24; }
+    .c-led-dot.on-silver { background:#e2e8f0; border-color:#94a3b8; box-shadow:0 0 8px #e2e8f0; }
+    .toss-btn { padding:6px 14px; background:#4f46e5; border:none; border-radius:6px; color:#fff; font-size:.75rem; font-weight:700; cursor:pointer; border:1.5px solid #4338ca; }
+    .toss-btn:hover { background:#4338ca; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Electronic Coin Toss</h1>
+      <p class="hero-sub">Press a button for a random heads-or-tails result shown on two LEDs. Introduces <code>randomSeed()</code>, the <code>random()</code> function, and seed entropy from an unconnected analog pin.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Electronic Coin Toss</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="coin" id="coin">🪙</div>
+          <div class="coin-leds">
+            <div class="c-led-row"><div class="c-led-dot" id="led-h"></div> Heads</div>
+            <div class="c-led-row"><div class="c-led-dot" id="led-t"></div> Tails</div>
+          </div>
+          <button class="toss-btn" id="toss-btn">TOSS</button>
+        </div>
+        <p class="anim-stage-label">Button press → randomSeed entropy → random(0,2) → LED result</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+random+coin+toss+random+function" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>Arduino's <code>random()</code> function generates <em>pseudo-random</em> numbers — determined by an algorithm that produces a sequence that appears random but repeats if you start from the same seed. Without seeding, the sequence starts identically every power cycle, making results predictable. The fix is <strong><code>randomSeed()</code></strong> — feeding it an unpredictable starting value.</p>
+        <p>The classic technique: <code>randomSeed(analogRead(A0));</code> — an unconnected analog pin floats at a noisy, indeterminate voltage, giving a different seed each boot. This is a real-world application of <em>entropy harvesting</em> — the same concept used in cryptography libraries to seed secure RNGs.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">Push-button</span><span class="comp-note">Coin toss trigger</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">2× LEDs (gold/yellow + silver/white)</span><span class="comp-note">Heads and Tails indicators</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">2× 220 Ω resistors</span><span class="comp-note">LED current limiting</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Seed the RNG</strong> — In <code>setup()</code>: <code>randomSeed(analogRead(A0));</code> — A0 is left unconnected. On some boards you can XOR multiple reads: <code>randomSeed(analogRead(A0) ^ analogRead(A1) ^ millis());</code> for better entropy. This ensures each power-on sequence is unique.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Detect button press with debounce</strong> — Button → D2 with 10 kΩ pull-down. On rising edge (after 50 ms debounce): call the flip function. Use <code>INPUT</code> mode (not PULLUP) with external resistor to clearly distinguish HIGH/LOW on a 5 V rail.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Generate and display result</strong> — <code>int result = random(0, 2);</code> (returns 0 or 1). If 0: <code>digitalWrite(LED_HEADS, HIGH); digitalWrite(LED_TAILS, LOW);</code>. If 1: opposite. Add a 500 ms "spinning" animation by rapidly blinking both LEDs alternately 10 times before settling on the result, creating a slot-machine effect.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Track statistics</strong> — Maintain counters: <code>int headsCount=0, tailsCount=0;</code>. Display on Serial Monitor: <code>Serial.print("H:"); Serial.print(headsCount); Serial.print(" T:"); Serial.println(tailsCount);</code>. After 100 tosses you should see roughly 50/50 — verifying uniform distribution and giving you a live statistics lesson.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🎲 Random dice (extend to 6-sided)</span>
+          <span class="app-tag">🃏 Card deck shuffler display</span>
+          <span class="app-tag">🏆 Fair team/player selector</span>
+          <span class="app-tag">🔀 Random order generator</span>
+          <span class="app-tag">🎰 Slot machine simulator</span>
+          <span class="app-tag">🧪 Probability statistics demo</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$3 – $8</span></li>
+            <li class="fact-row"><span>Build Time</span><span>45 min – 1 hr</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Output</span><span>2× LEDs</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">randomSeed() entropy</span></li>
+            <li><span class="skill-tag">random() function</span></li>
+            <li><span class="skill-tag">Pseudo-random number gen.</span></li>
+            <li><span class="skill-tag">Animated LED feedback</span></li>
+            <li><span class="skill-tag">Serial statistics output</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">No libraries needed</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="digital-dice.html" class="skill-tag">Digital Dice (7-segment)</a></li>
+            <li><a href="reaction-timer-game.html" class="skill-tag">Reaction Timer Game</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const coin = document.getElementById('coin');
+    const ledH = document.getElementById('led-h');
+    const ledT = document.getElementById('led-t');
+    const tossBtnEl = document.getElementById('toss-btn');
+    let tossing = false;
+    function doToss() {
+      if (tossing) return;
+      tossing = true;
+      tossBtnEl.disabled = true;
+      ledH.className = 'c-led-dot'; ledT.className = 'c-led-dot';
+      coin.classList.add('spinning');
+      // Animate
+      let flashes = 0;
+      const flashInterval = setInterval(() => {
+        if (flashes % 2 === 0) { ledH.className = 'c-led-dot on-gold'; ledT.className = 'c-led-dot'; }
+        else { ledH.className = 'c-led-dot'; ledT.className = 'c-led-dot on-silver'; }
+        flashes++;
+        if (flashes >= 10) {
+          clearInterval(flashInterval);
+          const result = Math.random() < 0.5 ? 'heads' : 'tails';
+          coin.textContent = result === 'heads' ? '👑' : '🌙';
+          coin.className = 'coin ' + result;
+          ledH.className = 'c-led-dot' + (result === 'heads' ? ' on-gold' : '');
+          ledT.className = 'c-led-dot' + (result === 'tails' ? ' on-silver' : '');
+          coin.classList.remove('spinning');
+          tossing = false;
+          tossBtnEl.disabled = false;
+        }
+      }, 90);
+    }
+    tossBtnEl.addEventListener('click', doToss);
+    // Auto-demo
+    setTimeout(doToss, 1200);
+    setInterval(doToss, 6000);
+  </script>
+</body>
+</html>

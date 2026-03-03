@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Self-Balancing Robot – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a two-wheeled self-balancing robot using MPU-6050 IMU and cascaded PID control on Raspberry Pi with DC motors and H-bridge driver." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050a10 0%,#0a1520 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:32px;position:relative;overflow:hidden;}
+    .robot-body{display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform 0.2s;}
+    .r-head{width:28px;height:20px;background:#1e4080;border-radius:4px;border:2px solid #3060c0;}
+    .r-torso{width:36px;height:32px;background:#162860;border-radius:4px;border:2px solid #2050a0;}
+    .r-wheels{display:flex;gap:8px;}
+    .r-wheel{width:22px;height:22px;border-radius:50%;border:3px solid #40a0ff;background:#0a2040;}
+    .pid-viz{display:flex;flex-direction:column;gap:4px;font-family:monospace;font-size:9px;color:#60a0e0;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Self-Balancing Robot</h1>
+      <p>Build a two-wheeled inverted pendulum robot using an MPU-6050 IMU and a cascaded PID control loop on Raspberry Pi. Master sensor fusion, real-time control theory, and motor drive in one platform.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Self-Balancing Robot</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="robot-body" id="robotBody" style="transform:rotate(0deg);">
+                  <div class="r-head"></div>
+                  <div class="r-torso"></div>
+                  <div class="r-wheels"><div class="r-wheel" id="wL"></div><div class="r-wheel" id="wR"></div></div>
+                </div>
+                <div class="pid-viz">
+                  <div>ANGLE: <span id="pidAngle">0.0°</span></div>
+                  <div>ERR: <span id="pidErr">0.00</span></div>
+                  <div>P: <span id="pidP">0.00</span></div>
+                  <div>I: <span id="pidI">0.00</span></div>
+                  <div>D: <span id="pidD">0.00</span></div>
+                  <div>PWM: <span id="pidOut">0</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch real builds:</span><a href="https://www.youtube.com/results?search_query=self+balancing+robot+raspberry+pi+MPU6050+PID" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The self-balancing (inverted pendulum) robot is the classic advanced project that ties together IMU sensor fusion, PID control theory, real-time loop scheduling, and motor drive electronics. Understanding this project means understanding most of what goes into drone flight controllers, bipedal robots, and gyroscopic camera gimbals.</p>
+              <p>The core challenge: the robot falls over in milliseconds if the control loop is too slow. You'll implement a complementary filter (or Kalman filter) to fuse accelerometer + gyroscope data for a low-noise tilt angle, then tune a cascaded PID: outer loop for position/speed, inner loop for angle.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (or Pi 3B+)</span><span class="comp-note"> — Runs Python control loop at 100 Hz via pigpio or RPi.GPIO; requires low-latency OS (disable unnecessary services)</span></div></li>
+                <li><span class="comp-icon">📐</span><div><span class="comp-name">MPU-6050 IMU (I2C)</span><span class="comp-note"> — 3-axis gyro + 3-axis accelerometer; 1 kHz output; ±2000°/s gyro; I2C address 0x68</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">2× N20 DC Gear Motors (+ encoders)</span><span class="comp-note"> — 100–300 RPM, 6V; Hall-effect encoders optional but recommended for speed feedback in outer loop</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">L298N or TB6612FNG H-Bridge</span><span class="comp-note"> — TB6612FNG preferred (3.4A peak, lower heat, logic-level PWM); controls forward/reverse + speed</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">2S LiPo Battery (7.4V, 1000mAh)</span><span class="comp-note"> — Powers motors directly; 5V UBEC regulator for Raspberry Pi; LiPo suits high-current motor spikes</span></div></li>
+                <li><span class="comp-icon">🖨️</span><div><span class="comp-name">3D-Printed / MDF Chassis</span><span class="comp-note"> — Low centre-of-mass body with IMU mounted at robot centroid; wheel axle at exact bottom</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Sensor Fusion — Complementary Filter</h4><p>Raw accelerometer angle: <code>accel_angle = atan2(ay, az) * 180/π</code>. Raw gyro rate: <code>gyro_rate = gx (°/s)</code>. Complementary filter: <code>angle = 0.98 * (angle + gyro_rate * dt) + 0.02 * accel_angle</code>. The 0.98/0.02 weighting trusts the gyro short-term and accelerometer long-term, eliminating both gyro drift and accelerometer noise. Update at 100 Hz (dt = 10 ms).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Cascaded PID Control</h4><p><strong>Inner loop (angle PID)</strong>: setpoint = balance_angle (typically ±2° from vertical). Error = setpoint − measured_angle. PID output → motor PWM. Kp ≈ 30, Ki ≈ 0.5, Kd ≈ 0.8 (tune empirically). Run at 100 Hz. <strong>Outer loop (speed PID)</strong>: uses encoder tick rate to compute actual speed; adjusts balance_angle setpoint to drive position correction. Run at 20 Hz. The cascaded structure separates fast balance stabilisation from slow positional drift correction.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Motor PWM via pigpio</h4><p>Use pigpio for hardware PWM (not software PWM — causes jitter). <code>pi.set_PWM_frequency(pin, 1000)</code>. PWM duty cycle 0–255. Direction via H-bridge IN1/IN2 pins. Clamp PID output: <code>pwm = max(-255, min(255, pid_output))</code>. For L298N: enable pin gets PWM, IN1/IN2 set direction. Dead-band: skip PWM &lt; 20 to prevent motor buzzing at near-zero command.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>PID Tuning Procedure</h4><p>Step 1: set Ki=Kd=0, increase Kp until robot starts oscillating rapidly. Step 2: add Kd to dampen oscillations. Step 3: add Ki slowly to correct slow lean drift. Balance point offset: robot may need a non-zero setpoint angle if centre of mass isn't perfectly centred — find empirically while holding robot. Use serial logging to plot angle and PWM during tuning.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import smbus2, time, pigpio, math
+
+pi = pigpio.pi()
+bus = smbus2.SMBus(1)
+MPU = 0x68; bus.write_byte_data(MPU, 0x6B, 0)  # wake MPU6050
+
+Kp, Ki, Kd = 30.0, 0.5, 0.8
+integral = 0; prev_error = 0; angle = 0
+SETPOINT = 0.0  # degrees from vertical
+
+def read_mpu():
+    raw = bus.read_i2c_block_data(MPU, 0x3B, 14)
+    ax = (raw[0]<<8|raw[1])/16384.0
+    ay = (raw[2]<<8|raw[3])/16384.0
+    az = (raw[4]<<8|raw[5])/16384.0
+    gx = (raw[8]<<8|raw[9])/131.0
+    return ax, ay, az, gx
+
+def set_motors(pwm):
+    speed = abs(int(pwm)); fwd = pwm > 0
+    pi.write(17, 1 if fwd else 0); pi.write(18, 0 if fwd else 1)
+    pi.write(22, 0 if fwd else 1); pi.write(23, 1 if fwd else 0)
+    pi.set_PWM_dutycycle(12, speed); pi.set_PWM_dutycycle(13, speed)
+
+dt = 0.01
+while True:
+    t0 = time.time()
+    ax, ay, az, gx = read_mpu()
+    accel_angle = math.degrees(math.atan2(ay, az))
+    angle = 0.98*(angle + gx*dt) + 0.02*accel_angle
+    error = SETPOINT - angle
+    integral += error * dt
+    derivative = (error - prev_error) / dt
+    pwm = Kp*error + Ki*integral + Kd*derivative
+    pwm = max(-255, min(255, pwm))
+    set_motors(pwm); prev_error = error
+    time.sleep(max(0, dt - (time.time()-t0)))</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📱 Bluetooth Remote Control</span>
+                <span class="app-tag">📡 ROS Integration</span>
+                <span class="app-tag">🔢 Kalman Filter Fusion</span>
+                <span class="app-tag">📷 Camera + Streaming</span>
+                <span class="app-tag">🗺️ Encoder Odometry</span>
+                <span class="app-tag">⚡ LQR State-Space Controller</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $40 – $75</li><li><strong>Build Time:</strong> 8 – 12 hours</li><li><strong>Platform:</strong> Raspberry Pi 4</li><li><strong>Control:</strong> Cascaded PID @ 100 Hz</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>IMU complementary/Kalman filter</li><li>Cascaded PID control theory</li><li>pigpio hardware PWM</li><li>Real-time loop scheduling</li><li>H-bridge motor drive</li><li>PID empirical tuning</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries Needed</h3><ul class="libs-list"><li><span class="lib-name">smbus2</span><span class="lib-desc"> — I2C communication with MPU-6050</span></li><li><span class="lib-name">pigpio</span><span class="lib-desc"> — Hardware PWM; low-jitter GPIO control</span></li><li><span class="lib-name">numpy</span><span class="lib-desc"> — Kalman filter matrix operations (optional)</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let ang = 0, vel = 0.3, t = 0;
+    setInterval(() => {
+      t += 0.1;
+      ang = 8 * Math.sin(t) * Math.exp(-0.05 * t % 30);
+      if (Math.abs(t % 30) < 0.2) ang = 8;
+      document.getElementById('robotBody').style.transform = `rotate(${ang.toFixed(1)}deg)`;
+      const err = (0 - ang).toFixed(2);
+      const p = (30 * err).toFixed(1);
+      const d = (0.8 * -vel).toFixed(1);
+      document.getElementById('pidAngle').textContent = ang.toFixed(1) + '°';
+      document.getElementById('pidErr').textContent = err;
+      document.getElementById('pidP').textContent = p;
+      document.getElementById('pidI').textContent = (0.5 * ang * 0.01).toFixed(2);
+      document.getElementById('pidD').textContent = d;
+      document.getElementById('pidOut').textContent = Math.max(-255, Math.min(255, Math.round(Number(p) + Number(d))));
+    }, 100);
+  </script>
+</body>
+</html>

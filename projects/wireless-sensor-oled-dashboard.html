@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wireless Sensor OLED Dashboard – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a wireless multi-node sensor dashboard using ESP-NOW protocol. Multiple ESP32 transmitters send data to a central ESP32 receiver displayed on a 0.96″ OLED." />
+  <meta name="keywords" content="ESP-NOW wireless sensor dashboard ESP32, multi-node ESP-NOW OLED display, ESP32 ESP-NOW sensor network, wireless sensor aggregation ESP32, ESP-NOW no router project" />
+  <link rel="canonical" href="wireless-sensor-oled-dashboard.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000820 0%,#001030 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .esp-node{background:#040c18;border:1px solid #1040a0;border-radius:6px;padding:6px 10px;font-family:monospace;font-size:9px;color:#4090e0;text-align:center;min-width:60px;}
+    .esp-receiver{background:#001020;border:2px solid #0060e0;border-radius:8px;padding:8px 12px;font-family:monospace;font-size:9px;color:#00aaff;text-align:center;}
+    .oled-panel{background:#000;border:2px solid #004400;border-radius:6px;padding:8px;font-family:monospace;font-size:8px;color:#00ff00;line-height:1.5;min-width:120px;}
+    .wave-line{height:1px;background:linear-gradient(90deg,transparent,#2060e0,transparent);width:120px;animation:waveAnim 1.5s linear infinite;}
+    @keyframes waveAnim{0%{transform:scaleX(0);opacity:0;}50%{transform:scaleX(1);opacity:1;}100%{transform:scaleX(0);opacity:0;}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Wireless Sensor OLED Dashboard</h1>
+      <p>Multiple ESP-NOW nodes transmit sensor readings wirelessly to a central ESP32 that aggregates and displays all data on a large OLED panel. No Wi-Fi router required — direct ESP-NOW peer-to-peer links at up to 200 m.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Wireless Sensor OLED Dashboard</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;gap:16px;align-items:center;">
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div class="esp-node">NODE 1<br><span id="n1t">T: 27°C</span><br><span id="n1h">H: 60%</span></div>
+                    <div class="esp-node">NODE 2<br><span id="n2t">T: 29°C</span><br><span id="n2h">H: 55%</span></div>
+                    <div class="esp-node">NODE 3<br><span id="n3t">T: 25°C</span><br><span id="n3h">H: 70%</span></div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                    <div class="wave-line"></div>
+                    <div class="wave-line" style="animation-delay:0.3s;"></div>
+                    <div class="wave-line" style="animation-delay:0.6s;"></div>
+                  </div>
+                  <div>
+                    <div style="font-family:monospace;font-size:8px;color:#4060a0;margin-bottom:4px;">ESP32 RECEIVER</div>
+                    <div class="oled-panel" id="oledPanel">
+                      N1: 27°C 60%<br>
+                      N2: 29°C 55%<br>
+                      N3: 25°C 70%<br>
+                      pkts:0
+                    </div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP-NOW+multi+node+sensor+ESP32+OLED+dashboard" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>ESP-NOW is Espressif's proprietary connectionless wireless protocol that operates at the MAC layer alongside, but independently of, Wi-Fi. Unlike MQTT over Wi-Fi, ESP-NOW requires no router, no IP stack, and no internet connection — nodes discover each other directly using MAC addresses. Latency is under 1 ms and the protocol is extremely power-efficient, making it ideal for battery-powered sensor nodes.</p>
+              <p>This project puts 3–6 ESP32 transmitter nodes throughout a building or field, each reading local sensors (temperature, humidity, soil moisture, gas, etc.) and sending compact data packets to a single ESP32 receiver every 30 seconds. The receiver aggregates all readings and presents a clear scrolling dashboard on a 1.3″ or larger OLED. The entire system is infrastructure-free.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">3–6× ESP32 Dev Boards</span><span class="comp-note"> — 1 receiver + 2–5 transmitter nodes; use identical MCU for simplified code reuse</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT22 / BME280 per node</span><span class="comp-note"> — Temperature + humidity; BME280 adds pressure; one sensor per transmitter node</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">1.3″ SH1106 OLED (Receiver)</span><span class="comp-note"> — 128×64; bigger screen for the receiver dashboard; shows all node data simultaneously</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">18650 LiPo per Node</span><span class="comp-note"> — ESP32 deep sleep between transmissions: 5 µA sleep + 240 mA active ~150 ms = months battery life</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Transmitter Node Setup (ESP-NOW Sender)</h4><p>Each node has a hard-coded NODE_ID (1, 2, 3…). On wake from deep sleep: initialise Wi-Fi in STA mode (required for ESP-NOW), call <code>esp_now_init()</code>, register the receiver's MAC address as a peer with <code>esp_now_add_peer()</code>, read sensor, pack into a 12-byte struct <code>{uint8_t nodeId, float temp, float hum, uint32_t uptime}</code>, send with <code>esp_now_send(receiverMAC, data, sizeof(data))</code>, confirm send callback, then enter deep sleep for 30 s.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Receiver: OnDataRecv Callback</h4><p>The receiver always-on ESP32 registers <code>esp_now_register_recv_cb(OnDataRecv)</code>. In the callback, cast the received bytes back to the struct, store in a <code>nodeData[6]</code> array indexed by <code>nodeId</code>. Update a "last-seen" timestamp. The OLED refresh loop (every 2 s) renders all nodes. Mark stale nodes (no update > 120 s) with a ⚠ symbol so you know if a node has died or is out of range.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>OLED Multi-Node Dashboard Layout</h4><p>Use <code>u8g2</code> library for crisp font rendering. Layout: one row per node (3 rows fit on 128×64 at font size 8). Each row: <code>"N1: 27.4°C  61%  ✓"</code>. Cycle through pages if more than 6 nodes (auto-scroll every 5 s). Add a top status bar showing total packet count and last update time. Highlight the most recently updated node with inverted text (white bg, black text).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Range Extension &amp; Broadcast Mode</h4><p>For broadcast (no peer registration): use the broadcast MAC <code>FF:FF:FF:FF:FF:FF</code>. This loses delivery confirmation but simplifies node code. To extend range beyond 100 m: add an external 2.4 GHz PCB antenna to the ESP32 (remove the onboard chip antenna) or use ESP32 modules with IPEX connector. For maximum range, elevate antennas and ensure line of sight. Achieved &gt;300 m LOS at 1 Mbps in tests.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>// === TRANSMITTER NODE (node_id = 1) ===
+#include &lt;esp_now.h&gt;
+#include &lt;WiFi.h&gt;
+
+uint8_t receiverMAC[] = {0xAA,0xBB,0xCC,0xDD,0xEE,0xFF};
+struct SensorPacket { uint8_t nodeId; float temp; float hum; };
+SensorPacket pkt;
+
+void setup() {
+  WiFi.mode(WIFI_STA); esp_now_init();
+  esp_now_peer_info_t peerInfo; memcpy(peerInfo.peer_addr, receiverMAC, 6);
+  peerInfo.channel=0; peerInfo.encrypt=false;
+  esp_now_add_peer(&peerInfo);
+  pkt.nodeId=1; pkt.temp=readTemp(); pkt.hum=readHum();
+  esp_now_send(receiverMAC,(uint8_t*)&pkt,sizeof(pkt));
+  esp_deep_sleep(30000000); // 30s deep sleep
+}
+
+// === RECEIVER ===
+#include &lt;esp_now.h&gt;
+
+struct SensorPacket { uint8_t nodeId; float temp; float hum; };
+SensorPacket nodes[6];
+
+void OnDataRecv(const uint8_t *mac, const uint8_t *data, int len) {
+  SensorPacket *p = (SensorPacket*)data;
+  if(p->nodeId >= 1 && p->nodeId &lt;= 6) nodes[p->nodeId - 1] = *p;
+  updateOLED();
+}
+
+void setup() {
+  WiFi.mode(WIFI_STA); esp_now_init();
+  esp_now_register_recv_cb(OnDataRecv);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌿 Greenhouse Zone Monitor</span>
+                <span class="app-tag">🏠 Home Sensor Network</span>
+                <span class="app-tag">🌾 Agricultural Field Nodes</span>
+                <span class="app-tag">📦 Warehouse Env Monitor</span>
+                <span class="app-tag">🔋 Ultra-Low-Power Nodes</span>
+                <span class="app-tag">📡 No-Router Campus Net</span>
+                <span class="app-tag">🛡️ Motion Alert Network</span>
+                <span class="app-tag">🗄️ SD Logging + Web Upload</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $20 – $45</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> ESP32 × multiple</li>
+                <li><strong>Protocol:</strong> ESP-NOW (no router)</li>
+                <li><strong>Range:</strong> Up to 200 m LOS</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>ESP-NOW peer-to-peer protocol</li>
+                <li>MAC address peer registration</li>
+                <li>Struct-based wireless packets</li>
+                <li>ESP32 deep sleep 5 µA mode</li>
+                <li>Multi-node data aggregation</li>
+                <li>u8g2 OLED dashboard layout</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">esp_now.h (built-in)</span><span class="lib-desc"> — Espressif ESP-NOW driver; no install needed</span></li>
+                <li><span class="lib-name">u8g2</span><span class="lib-desc"> — Olikraus; universal OLED/LCD driver with fonts</span></li>
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> — Adafruit; DHT11/22 temperature+humidity</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="lora-remote-sensor-node.html">LoRa Remote Sensor Node</a></li>
+                <li><a href="smart-parking-system.html">Smart Parking System</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let pkts=0, t=0;
+    const temps = [27,29,25], hums=[60,55,70];
+    setInterval(()=>{
+      t++; pkts++;
+      temps[0] = 27 + Math.round((Math.random()-0.5)*2);
+      temps[1] = 29 + Math.round((Math.random()-0.5)*2);
+      temps[2] = 25 + Math.round((Math.random()-0.5)*2);
+      hums[0] = 60 + Math.round((Math.random()-0.5)*4);
+      hums[1] = 55 + Math.round((Math.random()-0.5)*4);
+      hums[2] = 70 + Math.round((Math.random()-0.5)*4);
+      document.getElementById('n1t').textContent='T: '+temps[0]+'°C';
+      document.getElementById('n1h').textContent='H: '+hums[0]+'%';
+      document.getElementById('n2t').textContent='T: '+temps[1]+'°C';
+      document.getElementById('n2h').textContent='H: '+hums[1]+'%';
+      document.getElementById('n3t').textContent='T: '+temps[2]+'°C';
+      document.getElementById('n3h').textContent='H: '+hums[2]+'%';
+      document.getElementById('oledPanel').innerHTML = `N1: ${temps[0]}°C ${hums[0]}%<br>N2: ${temps[1]}°C ${hums[1]}%<br>N3: ${temps[2]}°C ${hums[2]}%<br>pkts:${pkts}`;
+    }, 1500);
+  </script>
+</body>
+</html>

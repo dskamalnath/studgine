@@ -1,0 +1,212 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Buzzer Piano – Studgine</title>
+  <meta name="description" content="Build an 8-key buzzer piano with Arduino. Each button plays a musical note using tone(). Learn frequency values, arrays, and tone/noTone." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    /* ── Piano Keys Animation ── */
+    .anim-stage { display:flex; align-items:flex-end; justify-content:center; gap:5px; padding:28px 16px 16px; }
+    .piano-key { width:32px; height:80px; border-radius:0 0 6px 6px; cursor:pointer; position:relative; transition:transform .1s, box-shadow .1s; }
+    .piano-key.white { background:linear-gradient(180deg,#e2e8f0,#fff); border:1px solid #94a3b8; box-shadow:0 4px 8px rgba(0,0,0,.2); }
+    .piano-key.black { height:52px; width:22px; background:linear-gradient(180deg,#1e293b,#0f172a); margin:0 -11px; z-index:2; box-shadow:0 4px 8px rgba(0,0,0,.4); }
+    .piano-key.active { transform:translateY(3px); box-shadow:0 1px 4px rgba(0,0,0,.2); }
+    .piano-key.white.active { background:linear-gradient(180deg,#bfdbfe,#dbeafe); }
+    .piano-key.black.active { background:linear-gradient(180deg,#1e3a8a,#1e293b); }
+    .note-label { position:absolute; bottom:4px; left:50%; transform:translateX(-50%); font-size:.55rem; color:#64748b; font-weight:600; }
+    .buzzer-icon { font-size:2rem; animation:buzz 0.3s ease-in-out infinite; }
+    @keyframes buzz { 0%,100%{transform:rotate(-3deg);} 50%{transform:rotate(3deg);} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html"    class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html"    class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Mini Buzzer Piano</h1>
+      <p class="hero-sub">Eight buttons each play a musical note via a passive buzzer using <code>tone()</code> — map your own songs and learn frequency values, arrays, and the tone/noTone functions.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Mini Buzzer Piano</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+
+        <div class="anim-stage">
+          <div class="piano-key white" id="k0"><span class="note-label">C</span></div>
+          <div class="piano-key black" id="k1"><span class="note-label" style="color:#94a3b8">C#</span></div>
+          <div class="piano-key white" id="k2"><span class="note-label">D</span></div>
+          <div class="piano-key black" id="k3"><span class="note-label" style="color:#94a3b8">D#</span></div>
+          <div class="piano-key white" id="k4"><span class="note-label">E</span></div>
+          <div class="piano-key white" id="k5"><span class="note-label">F</span></div>
+          <div class="piano-key black" id="k6"><span class="note-label" style="color:#94a3b8">F#</span></div>
+          <div class="piano-key white" id="k7"><span class="note-label">G</span></div>
+          <div class="piano-key white" id="k8"><span class="note-label">A</span></div>
+          <div class="piano-key white" id="k9"><span class="note-label">B</span></div>
+        </div>
+        <p class="anim-stage-label">Each button triggers tone() at the exact note frequency</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+buzzer+piano+tone+function" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The Arduino <code>tone()</code> function generates a square wave on any digital pin at a specified frequency. A passive buzzer (which needs a driving signal, unlike an active buzzer that beeps on its own) converts that electrical oscillation into sound. Middle C is 262 Hz, A4 is 440 Hz — standard equal temperament frequencies are fixed constants you'll learn to work with across many audio projects.</p>
+        <p>With 8 buttons wired to 8 digital pins, you create a playable one-octave piano. Each button press calls <code>tone(buzzerPin, frequency)</code> and releasing it calls <code>noTone(buzzerPin)</code>. You can then encode songs as frequency + duration arrays and play them back automatically.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Main microcontroller</span></div></li>
+          <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive buzzer</span><span class="comp-note">Produces musical tones (NOT active buzzer)</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">8× Push-buttons</span><span class="comp-note">One per note (C D E F G A B C)</span></div></li>
+          <li><span class="comp-icon">🟫</span><div><span class="comp-name">8× 10 kΩ resistors</span><span class="comp-note">Pull-down for each button</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype connections</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">USB cable</span><span class="comp-note">5 V power</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Define frequencies</strong> — Create an integer array: <code>int notes[] = {262, 294, 330, 349, 392, 440, 494, 523};</code> — that's C4, D4, E4, F4, G4, A4, B4, C5. Wire each button to pins 2–9 with 10 kΩ pull-down resistors.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Read buttons in a loop</strong> — Use an array of pin numbers: <code>int btnPins[] = {2,3,4,5,6,7,8,9};</code>. In <code>loop()</code>, iterate with a <code>for</code> loop, check <code>digitalRead(btnPins[i])</code>, and if any are HIGH call <code>tone(10, notes[i]);</code> (buzzer on pin 10) then break.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Handle release silence</strong> — After the loop, if no button was pressed in this iteration, call <code>noTone(10);</code>. This stops the sound immediately when all buttons are released, giving clean note boundaries.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Play a song</strong> — Add a secondary function <code>playSong()</code> triggered by a 9th button. Encode a melody as a 2D array of <code>{note, duration}</code> pairs (e.g. Happy Birthday) and iterate through it with <code>tone(pin, freq, dur)</code> and a brief gap between notes.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🎵 Auto-play melody songs</span>
+          <span class="app-tag">🎹 2-octave extended piano</span>
+          <span class="app-tag">🎮 Simon Says memory game</span>
+          <span class="app-tag">🔔 Custom doorbell tune</span>
+          <span class="app-tag">🕹️ Chiptune sound effects</span>
+          <span class="app-tag">📱 MIDI to Arduino bridge</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$3 – $8</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 2 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Power</span><span>5 V USB</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">tone() / noTone()</span></li>
+            <li><span class="skill-tag">Frequency arrays</span></li>
+            <li><span class="skill-tag">Multi-button polling</span></li>
+            <li><span class="skill-tag">for-loop iteration</span></li>
+            <li><span class="skill-tag">Song encoding arrays</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;">None — built-in Arduino <code>tone()</code> only. Optional: <strong>pitches.h</strong> header for named note constants.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="morse-code-led-flasher.html" class="skill-tag">Morse Code Flasher</a></li>
+            <li><a href="bpm-metronome.html" class="skill-tag">BPM Metronome</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+
+  <script src="../js/main.js"></script>
+  <script>
+    const keys = document.querySelectorAll('.piano-key');
+    const melody = [0,2,4,5,7,9,7,5,4,2,0];
+    let mi = 0;
+    setInterval(() => {
+      keys.forEach(k => k.classList.remove('active'));
+      const keyIdx = [0,1,2,3,4,5,6,7,8,9][melody[mi % melody.length]];
+      if(document.getElementById('k'+keyIdx)) document.getElementById('k'+keyIdx).classList.add('active');
+      mi++;
+    }, 400);
+  </script>
+</body>
+</html>

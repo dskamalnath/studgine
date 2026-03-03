@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parking Sensor Beeper – Studgine</title>
+  <meta name="description" content="An HC-SR04 sensor beeps faster as an object gets closer, like a car parking assistant. Learn distance-to-frequency mapping and proportional audio feedback with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:0; position:relative; overflow:hidden; }
+    .sensor-body { width:38px; height:30px; background:#1e293b; border:2px solid #3b82f6; border-radius:6px; display:flex; align-items:center; justify-content:center; z-index:2; }
+    .sensor-eye { width:10px; height:10px; border-radius:50%; background:#3b82f6; box-shadow:0 0 4px #3b82f6; }
+    .sonar-rings { position:absolute; left:60px; display:flex; align-items:center; gap:0; }
+    .sonar-ring { border-radius:50%; border:2px solid rgba(59,130,246,.5); position:absolute; transform:translateX(-50%) translateY(-50%); top:50%; left:0; opacity:0; }
+    .sonar-ring.r1 { width:30px; height:30px; animation:sonar-pulse 1.8s ease-out infinite; }
+    .sonar-ring.r2 { width:56px; height:56px; animation:sonar-pulse 1.8s ease-out .5s infinite; }
+    .sonar-ring.r3 { width:82px; height:82px; animation:sonar-pulse 1.8s ease-out 1s infinite; }
+    @keyframes sonar-pulse { 0%{opacity:.7;transform:translateX(-50%) translateY(-50%) scale(.7);} 100%{opacity:0;transform:translateX(-50%) translateY(-50%) scale(1);} }
+    .obstacle { position:absolute; right:18px; width:18px; height:60px; background:#ef4444; border-radius:4px; }
+    .dist-label { position:absolute; bottom:6px; right:28px; font-size:.55rem; color:#94a3b8; }
+    .beep-dot { position:absolute; top:10px; right:4px; width:12px; height:12px; border-radius:50%; background:#fbbf24; opacity:0; }
+    .beep-dot.on { opacity:1; animation:beep-flash .15s ease; }
+    @keyframes beep-flash { 0%{opacity:1;} 100%{opacity:.3;} }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Parking Sensor Beeper</h1>
+      <p class="hero-sub">An HC-SR04 sensor beeps faster as an object gets closer, just like a car parking assistant. Learn distance-to-frequency mapping and proportional audio feedback design.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Parking Sensor Beeper</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="sensor-body"><div class="sensor-eye"></div></div>
+          <div class="sonar-rings">
+            <div class="sonar-ring r1"></div>
+            <div class="sonar-ring r2"></div>
+            <div class="sonar-ring r3"></div>
+          </div>
+          <div class="obstacle"></div>
+          <div class="dist-label" id="dist-lbl">45 cm</div>
+          <div class="beep-dot" id="beep-dot"></div>
+        </div>
+        <p class="anim-stage-label">HC-SR04 echo → distance (cm) → beep interval</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+parking+sensor+HC-SR04+buzzer+beeper" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The HC-SR04 ultrasonic distance sensor works by emitting a 40 kHz ultrasonic burst from its TRIG pin and measuring how long it takes the echo to return on the ECHO pin. Since sound travels at ~343 m/s (at 20 °C), the formula is: <strong>distance (cm) = (echoTime_µs / 2) / 29.1</strong>.</p>
+        <p>This project maps that continuous distance measurement to a beep interval — close objects produce rapid continuous beeps (a solid tone below 10 cm), far objects produce slow single chirps. It's exactly how parking sensors in cars work, making this a commercially realistic embedded systems exercise.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">📡</span><div><span class="comp-name">HC-SR04 Ultrasonic sensor</span><span class="comp-note">Distance measurement</span></div></li>
+          <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive or active buzzer</span><span class="comp-note">Audio feedback</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire HC-SR04</strong> — VCC → 5 V, GND → GND, TRIG → D9, ECHO → D10. The sensor operates at 5 V; its ECHO pin outputs 5 V logic which is fine for standard Uno but use a voltage divider to 3.3 V when using 3.3 V boards.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Measure distance</strong> — Trigger a 10 µs pulse: <code>digitalWrite(TRIG, HIGH); delayMicroseconds(10); digitalWrite(TRIG, LOW);</code>. Then: <code>long duration = pulseIn(ECHO, HIGH); long dist = duration / 58;</code> (the constant 58 combines ÷2 for round-trip and ÷29.1 for cm/µs – rounded to integer-friendly value). Read every 60 ms minimum to allow echo to clear.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Map distance to beep interval</strong> — <code>int beepInterval = map(dist, 5, 80, 50, 1000);</code> Clamp with <code>constrain()</code>. Also scale tone frequency: <code>int freq = map(dist, 5, 80, 2400, 800);</code> — as you approach, the pitch rises and the beep rate increases simultaneously, creating a clear urgency gradient.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Non-blocking beep output</strong> — Use <code>millis()</code>: if elapsed ≥ beepInterval, play <code>tone(BUZZ, freq, 40);</code> and reset timer. If distance &lt; 8 cm, switch to continuous tone: <code>tone(BUZZ, 2500);</code>. If distance &gt; 100 cm, <code>noTone(BUZZ);</code> — no alerts for objects out of parking range.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🚗 Car reversing backup sensor</span>
+          <span class="app-tag">🦯 Obstacle alert for visually impaired</span>
+          <span class="app-tag">🤖 Robot collision avoidance</span>
+          <span class="app-tag">📦 Proximity switch for conveyor</span>
+          <span class="app-tag">🏠 Smart bin lid level indicator</span>
+          <span class="app-tag">🎮 Distance-based game controller</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $12</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 1.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Sensor</span><span>HC-SR04</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">pulseIn() timing</span></li>
+            <li><span class="skill-tag">Distance formula (sound)</span></li>
+            <li><span class="skill-tag">map() proportional scaling</span></li>
+            <li><span class="skill-tag">Non-blocking tone control</span></li>
+            <li><span class="skill-tag">Proximity zones</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">No libraries needed</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="ultrasonic-distance-meter.html" class="skill-tag">Ultrasonic Distance Meter</a></li>
+            <li><a href="obstacle-avoiding-robot.html" class="skill-tag">Obstacle Avoiding Robot</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const distLbl = document.getElementById('dist-lbl');
+    const beepDot = document.getElementById('beep-dot');
+    const distances = [80, 60, 45, 30, 20, 12, 8, 12, 20, 35, 50, 70];
+    let di = 0, beepTimer;
+    function update() {
+      const dist = distances[di % distances.length];
+      distLbl.textContent = dist + ' cm';
+      di++;
+      const interval = Math.round(50 + (dist / 80) * 950);
+      clearInterval(beepTimer);
+      beepTimer = setInterval(() => {
+        beepDot.classList.add('on');
+        setTimeout(() => beepDot.classList.remove('on'), 80);
+      }, interval);
+    }
+    update();
+    setInterval(update, 2200);
+  </script>
+</body>
+</html>

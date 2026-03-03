@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Industrial 4-Channel Timer Relay – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a 4-channel programmable timer relay with LCD menu using Arduino. Configure independent ON/OFF schedules with EEPROM persistence for industrial automation." />
+  <meta name="keywords" content="4 channel timer relay Arduino, programmable relay timer LCD Arduino, EEPROM relay schedule Arduino, industrial timer relay project, Arduino relay timer DS3231 RTC" />
+  <link rel="canonical" href="industrial-4-channel-timer-relay.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050808 0%,#0a1010 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;overflow:hidden;}
+    .relay-block{display:flex;flex-direction:column;gap:6px;}
+    .relay-ch{display:flex;align-items:center;gap:8px;font-family:monospace;font-size:10px;}
+    .relay-led{width:12px;height:12px;border-radius:50%;border:1px solid #333;transition:background 0.3s;}
+    .relay-time{font-size:8px;color:#406060;}
+    .lcd-panel{background:#002200;border:2px solid #004400;border-radius:6px;padding:8px;font-family:monospace;font-size:8px;color:#00ff66;line-height:1.6;min-width:130px;font-weight:700;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Industrial 4-Channel Timer Relay</h1>
+      <p>Configure independent ON/OFF schedules for four relay channels via an LCD menu interface. Covers structured menu design, EEPROM schedule persistence, and safe relay switching logic.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Industrial 4-Channel Timer Relay</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="relay-block">
+                  <div style="font-family:monospace;font-size:8px;color:#406060;margin-bottom:4px;">4-CHANNEL RELAY STATUS</div>
+                  <div class="relay-ch"><div class="relay-led" id="r1led" style="background:#006600;"></div><div>CH1: Pump</div><div class="relay-time" id="r1time">ON 06:00–08:00</div></div>
+                  <div class="relay-ch"><div class="relay-led" id="r2led" style="background:#1a1a1a;"></div><div>CH2: Lights</div><div class="relay-time" id="r2time">ON 18:00–22:00</div></div>
+                  <div class="relay-ch"><div class="relay-led" id="r3led" style="background:#1a1a1a;"></div><div>CH3: Heater</div><div class="relay-time" id="r3time">ON 05:00–07:00</div></div>
+                  <div class="relay-ch"><div class="relay-led" id="r4led" style="background:#006600;"></div><div>CH4: Fan</div><div class="relay-time" id="r4time">ON 12:00–14:00</div></div>
+                </div>
+                <div>
+                  <div style="font-family:monospace;font-size:7px;color:#204040;margin-bottom:4px;">16×2 LCD MENU</div>
+                  <div class="lcd-panel" id="lcdPanel">
+                    CH1 PUMP ACTIVE<br>ON:06:00 OFF:08:00
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+4+channel+timer+relay+LCD+menu+EEPROM+schedule" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Commercial programmable timer relays used in farms, greenhouses, factories, and homes can cost $30–$100 each. This project builds a 4-channel equivalent with a richer programming interface — a 16×2 LCD and 4 navigation buttons allowing you to set independent daily ON/OFF times for each relay channel. Schedules are stored in EEPROM so they survive power cuts.</p>
+              <p>The project covers one of the most practically applicable embedded patterns: the hierarchical menu system. Real industrial controllers (PLCs, VFDs) use exactly this button-and-LCD navigation approach. You'll also learn safe relay switching — preventing simultaneous energisation of multiple channels to manage inrush current, and debouncing the programming buttons for reliable menu navigation.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">4-Channel 5V Relay Module</span><span class="comp-note"> — Opto-isolated; rated for 10A/250VAC; one per controlled load</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno / Mega</span><span class="comp-note"> — Uno for 4 ch; Arduino Mega if expanding to 8+ channels (more digital IO)</span></div></li>
+                <li><span class="comp-icon">⏰</span><div><span class="comp-name">DS3231 RTC Module</span><span class="comp-note"> — Precision ±2 ppm RTC; battery-backed; I2C interface for accurate daily scheduling</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note"> — Menu display; only 2 wires (SDA/SCL) plus power; PCF8574 I2C backpack</span></div></li>
+                <li><span class="comp-icon">🔘</span><div><span class="comp-name">4× Push Buttons</span><span class="comp-note"> — UP / DOWN / SELECT / BACK navigation for 4-level menu hierarchy</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">EEPROM (built-in Arduino)</span><span class="comp-note"> — Arduino has 1 KB EEPROM; stores 4×(ON_hour, ON_min, OFF_hour, OFF_min, enabled) = 20 bytes</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>DS3231 RTC — Accurate Timekeeping</h4><p>Use the RTClib library. On first boot (or RTC battery dead), set RTC time to compile time: <code>rtc.adjust(DateTime(F(__DATE__), F(__TIME__)))</code>. Main loop reads <code>DateTime now = rtc.now()</code> every second. Compare <code>now.hour()</code> and <code>now.minute()</code> against each channel's stored ON and OFF times. Midnight wrap: handle the case where OFF time &lt; ON time (e.g., ON=22:00, OFF=02:00) by checking if <code>hour &gt;= onH || hour &lt; offH</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Hierarchical Menu System</h4><p>Four-level menu tree: <strong>Level 0</strong> = status view (all 4 channels, current time). <strong>Level 1</strong> = select channel (CH1–CH4). <strong>Level 2</strong> = select parameter (ON time / OFF time / Enable). <strong>Level 3</strong> = edit value (UP/DOWN increment hour, SELECT moves to minutes, SELECT again confirms). Use a <code>menuLevel</code> variable and a switch-case to render the appropriate LCD content. Key debounce: 200 ms debounce timer prevents multiple triggers per press. BACK button always goes up one level.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>EEPROM Schedule Persistence</h4><p>Define a struct: <code>struct Schedule { uint8_t onH, onM, offH, offM; bool enabled; }</code>. Store 4 schedules at EEPROM addresses 0, 10, 20, 30. Write with <code>EEPROM.put(addr, sched[i])</code> only when the user confirms an edit (reduces EEPROM write cycles — EEPROM has only 100,000 write cycles). On boot, read all 4 schedules with <code>EEPROM.get(addr, sched[i])</code> and validate (check if read values are in valid time range 0–23:0–59; default to 00:00–00:00 disabled if corrupt).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Safe Relay Switching Logic</h4><p>Relay module inputs are active-LOW (energise relay by pulling pin LOW). Use a <code>setRelay(int ch, bool on)</code> function that adds a 50 ms inter-channel delay when turning on multiple relays simultaneously (limits peak inrush current to power supply). Add manual override: holding SELECT for 3 seconds on a channel in the status view toggles it ON/OFF regardless of schedule (manual override flag, cleared at next schedule change). LED indicators: onboard relay LED sufficient, or add external 5 mm LEDs on relay secondary side for visual status at a glance.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;RTClib.h&gt;
+#include &lt;EEPROM.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+RTC_DS3231 rtc;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+const int RELAY[4] = {4, 5, 6, 7};
+
+struct Schedule { uint8_t onH, onM, offH, offM; bool enabled; };
+Schedule sched[4];
+
+void loadSchedules() { for(int i=0;i&lt;4;i++) EEPROM.get(i*10, sched[i]); }
+void saveSchedule(int i) { EEPROM.put(i*10, sched[i]); }
+
+bool isActive(int ch) {
+  if(!sched[ch].enabled) return false;
+  DateTime now = rtc.now();
+  int nowM = now.hour()*60 + now.minute();
+  int onM = sched[ch].onH*60 + sched[ch].onM;
+  int offM = sched[ch].offH*60 + sched[ch].offM;
+  if(onM &lt; offM) return nowM >= onM && nowM &lt; offM;
+  else return nowM >= onM || nowM &lt; offM; // overnight wrap
+}
+
+void setup() {
+  rtc.begin(); loadSchedules();
+  lcd.begin(); lcd.backlight();
+  for(int i=0;i&lt;4;i++) { pinMode(RELAY[i], OUTPUT); digitalWrite(RELAY[i], HIGH); }
+}
+
+void loop() {
+  for(int i=0;i&lt;4;i++) {
+    digitalWrite(RELAY[i], isActive(i) ? LOW : HIGH); // active LOW relay
+    delay(50); // stagger switching
+  }
+  // ... menu handling and LCD update
+  delay(1000);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌱 Irrigation Timer</span>
+                <span class="app-tag">💡 Lighting Schedule</span>
+                <span class="app-tag">🔥 Heating Time Control</span>
+                <span class="app-tag">🏭 Industrial Process Timer</span>
+                <span class="app-tag">📅 7-Day Weekly Schedule</span>
+                <span class="app-tag">📱 Blynk Remote Override</span>
+                <span class="app-tag">🔌 8-Channel Expansion</span>
+                <span class="app-tag">📊 Runtime Hour Counter LCD</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $15 – $30</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno</li>
+                <li><strong>Channels:</strong> 4 independent relays</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Hierarchical LCD menu design</li>
+                <li>DS3231 RTC time scheduling</li>
+                <li>EEPROM struct persistence</li>
+                <li>Active-LOW relay safe switching</li>
+                <li>Button debounce + hold detection</li>
+                <li>Overnight time-wrap logic</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — Adafruit; DS3231 real-time clock driver</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — I2C LCD driver for 16×2 display menu</span></li>
+                <li><span class="lib-name">EEPROM (built-in)</span><span class="lib-desc"> — Schedule struct storage; survives power cycles</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="automated-grow-light-controller.html">Grow Light Controller</a></li>
+                <li><a href="smart-wifi-power-strip.html">Smart Wi-Fi Power Strip</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const schedules=[
+      {name:"CH1: Pump",  on:{h:6,m:0},  off:{h:8,m:0}},
+      {name:"CH2: Lights",on:{h:18,m:0}, off:{h:22,m:0}},
+      {name:"CH3: Heater",on:{h:5,m:0},  off:{h:7,m:0}},
+      {name:"CH4: Fan",   on:{h:12,m:0}, off:{h:14,m:0}},
+    ];
+    const lcdLines=[
+      ["CH1 PUMP ACTIVE","ON:06:00 OFF:08:00"],
+      ["CH2 LIGHTS","ON:18:00 OFF:22:00"],
+      ["CH3 HEATER","ON:05:00 OFF:07:00"],
+      ["CH4 FAN","ON:12:00 OFF:14:00"],
+    ];
+    let simHour=6, simMin=0, ti=0;
+    setInterval(()=>{
+      ti++;
+      simMin+=2; if(simMin>=60){simMin=0;simHour=(simHour+1)%24;}
+      const ids=['1','2','3','4'];
+      ids.forEach((id,i)=>{
+        const s=schedules[i];
+        const now=simHour*60+simMin;
+        const onM=s.on.h*60+s.on.m; const offM=s.off.h*60+s.off.m;
+        let active = onM<offM ? (now>=onM&&now<offM) : (now>=onM||now<offM);
+        document.getElementById('r'+id+'led').style.background=active?'#00cc00':'#1a1a1a';
+      });
+      const li=Math.floor(simHour/6)%4;
+      document.getElementById('lcdPanel').innerHTML=lcdLines[ti%4][0]+'<br>'+lcdLines[ti%4][1];
+    }, 800);
+  </script>
+</body>
+</html>

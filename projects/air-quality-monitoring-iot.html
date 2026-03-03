@@ -1,0 +1,241 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Air Quality Monitoring IoT Node – Advanced Project | Studgine</title>
+  <meta name="description" content="Deploy a network of ESP32 air quality sensors streaming PM2.5, CO2, and gas data to a Grafana dashboard via InfluxDB. Advanced IoT pipeline project, $30–$60." />
+  <meta name="keywords" content="air quality monitor IoT, ESP32 mesh, MQ-135, PM2.5 sensor, Grafana InfluxDB, advanced project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="air-quality-monitoring-iot.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                  </div>
+                  <!-- Bar chart -->
+                  <div class="aq-bars">
+                    <div class="aq-bar" style="height:35%"></div>
+                    <div class="aq-bar" style="height:55%"></div>
+                    <div class="aq-bar" style="height:80%"></div>
+                    <div class="aq-bar" style="height:50%"></div>
+                    <div class="aq-bar" style="height:40%"></div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP32+air+quality+monitor+MQ135+PM2.5+Grafana+InfluxDB+tutorial" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <!-- Introduction -->
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>
+                Air quality monitoring is one of the most impactful IoT applications you can build as a student.
+                This project goes beyond a single sensor node — you'll deploy a small mesh of ESP32 boards, each
+                measuring particulate matter (PM2.5) and toxic gas concentrations, then aggregate all readings
+                into a time-series InfluxDB database and visualise them with Grafana dashboards.
+              </p>
+              <p>
+                It teaches the complete end-to-end IoT pipeline: sensor calibration, firmware development, network
+                protocols (MQTT or ESP-NOW mesh), database ingestion, and real-time dashboarding — every skill
+                valued by IoT employers and research labs.
+              </p>
+            </div>
+
+            <!-- Components -->
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🎛️</span>
+                  <div><span class="comp-name">ESP32 DevKit × 2–3</span><span class="comp-note"> — One per monitoring node</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🌫️</span>
+                  <div><span class="comp-name">MQ-135 Gas Sensor</span><span class="comp-note"> — CO₂, NH₃, benzene, smoke detection</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">💨</span>
+                  <div><span class="comp-name">PM2.5 Dust Sensor (GP2Y1010)</span><span class="comp-note"> — Measures fine particulate matter</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🖥️</span>
+                  <div><span class="comp-name">0.96″ OLED Display</span><span class="comp-note"> — Local AQI readout on each node</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🔋</span>
+                  <div><span class="comp-name">18650 Battery + TP4056 Charger</span><span class="comp-note"> — Portable, rechargeable power</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🖥️</span>
+                  <div><span class="comp-name">Raspberry Pi / PC (server)</span><span class="comp-note"> — Runs InfluxDB + Grafana stack</span></div>
+                </li>
+              </ul>
+            </div>
+
+            <!-- How it works -->
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">1</div>
+                  <div class="step-content">
+                    <h4>Calibrate &amp; Wire Sensors</h4>
+                    <p>The MQ-135 requires a 24-hour burn-in and a Rs/R0 calibration in clean air. The GP2Y1010 uses an LED pulse circuit — wire the 150 Ω resistor and 220 µF capacitor per the datasheet, then read the analog output on an ADC pin.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">2</div>
+                  <div class="step-content">
+                    <h4>Set Up Mesh Network</h4>
+                    <p>Use ESP-NOW (peer-to-peer, no router) to relay readings from remote nodes to a gateway node. Alternatively, connect each ESP32 to Wi-Fi and publish directly to an MQTT broker on the Raspberry Pi.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">3</div>
+                  <div class="step-content">
+                    <h4>Ingest into InfluxDB</h4>
+                    <p>A Node-RED flow (or a small Python script) subscribes to the MQTT topics and writes each reading as an InfluxDB time-series measurement: <code>air_quality,node=N1 ppm=412,pm25=18 &lt;timestamp&gt;</code>.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">4</div>
+                  <div class="step-content">
+                    <h4>Build Grafana Dashboard</h4>
+                    <p>Connect Grafana to InfluxDB as a data source. Create time-series panels for each metric, add threshold bands for WHO AQI levels, and configure alert rules that send Telegram notifications when PM2.5 exceeds safe limits.</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <!-- Applications -->
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <p>Scale this project to real-world environmental impact:</p>
+              <div class="applications-grid">
+                <span class="app-tag">🏫 Campus AQI Network</span>
+                <span class="app-tag">🏭 Industrial Emission Monitor</span>
+                <span class="app-tag">🏠 Smart HVAC Control</span>
+                <span class="app-tag">📊 Public AQI Dashboard</span>
+                <span class="app-tag">📱 Telegram Alerts</span>
+                <span class="app-tag">🌿 Greenhouse Gas Tracking</span>
+                <span class="app-tag">🔬 Research Data Collection</span>
+                <span class="app-tag">☁️ AWS / Azure Cloud Sync</span>
+              </div>
+            </div>
+
+            <a href="../projects.html" class="back-btn" aria-label="Back to all projects">← Back to Projects</a>
+
+          </div><!-- /.detail-main -->
+
+          <aside class="detail-sidebar" aria-label="Project details">
+
+            <div class="sidebar-card">
+              <h3>Quick Facts</h3>
+              <div class="quick-facts">
+                <div class="fact-row"><span class="fact-label">Difficulty</span><span class="fact-value"><span class="badge badge-red">Advanced</span></span></div>
+                <div class="fact-row"><span class="fact-label">Budget</span><span class="fact-value">$30 – $60 USD</span></div>
+                <div class="fact-row"><span class="fact-label">Time</span><span class="fact-value">5 – 8 hours</span></div>
+                <div class="fact-row"><span class="fact-label">Platform</span><span class="fact-value">ESP32 + Raspberry Pi</span></div>
+                <div class="fact-row"><span class="fact-label">Language</span><span class="fact-value">C++ / Python</span></div>
+                <div class="fact-row"><span class="fact-label">Protocol</span><span class="fact-value">MQTT / ESP-NOW</span></div>
+              </div>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Skills You'll Learn</h3>
+              <div class="skills-list">
+                <span class="skill-tag">Sensor Calibration</span>
+                <span class="skill-tag">ESP-NOW Mesh</span>
+                <span class="skill-tag">InfluxDB</span>
+                <span class="skill-tag">Grafana</span>
+                <span class="skill-tag">MQTT Brokering</span>
+                <span class="skill-tag">AQI Algorithms</span>
+              </div>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Libraries Needed</h3>
+              <div class="skills-list">
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">esp_now.h</span>
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">PubSubClient</span>
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">influxdb-client</span>
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">U8g2 (OLED)</span>
+              </div>
+              <p style="font-size:.75rem;color:var(--color-text-muted);margin-top:.75rem;line-height:1.6;">
+                Grafana &amp; InfluxDB run on Raspberry Pi via Docker or native install
+              </p>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Try Next</h3>
+              <div style="display:flex;flex-direction:column;gap:.5rem;">
+                <a href="autonomous-line-following-robot.html" class="btn btn-ghost btn-sm" style="justify-content:flex-start;border:1px solid var(--color-border);">
+                  🤖 Line-Following Robot
+                </a>
+                <a href="ml-plant-disease-detector.html" class="btn btn-ghost btn-sm" style="justify-content:flex-start;border:1px solid var(--color-border);">
+                  🌿 ML Plant Disease Detector
+                </a>
+              </div>
+            </div>
+
+          </aside>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo-wrap"><svg width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="fG1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#2563EB"/><stop offset="1" stop-color="#06B6D4"/></linearGradient><linearGradient id="fG2" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#60A5FA"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><path d="M20 2L34.5 11V29L20 38L5.5 29V11Z" fill="url(#fG1)"/><path d="M20 6L31 12.5V26.5L20 33L9 26.5V12.5Z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/><path d="M24.5 14.5C24.5 14.5 22.5 11.5 19 11.5C15.5 11.5 13 13.8 13 16.5C13 19.2 15.5 20.2 20 21.2C24.5 22.2 27 23.2 27 26C27 28.8 24.5 30.8 20.5 30.8C16.5 30.8 14.5 28.5 14.5 28.5" stroke="white" stroke-width="2.7" stroke-linecap="round" fill="none"/><circle cx="28.5" cy="12" r="2.5" fill="url(#fG2)"/></svg><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="../projects.html">Projects</a></li>
+          <li><a href="../budget-electronics.html">Electronics</a></li>
+          <li><a href="../resources.html">Resources</a></li>
+          <li><a href="../about.html">About</a></li>
+        </ul></div>
+        <div class="footer-col"><h4>Projects</h4><ul>
+          <li><a href="autonomous-line-following-robot.html">Line-Following Robot</a></li>
+          <li><a href="air-quality-monitoring-iot.html">Air Quality IoT</a></li>
+          <li><a href="ml-plant-disease-detector.html">ML Plant Detector</a></li>
+          <li><a href="../projects.html">All Projects →</a></li>
+        </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+          <li><a href="../about.html">About Us</a></li>
+          <li><a href="#">Submit a Project</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

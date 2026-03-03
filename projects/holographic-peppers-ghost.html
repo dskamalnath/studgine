@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Holographic Pepper's Ghost Display – Advanced Project | Studgine</title>
+  <meta name="description" content="A Raspberry Pi renders 3D quad-split animations onto a 45° Mylar reflector pyramid to create a convincing holographic floating image effect." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000000;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .holo-info{font-family:monospace;font-size:9px;color:#00ffff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Holographic Pepper's Ghost Display</h1>
+      <p>A Raspberry Pi renders four rotated copies of a 3D wireframe animation on a black background, displayed on an HDMI screen laying flat. A hand-cut or 3D-printed 45° Mylar reflector pyramid placed on top of the screen reflects each quadrant inward — creating the illusion of a glowing 3D hologram floating in mid-air, from any viewing angle.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Holographic Pepper's Ghost Display</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="holoCanvas" width="150" height="120"></canvas>
+                <div class="holo-info">
+                  <div>TECHNIQUE</div>
+                  <div>Pepper's Ghost</div>
+                  <div>45° Mylar Pyramid</div>
+                  <div style="margin-top:3px;">DISPLAY</div>
+                  <div>1080p HDMI Screen</div>
+                  <div>Flat orientation</div>
+                  <div style="margin-top:3px;">ANIMATION</div>
+                  <div>OpenGL 3D wireframe</div>
+                  <div>4× rotated quads</div>
+                  <div>60fps rendering</div>
+                  <div style="margin-top:3px;color:#00ffff;">✨ HOLOGRAM</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Raspberry+Pi+Peppers+Ghost+hologram+pyramid+OpenGL+Python" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Pepper's Ghost is a 19th-century illusion technique used in Victorian theatres to make ghosts appear on stage. A 45° semi-transparent reflector causes light from a hidden display to appear to float in free space. This project modernises it: a Raspberry Pi renders a 3D wireframe object (rotating DNA helix, Earth globe, or custom 3D model) using PyOpenGL or Pygame/Pyglet, splits it into four rotated quadrants on screen (front/back/left/right views), and displays on a 1080p HDMI tablet or monitor laid flat. A 20cm Mylar pyramid placed over the screen creates a convincing free-floating hologram visible from all sides.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">10" HDMI LCD Screen (IPS, placed flat)</span><span class="comp-note"> — 1920×1080; high brightness (&gt;300 nits); black background essential for illusion quality; flat bezel-less preferred</span></div></li>
+                <li><span class="comp-icon">💎</span><div><span class="comp-name">Mylar / PET Reflector Pyramid</span><span class="comp-note"> — 20×20cm base; 45° walls; laser-cut 0.5mm Mylar film or 3D-printed frame + polished PET sheet; 5cm apex aperture</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — PyOpenGL + GLFW for 3D rendering; OpenGL ES 3.0 on VideoCore VI GPU; 60fps at 1080p; hardware texture units</span></div></li>
+                <li><span class="comp-icon">🌑</span><div><span class="comp-name">Dark Room / Enclosure</span><span class="comp-note"> — Surround pyramid with black card enclosure; room ambient light &lt; 10 lux for maximum hologram visibility; optional RGB accent lighting</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>3D Wireframe Rendering with PyOpenGL</h4><p>Render 3D object (DNA double helix, rotating sphere, wireframe cube) with PyOpenGL + GLFW on Pi GPU. The key is all content on pure black (RGB 0,0,0) background — anything black becomes invisible in the Mylar reflection while coloured wireframes appear to glow. Use additive blending: <code>glBlendFunc(GL_SRC_ALPHA, GL_ONE)</code> for glowing neon wire effect. Geometry: DNA helix = parametric helix points connected with GL_LINE_STRIP: <code>x=r*cos(t), y=b*t/(2π), z=r*sin(t)</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Quad-Split Screen Layout</h4><p>The 1080×1080 display area is divided into 4 quadrants. Each quadrant gets one rotated view: top quadrant = front view, bottom = back view (180° rotated), left = left side view (90° CCW), right = right side view (90° CW). Render to FBO (framebuffer object), then blit to each quadrant with appropriate rotation transform. For simple 2D implementation: use Pygame to blit 4 rotated copies of the rendered image: <code>pygame.transform.rotate(frame, angle)</code> at offsets (W//4, 0), (W//4, H//2), (0, H//4), (W//2, H//4).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Pyramid Physics: Why It Works</h4><p>When you look at a 45° mirror, you see a virtual image of whatever is below/beside it. The Mylar panel reflects the light from the screen quadrant toward you at 90°. Your eye perceives the image as floating at the pyramid's apex centre. Four panels create four views (front, back, left, right) simultaneously — creating the 360° holographic illusion. Key: Mylar semi-transparency means you see the virtual image floating inside the transparent pyramid structure itself, not reflected from a surface.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Content Creation + Animation Loop</h4><p>Animation loop: update rotation angle each frame, re-render 3D scene. For variety: DNA double helix (biology demo), wireframe Earth globe (geography), 3D snowflake (seasonal), custom ASCII name in 3D neon, anatomical heart model (OBJ file loader). Add audio: play ambient drone sound or heartbeat synced to animation. Touchscreen interactivity: touch to change displayed object. Suitable for science fair, museum exhibit, or product launch demo — extremely high visual impact for low cost.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import pygame, math, sys
+pygame.init()
+W, H = 800, 800  # square display
+screen = pygame.display.set_mode((W, H), pygame.FULLSCREEN)
+pygame.display.set_caption("Hologram")
+
+def draw_helix(surface, cx, cy, angle, color, scale=1.0):
+    """Draw a rotating DNA double helix wireframe."""
+    pts1, pts2 = [], []
+    for i in range(60):
+        t = i / 60 * 4 * math.pi
+        # Rotate around Y axis by 'angle'
+        x = 0.3 * math.cos(t + angle)
+        y = (i - 30) / 30.0  # -1 to 1
+        z = 0.3 * math.sin(t + angle)
+        # Simple perspective projection
+        fov = 3.0; d = fov / (fov + z)
+        sx = int(cx + x * d * 80 * scale)
+        sy = int(cy + y * d * 100 * scale)
+        pts1.append((sx, sy))
+        # Complementary strand (offset by π)
+        x2 = 0.3 * math.cos(t + angle + math.pi)
+        z2 = 0.3 * math.sin(t + angle + math.pi)
+        d2 = fov / (fov + z2)
+        pts2.append((int(cx + x2*d2*80*scale), int(cy + y*d2*100*scale)))
+    for i in range(len(pts1)-1):
+        pygame.draw.line(surface, color, pts1[i], pts1[i+1], 2)
+        pygame.draw.line(surface, (0,200,200), pts2[i], pts2[i+1], 2)
+        if i % 8 == 0:
+            pygame.draw.line(surface, (100,255,100), pts1[i], pts2[i], 1)
+
+angle = 0
+while True:
+    for e in pygame.event.get():
+        if e.type == pygame.QUIT: sys.exit()
+    screen.fill((0, 0, 0))
+    cx, cy = W//2, H//2
+    views = [(cx, cy//2, 0), (cx, cy*3//2, math.pi), (cx//2, cy, math.pi/2), (cx*3//2, cy, -math.pi/2)]
+    for vx, vy, offset in views:
+        draw_helix(screen, vx, vy, angle + offset, (0, 255, 200), scale=0.5)
+    pygame.display.flip()
+    angle += 0.02; pygame.time.Clock().tick(60)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌍 Interactive Globe Hologram</span>
+                <span class="app-tag">🎵 Music-Reactive Hologram</span>
+                <span class="app-tag">👻 Ghost / Avatar Hologram</span>
+                <span class="app-tag">🦷 Medical 3D Anatomy Model</span>
+                <span class="app-tag">📱 Smartphone Hologram Version</span>
+                <span class="app-tag">🤝 Touchless Gesture Control</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $95</li><li><strong>Build Time:</strong> 6 – 12 hours</li><li><strong>Render Rate:</strong> 60fps</li><li><strong>Illusion:</strong> 360° visible</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>PyOpenGL / Pygame 3D rendering</li><li>Perspective projection maths</li><li>Quad-split framebuffer layout</li><li>Additive glow blending</li><li>Pepper's Ghost optical principle</li><li>Mylar/PET optics and reflection</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">PyOpenGL + GLFW</span><span class="lib-desc"> — 3D GPU rendering on Pi</span></li><li><span class="lib-name">Pygame</span><span class="lib-desc"> — 2D fallback + rotation</span></li><li><span class="lib-name">numpy</span><span class="lib-desc"> — Geometry / matrix math</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const hC=document.getElementById('holoCanvas');const hCtx=hC.getContext('2d');
+    let hPhase=0;
+    function drawHelix(ctx, cx, cy, angle, color, scale){
+      const pts1=[],pts2=[];
+      for(let i=0;i<40;i++){
+        const t=i/40*4*Math.PI;
+        const x=0.3*Math.cos(t+angle);const y=(i-20)/20;const z=0.3*Math.sin(t+angle);
+        const fov=3;const d=fov/(fov+z);
+        pts1.push([cx+x*d*35*scale, cy+y*d*55*scale]);
+        const x2=0.3*Math.cos(t+angle+Math.PI);const z2=0.3*Math.sin(t+angle+Math.PI);
+        const d2=fov/(fov+z2);
+        pts2.push([cx+x2*d2*35*scale, cy+y*d2*55*scale]);
+      }
+      ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.globalAlpha=0.9;
+      ctx.beginPath();pts1.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));ctx.stroke();
+      ctx.strokeStyle='#00cccc';ctx.beginPath();pts2.forEach((p,i)=>i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));ctx.stroke();
+      ctx.strokeStyle='#44ff44';ctx.lineWidth=1;
+      for(let i=0;i<pts1.length;i+=5){ctx.beginPath();ctx.moveTo(pts1[i][0],pts1[i][1]);ctx.lineTo(pts2[i][0],pts2[i][1]);ctx.stroke();}
+      ctx.globalAlpha=1;
+    }
+    function drawHolo(){
+      hCtx.fillStyle='#000';hCtx.fillRect(0,0,150,120);
+      // 4 quadrants
+      const Q=[[75,30,0],[75,90,Math.PI],[37,60,Math.PI/2],[113,60,-Math.PI/2]];
+      Q.forEach(([cx,cy,off])=>drawHelix(hCtx,cx,cy,hPhase+off,'#00ffcc',0.55));
+      // Pyramid outline
+      hCtx.strokeStyle='rgba(0,200,200,0.2)';hCtx.lineWidth=1;
+      hCtx.beginPath();hCtx.moveTo(75,0);hCtx.lineTo(148,60);hCtx.lineTo(75,120);hCtx.lineTo(2,60);hCtx.closePath();hCtx.stroke();
+      hCtx.fillStyle='rgba(0,255,255,0.05)';hCtx.fill();
+      hPhase+=0.03;
+      requestAnimationFrame(drawHolo);
+    }
+    drawHolo();
+  </script>
+</body>
+</html>

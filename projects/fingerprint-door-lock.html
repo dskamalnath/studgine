@@ -1,0 +1,309 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fingerprint Door Lock – Intermediate Project | Studgine</title>
+  <meta name="description" content="Enrol fingerprints into an R307 optical sensor to control a servo-driven deadbolt with Arduino. Full biometric security project, $18–$35 budget." />
+  <meta name="keywords" content="fingerprint door lock, R307 Arduino, biometric lock, servo deadbolt, fingerprint scanner project" />
+  <link rel="canonical" href="fingerprint-door-lock.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a0a1a 0%,#1a1a2a 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+    .door-wrap{display:flex;gap:20px;align-items:center;}
+    .door-panel{width:80px;height:110px;background:#5c3d2e;border:3px solid #7a5c3e;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;position:relative;}
+    .door-knob{width:12px;height:12px;border-radius:50%;background:#e0b840;box-shadow:0 0 4px #e0b840;}
+    .bolt{width:16px;height:10px;background:#c0c0c0;border-radius:0 4px 4px 0;position:absolute;right:-16px;top:50%;transform:translateY(-50%);transition:width 0.5s,right 0.5s;}
+    .bolt.unlocked{width:0;right:0;}
+    .fp-scanner{width:60px;height:80px;background:#1a1a3a;border:2px solid #3a3a7a;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+    .fp-icon{font-size:28px;filter:grayscale(1);transition:filter 0.4s;}
+    .fp-icon.match{filter:none;filter:drop-shadow(0 0 8px #1e90ff);}
+    .fp-icon.fail{filter:drop-shadow(0 0 8px red);}
+    .fp-status{font-family:monospace;font-size:11px;color:#aaa;text-align:center;}
+    .lcd-bar{background:#1a2a1a;border:1px solid #3cb83c;border-radius:6px;padding:7px 16px;font-family:monospace;font-size:13px;color:#7de0a0;text-align:center;min-width:220px;}
+    .result-badge{padding:6px 20px;border-radius:20px;font-family:monospace;font-size:13px;font-weight:bold;transition:background 0.3s,color 0.3s;}
+    .result-badge.ok{background:#1a3a1a;color:#3cb83c;border:1px solid #3cb83c;}
+    .result-badge.fail{background:#3a1a1a;color:#e05252;border:1px solid #e05252;}
+    .result-badge.idle{background:#1a1a1a;color:#aaa;border:1px solid #555;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Fingerprint Door Lock</h1>
+      <p>Enrol fingerprints into an R307 optical sensor — a matching scan unlocks a servo-driven deadbolt, teaching biometric UART communication and template management.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Fingerprint Door Lock</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="door-wrap">
+                  <div class="fp-scanner">
+                    <div class="fp-icon" id="fpIcon">👆</div>
+                    <div class="fp-status" id="fpStatus">Place finger...</div>
+                  </div>
+                  <div class="door-panel">
+                    <div class="door-knob"></div>
+                    <div class="bolt" id="bolt"></div>
+                  </div>
+                </div>
+                <div class="lcd-bar" id="lcdMsg">Fingerprint Door Lock Ready</div>
+                <div class="result-badge idle" id="resultBadge">Waiting...</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+fingerprint+door+lock+R307+servo+tutorial" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The Fingerprint Door Lock replaces a keypad or RFID card with your own biology. The R307 optical fingerprint sensor captures a 256×288 pixel image, extracts 64 characteristic templates, and compares them against up to 162 stored prints in flash — all via UART. The Arduino simply sends search commands and interprets the match score.</p>
+              <p>A match rotates a servo to 90° (unlocked) for 5 seconds, then reverts. Three failed attempts trigger a buzzer lockout. You'll learn UART biometric protocol, template enrolment workflow, servo timing, and security lockout logic — directly applicable to access control systems.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — UART communication host</span></div></li>
+                <li><span class="comp-icon">👆</span><div><span class="comp-name">R307 / R305 Optical Fingerprint Sensor</span><span class="comp-note"> — UART, 3.3 V logic, 300 dpi</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">SG90 Servo Motor</span><span class="comp-note"> — Deadbolt rotation (0°–90°)</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">Piezo Buzzer</span><span class="comp-note"> — Access granted / denied tones</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note"> — Status messages</span></div></li>
+                <li><span class="comp-icon">🔴</span><div><span class="comp-name">Red + Green LEDs</span><span class="comp-note"> — Visual match / deny feedback</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard + Jumper Wires</span><span class="comp-note"> — Level shifter if using 5→3.3 V</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Enrolment Mode</h4><p>Hold the ENROL button and place your finger twice. The Adafruit Fingerprint library's <code>enrollStart(id)</code>, <code>image2Tz(1)</code>, <code>image2Tz(2)</code>, <code>createModel()</code>, and <code>storeModel(id)</code> sequence stores the fused template in sensor flash. Repeat for up to 20 users, incrementing the ID each time.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Recognition Loop</h4><p>In normal operation, call <code>getImage()</code> → <code>image2Tz()</code> → <code>fingerFastSearch()</code>. Fast search scans all stored templates in &lt;1 s and returns the best match ID and confidence score. Require confidence ≥ 50 to accept (0–255 scale).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Unlock Servo &amp; LED Feedback</h4><p>On match: rotate servo to 90°, light green LED, play 2-tone success melody, display "Welcome User N". Start a 5-second timer then re-lock (servo to 0°). On failure: red LED, error tone, and increment fail counter.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Lockout &amp; Logging</h4><p>After 3 consecutive failures, engage a 30-second lockout (servo stays locked, buzzer alarm). Log access events (user ID, timestamp from DS3231, result) to Serial for audit trail. Optional: upload events to EEPROM circular buffer.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Adafruit_Fingerprint.h&gt;
+#include &lt;Servo.h&gt;
+#include &lt;SoftwareSerial.h&gt;
+
+SoftwareSerial mySerial(2, 3);
+Adafruit_Fingerprint finger(&amp;mySerial);
+Servo lock;
+int failCount = 0;
+
+void loop() {
+  int result = getFingerprintIDez();
+
+  if (result &gt;= 0) {
+    // Valid match — unlock
+    failCount = 0;
+    lock.write(90);        // unlocked position
+    digitalWrite(GREEN_LED, HIGH);
+    tone(BUZZER, 1000, 200); delay(300); tone(BUZZER, 1500, 200);
+    Serial.print("Access granted, User "); Serial.println(result);
+    delay(5000);
+    lock.write(0);         // re-lock
+    digitalWrite(GREEN_LED, LOW);
+  } else if (result == -2) {
+    // No match
+    failCount++;
+    digitalWrite(RED_LED, HIGH);
+    tone(BUZZER, 400, 500);
+    if (failCount &gt;= 3) {
+      tone(BUZZER, 300, 5000); // alarm
+      delay(30000);            // lockout period
+      failCount = 0;
+    }
+    delay(1000);
+    digitalWrite(RED_LED, LOW);
+  }
+}
+
+int getFingerprintIDez() {
+  if (finger.getImage() != FINGERPRINT_OK) return -1;
+  if (finger.image2Tz() != FINGERPRINT_OK) return -1;
+  if (finger.fingerFastSearch() != FINGERPRINT_OK) return -2;
+  if (finger.confidence &lt; 50) return -2;
+  return finger.fingerID;
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Home Door Lock</span>
+                <span class="app-tag">🔒 Lab Access Control</span>
+                <span class="app-tag">📋 Attendance System</span>
+                <span class="app-tag">💾 EEPROM Audit Log</span>
+                <span class="app-tag">📱 Blynk Remote Unlock</span>
+                <span class="app-tag">🔔 Telegram Intrusion Alert</span>
+                <span class="app-tag">👥 Multi-User Management</span>
+                <span class="app-tag">⏱️ Timed Access Windows</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $35</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno</li>
+                <li><strong>Interface:</strong> UART (SoftwareSerial)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Biometric UART protocol</li>
+                <li>Fingerprint template enrolment</li>
+                <li>Fast-search confidence scoring</li>
+                <li>Servo timing for locking</li>
+                <li>Fail-counter lockout logic</li>
+                <li>Access event logging</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Adafruit Fingerprint Sensor</span><span class="lib-desc"> — R307/R305 UART driver</span></li>
+                <li><span class="lib-name">Servo (built-in)</span><span class="lib-desc"> — Deadbolt actuator</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — Status display</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="rfid-attendance-system.html">RFID Attendance System</a></li>
+                <li><a href="smart-locker-rfid.html">Smart Locker with RFID</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const events = [
+      {match:true,msg:'User 01 – MATCH (conf:185)'},
+      {match:false,msg:'Unknown – NO MATCH'},
+      {match:true,msg:'User 02 – MATCH (conf:210)'},
+      {match:false,msg:'Unknown – NO MATCH'},
+      {match:true,msg:'User 01 – MATCH (conf:198)'},
+    ];
+    let ei = 0;
+    function runEvent() {
+      const e = events[ei % events.length]; ei++;
+      const fp = document.getElementById('fpIcon');
+      const status = document.getElementById('fpStatus');
+      const lcd = document.getElementById('lcdMsg');
+      const badge = document.getElementById('resultBadge');
+      const bolt  = document.getElementById('bolt');
+      fp.className = 'fp-icon'; status.textContent = 'Scanning...'; lcd.textContent = 'Processing...';
+      setTimeout(() => {
+        if (e.match) {
+          fp.className = 'fp-icon match'; fp.textContent = '👆';
+          status.textContent = 'Match!';
+          lcd.textContent = e.msg;
+          badge.className = 'result-badge ok'; badge.textContent = '✓ ACCESS GRANTED';
+          bolt.className = 'bolt unlocked';
+          setTimeout(() => { bolt.className = 'bolt'; badge.className = 'result-badge idle'; badge.textContent = 'Waiting...'; fp.textContent = '👆'; fp.className = 'fp-icon'; status.textContent = 'Place finger...'; }, 3000);
+        } else {
+          fp.className = 'fp-icon fail'; fp.textContent = '✋';
+          status.textContent = 'No match';
+          lcd.textContent = e.msg;
+          badge.className = 'result-badge fail'; badge.textContent = '✗ ACCESS DENIED';
+          setTimeout(() => { badge.className = 'result-badge idle'; badge.textContent = 'Waiting...'; fp.textContent = '👆'; fp.className = 'fp-icon'; status.textContent = 'Place finger...'; }, 2000);
+        }
+      }, 1200);
+    }
+    setInterval(runEvent, 4500);
+  </script>
+</body>
+</html>

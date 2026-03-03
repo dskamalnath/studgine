@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoRa Remote Sensor Node – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a long-range LoRa 433 MHz wireless sensor network with two Arduino nodes. Transmit temperature and humidity up to 2 km without Wi-Fi or cellular." />
+  <meta name="keywords" content="LoRa Arduino, SX1278 long range, LoRa sensor node, 433MHz Arduino, LMIC LoRaWAN, long range wireless sensor" />
+  <link rel="canonical" href="lora-remote-sensor-node.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080818 0%,#111830 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .lora-field{display:flex;align-items:center;gap:40px;position:relative;}
+    .node-box{background:#1a2a3a;border:2px solid #1e90ff;border-radius:8px;padding:10px 14px;font-family:monospace;font-size:11px;color:#7de0ff;text-align:center;min-width:80px;}
+    .node-label{color:#aaa;font-size:10px;margin-top:4px;}
+    .wave-wrap{position:relative;width:80px;height:30px;display:flex;align-items:center;justify-content:center;}
+    .wave-ring{position:absolute;border:2px solid #1e90ff;border-radius:50%;opacity:0;animation:lora-wave 2s ease-out infinite;}
+    .wave-ring:nth-child(1){width:20px;height:20px;animation-delay:0s;}
+    .wave-ring:nth-child(2){width:40px;height:40px;animation-delay:0.4s;}
+    .wave-ring:nth-child(3){width:60px;height:60px;animation-delay:0.8s;}
+    @keyframes lora-wave{0%{opacity:0.9;transform:scale(0.3)}100%{opacity:0;transform:scale(1.5)}}
+    .signal-dot{width:8px;height:8px;border-radius:50%;background:#1e90ff;box-shadow:0 0 8px #1e90ff;animation:pulse-dot 1s ease-in-out infinite;}
+    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.3}}
+    .rssi-bar{height:6px;border-radius:3px;background:#1e90ff;box-shadow:0 0 4px #1e90ff;transition:width 0.8s;}
+    .rssi-bg{background:#1a1a2a;border-radius:3px;width:140px;height:6px;overflow:hidden;margin-top:4px;}
+    .packet-label{font-family:monospace;font-size:11px;color:#7de0ff;letter-spacing:1px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>LoRa Remote Sensor Node</h1>
+      <p>Transmit temperature and humidity data over 433 MHz LoRa up to 2 km between two Arduino nodes — no Wi-Fi or cellular required.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">LoRa Remote Sensor Node</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="lora-field">
+                  <div>
+                    <div class="node-box" id="txNode">TX NODE<br><span id="txData" style="color:#7dff40">T:28°C H:62%</span></div>
+                    <div class="node-label">Sensor Node</div>
+                  </div>
+                  <div class="wave-wrap">
+                    <div class="wave-ring"></div><div class="wave-ring"></div><div class="wave-ring"></div>
+                    <div class="signal-dot"></div>
+                  </div>
+                  <div>
+                    <div class="node-box" id="rxNode">RX GATEWAY<br><span id="rxData" style="color:#aaa">Waiting...</span></div>
+                    <div class="node-label">Base Station</div>
+                  </div>
+                </div>
+                <div>
+                  <div class="packet-label" id="packetInfo">Packet #0 | RSSI: --- dBm | SNR: ---</div>
+                  <div class="rssi-bg"><div class="rssi-bar" id="rssiBar" style="width:0%"></div></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=LoRa+SX1278+Arduino+sensor+node+tutorial" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>LoRa (Long Range) uses a proprietary chirp-spread-spectrum (CSS) modulation that trades data rate for remarkable link budget. A 100 mW transmitter on 433 MHz can reach 2–3 km in open terrain, handling concrete walls and foliage far better than Wi-Fi or Bluetooth.</p>
+              <p>This project builds a two-node point-to-point link: a <em>sensor node</em> (Transmitter) collects DHT22 temperature/humidity data and broadcasts a compact packet every 10 seconds. A <em>base station</em> (Receiver) decodes the packet, prints readings to Serial, and drives an LCD. You'll learn packet framing, RSSI/SNR diagnostics, and LoRa module SPI configuration — the same concepts used in commercial LoRaWAN deployments.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Nano / Uno ×2</span><span class="comp-note"> — One TX node, one RX gateway</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">SX1278 LoRa Module (Ra-02) ×2</span><span class="comp-note"> — 433 MHz, 3.3 V, SPI interface + IPEX antenna</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT22 Temperature/Humidity Sensor</span><span class="comp-note"> — On the TX sensor node</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note"> — On the RX gateway to display readings</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">3.3 V LDO (AMS1117-3.3)</span><span class="comp-note"> — LoRa module is 3.3 V; use level-shifted SPI or LDO</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">Li-Po 3.7 V Battery + TP4056</span><span class="comp-note"> — Powers TX node in the field</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Wire SPI + 3.3 V Level Shift</h4><p>Connect RA-02 NSS→D10, SCK→D13, MOSI→D11, MISO→D12, DIO0→D2. The module operates at 3.3 V — use a logic-level shifter or a resistor divider on MOSI/SCK/NSS lines. MISO can connect directly since 3.3 V HIGH is read correctly by Arduino 5 V logic.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Configure LoRa Parameters</h4><p>Both nodes must use identical settings: <code>LoRa.setFrequency(433E6)</code>, spreading factor <code>SF7</code> (fast, moderate range), bandwidth 125 kHz, coding rate 4/5. Increase to SF10 for longer range at lower data rate. Set TX power with <code>LoRa.setTxPower(17)</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Build and Send a Packet</h4><p>On the TX node, read DHT22 every 10 s, format a CSV string <code>"T:28.5,H:61.2,V:3.8"</code> (adding battery voltage). Call <code>LoRa.beginPacket()</code>, print the string, then <code>LoRa.endPacket()</code>. The radio transmits and returns to idle — great for battery-powered remote nodes.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Receive, Parse, and Display</h4><p>The RX gateway polls <code>LoRa.parsePacket()</code> in <code>loop()</code>. When a packet arrives, read the full string, split on commas, extract T/H/V values, print to LCD and Serial. Log <code>LoRa.packetRssi()</code> and <code>LoRa.packetSnr()</code> for link quality diagnostics.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>// === TRANSMITTER NODE ===
+#include &lt;SPI.h&gt;
+#include &lt;LoRa.h&gt;
+#include &lt;DHT.h&gt;
+
+#define LORA_NSS 10
+#define LORA_RST  9
+#define LORA_DIO0 2
+DHT dht(5, DHT22);
+unsigned int pktCount = 0;
+
+void setup() {
+  dht.begin();
+  LoRa.setPins(LORA_NSS, LORA_RST, LORA_DIO0);
+  LoRa.begin(433E6);
+  LoRa.setSpreadingFactor(7);
+  LoRa.setTxPower(17);
+}
+
+void loop() {
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+  float batt = analogRead(A0) * (3.3 / 1023.0) * 2;  // voltage divider
+  // Build packet
+  String payload = "T:" + String(t,1) +
+                   ",H:" + String(h,1) +
+                   ",V:" + String(batt,2) +
+                   ",N:" + String(pktCount++);
+  LoRa.beginPacket();
+  LoRa.print(payload);
+  LoRa.endPacket();
+  delay(10000);  // every 10 s
+}
+
+// === RECEIVER / GATEWAY ===
+void loop() {
+  int pktSize = LoRa.parsePacket();
+  if (pktSize) {
+    String incoming = "";
+    while (LoRa.available()) incoming += (char)LoRa.read();
+    int rssi = LoRa.packetRssi();
+    float snr  = LoRa.packetSnr();
+    // Parse CSV
+    int ti = incoming.indexOf("T:") + 2;
+    float temp = incoming.substring(ti, incoming.indexOf(',', ti)).toFloat();
+    Serial.println("Temp=" + String(temp) + "  RSSI=" + rssi + "  SNR=" + snr);
+    lcd.clear(); lcd.print("T:" + String(temp,1));
+    lcd.setCursor(0,1); lcd.print("RSSI:" + String(rssi) + "dBm");
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌾 Remote Farm Monitoring</span>
+                <span class="app-tag">🚿 Irrigation Trigger by SMS</span>
+                <span class="app-tag">🌊 Flood Level Early Warning</span>
+                <span class="app-tag">⛽ Underground Tank Monitor</span>
+                <span class="app-tag">🏗️ Construction Site Sensor</span>
+                <span class="app-tag">🛰️ LoRaWAN TTN Gateway</span>
+                <span class="app-tag">🐾 Animal Collar Tracker</span>
+                <span class="app-tag">🌬️ Air-Quality Remote Node</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $35</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino + LoRa SX1278</li>
+                <li><strong>Range:</strong> Up to 2–3 km LOS</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>LoRa SPI module wiring</li>
+                <li>Radio packet framing</li>
+                <li>CSV string parsing</li>
+                <li>RSSI / SNR link diagnostics</li>
+                <li>3.3 V level-shifting</li>
+                <li>Battery-powered node design</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">LoRa</span><span class="lib-desc"> — Sandeep Mistry's SX127x driver</span></li>
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> — Adafruit DHT22 driver</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — Gateway LCD display</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="iot-flood-sensor-alert.html">IoT Flood Sensor Alert</a></li>
+                <li><a href="smart-irrigation-system.html">Smart Irrigation System</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let cnt = 0;
+    const temps = [28.1,29.5,27.8,30.2,26.4];
+    const hums  = [62,58,65,70,55];
+    const rssis = [-75,-88,-120,-95,-68];
+    function simPacket() {
+      cnt++;
+      let i = cnt % temps.length;
+      let t = temps[i], h = hums[i], r = rssis[i];
+      document.getElementById('txData').textContent = 'T:'+t+'°C H:'+h+'%';
+      document.getElementById('rxData').textContent = 'T:'+t+' H:'+h;
+      document.getElementById('rxData').style.color = '#7dff40';
+      let rssiPct = Math.max(0, Math.min(100, ((r+120)/60)*100));
+      document.getElementById('rssiBar').style.width = rssiPct+'%';
+      document.getElementById('packetInfo').textContent = 'Packet #'+cnt+' | RSSI: '+r+' dBm | SNR: '+(2.5+Math.random()*3).toFixed(1);
+    }
+    setInterval(simPacket, 3000);
+  </script>
+</body>
+</html>

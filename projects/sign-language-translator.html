@@ -1,0 +1,235 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Language Translator – Advanced Project | Studgine</title>
+  <meta name="description" content="Build an ASL sign language translator using TFLite MediaPipe hand landmarks, a Raspberry Pi, and pyttsx3 text-to-speech on a Pi Camera feed." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050810 0%,#0a0520 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .hand-vis{width:70px;height:80px;position:relative;display:flex;align-items:flex-end;justify-content:center;gap:3px;}
+    .finger{width:10px;border-radius:5px 5px 0 0;background:#4060c0;transition:height 0.4s;}
+    .palm{position:absolute;bottom:0;width:52px;height:20px;background:#304080;border-radius:4px 4px 0 0;}
+    .asl-label{font-size:2rem;color:#80a0ff;font-weight:700;}
+    .tts-log{font-family:monospace;font-size:9px;color:#6060c0;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Sign Language Translator</h1>
+      <p>Translate ASL hand signs to spoken words in real time using MediaPipe hand landmarks, a TFLite neural network classifier on Raspberry Pi, and pyttsx3 text-to-speech — an assistive technology project with real-world impact.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Sign Language Translator</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <div class="hand-vis" id="handVis">
+                    <div class="palm"></div>
+                    <div class="finger" id="f1" style="height:36px;"></div>
+                    <div class="finger" id="f2" style="height:44px;"></div>
+                    <div class="finger" id="f3" style="height:46px;"></div>
+                    <div class="finger" id="f4" style="height:40px;"></div>
+                    <div class="finger" id="f5" style="height:28px;"></div>
+                  </div>
+                  <div style="font-family:monospace;font-size:8px;color:#6080e0;">21 LANDMARKS</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <div class="asl-label" id="aslLetter">A</div>
+                  <div style="font-family:monospace;font-size:8px;color:#8060e0;" id="confLabel">CONF: 0.94</div>
+                </div>
+                <div class="tts-log">
+                  <div>BUFFER: <span id="ttsBuffer">A</span></div>
+                  <div>WORD: <span id="ttsWord" style="color:#00ccff;">---</span></div>
+                  <div>TTS: <span id="ttsStatus">IDLE</span></div>
+                  <div>FPS: <span id="ttsFps">14</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=sign+language+translator+raspberry+pi+mediapipe+TFLite" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>MediaPipe Hands (by Google) detects 21 3D landmarks per hand in real time — even on Raspberry Pi 4 at 14+ FPS. This project uses those landmarks as a 63-feature vector (21 points × x,y,z) to train a lightweight neural network to classify ASL letter hand shapes. The classifier runs as a TFLite model for speed.</p>
+              <p>This is a complete machine learning pipeline project: data collection → preprocessing → model training → quantisation to INT8 TFLite → edge deployment → speech output. The assistive technology angle makes it an excellent showcasing project for capstone presentations.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (2GB+)</span><span class="comp-note"> — 2GB sufficient; TFLite inference is fast; HDMI display for live camera preview with landmark overlay</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Pi Camera v2 / USB Webcam</span><span class="comp-note"> — USB webcam (720p) works well; position obliquely from above at 45° for clearest landmark detection</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">USB Speaker or 3.5mm Speaker</span><span class="comp-note"> — pyttsx3 outputs speech via ALSA; USB speaker avoids Pi audio jack noise issues</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">7" HDMI Touchscreen (optional)</span><span class="comp-note"> — Shows live video with landmark overlay + recognised letter; touchscreen adds word-delete and TTS toggle buttons</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Data Collection</h4><p>Run a capture script: press A–Z keys to label, capture 200 frames per letter. For each frame: extract 21 MediaPipe landmarks, normalise to wrist origin (subtract landmark 0), flatten to 63-feature vector. Save to CSV. Total: 26 × 200 = 5200 samples. Include variation: hand distance, angle, slight rotation. This step takes ~1–2 hours but is essential for accuracy.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Train the Classifier</h4><p>On a more powerful PC (or Colab): load CSV, split 80/20 train/test. Model architecture: Dense(128, relu) → Dropout(0.3) → Dense(64, relu) → Dense(26, softmax). Compile: Adam optimiser, categorical cross-entropy. Train 50 epochs, usually reaches 97%+ accuracy. Convert to TFLite INT8: <code>converter.optimizations = [tf.lite.Optimize.DEFAULT]</code>. Copy the .tflite file to Pi.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Real-Time Inference</h4><p>Load TFLite interpreter: <code>interpreter = tflite.Interpreter(model_path="asl_model.tflite")</code>. On each frame: MediaPipe extracts landmarks → normalise → reshape to (1,63) → interpreter.set_tensor → invoke → get_tensor → argmax → letter. Apply confidence threshold (0.85) and temporal stability: only accept a letter if it appears in 3 consecutive frames to prevent flickering.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Text Buffer + Text-to-Speech</h4><p>Maintain a letter buffer. Stability: a letter must be held (&gt;2 seconds) to add to buffer (prevents adding during sign transitions). Space sign (open flat hand): add space to buffer. Backspace: specific sign (thumbs-down). When a complete word is detected (space after sequence), call <code>engine.say(word); engine.runAndWait()</code> in a background thread so TTS doesn't block video. Display current buffer and recent words on screen.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import cv2, mediapipe as mp, numpy as np
+import tflite_runtime.interpreter as tflite
+import pyttsx3, threading
+
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.7)
+interpreter = tflite.Interpreter("asl_model.tflite")
+interpreter.allocate_tensors()
+in_idx = interpreter.get_input_details()[0]['index']
+out_idx = interpreter.get_output_details()[0]['index']
+engine = pyttsx3.init()
+LETTERS = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+cap = cv2.VideoCapture(0)
+buffer = ""; stable_letter = ""; stable_count = 0
+
+while True:
+    ret, frame = cap.read()
+    results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    if results.multi_hand_landmarks:
+        lm = results.multi_hand_landmarks[0].landmark
+        origin = [lm[0].x, lm[0].y, lm[0].z]
+        feat = np.array([[l.x-origin[0], l.y-origin[1], l.z-origin[2]] for l in lm]).flatten()
+        interpreter.set_tensor(in_idx, feat.reshape(1,-1).astype(np.float32))
+        interpreter.invoke()
+        pred = interpreter.get_tensor(out_idx)[0]
+        idx = pred.argmax(); conf = pred[idx]
+        letter = LETTERS[idx] if conf > 0.85 else ""
+        if letter == stable_letter: stable_count += 1
+        else: stable_letter = letter; stable_count = 0
+        if stable_count == 30:  # ~2 seconds at 15fps
+            buffer += letter; stable_count = 0
+            if letter == " ":
+                word = buffer.strip().split()[-1] if buffer.strip() else ""
+                threading.Thread(target=lambda w: (engine.say(w),engine.runAndWait()), args=(word,)).start()
+        cv2.imshow("ASL", frame)
+    if cv2.waitKey(1)&0xFF==ord('q'): break</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🤲 Two-Hand Support</span>
+                <span class="app-tag">🌍 Multi-Language SL</span>
+                <span class="app-tag">📺 Subtitle Overlay</span>
+                <span class="app-tag">📲 Smartphone App</span>
+                <span class="app-tag">🧠 LSTM for Dynamic Signs</span>
+                <span class="app-tag">📊 Custom Sign Training</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $40 – $80</li><li><strong>Build Time:</strong> 8 – 12 hours</li><li><strong>Platform:</strong> Raspberry Pi 4</li><li><strong>Accuracy:</strong> 97%+ on test set</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>MediaPipe hand landmark extraction</li><li>TFLite model training + conversion</li><li>INT8 quantisation for edge inference</li><li>Temporal stability filtering</li><li>pyttsx3 text-to-speech</li><li>Data collection + ML pipeline</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">mediapipe</span><span class="lib-desc"> — Hand landmark detection (21 points)</span></li><li><span class="lib-name">tflite-runtime</span><span class="lib-desc"> — Lightweight TFLite inference on Pi</span></li><li><span class="lib-name">pyttsx3</span><span class="lib-desc"> — Offline text-to-speech engine</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const fingerHeights={
+      A:[12,12,12,12,12],B:[46,48,46,42,20],C:[30,36,38,32,24],
+      D:[46,14,14,14,14],E:[10,10,10,10,10],
+    };
+    const words=["HELLO","WORLD","HELP","THANKS","YES"];
+    let t=0,buf="";
+    setInterval(()=>{
+      t++;
+      const li=Math.floor(t/5)%letters.length;
+      const letter=letters[li];
+      const conf=(0.88+Math.random()*0.1).toFixed(2);
+      document.getElementById('aslLetter').textContent=letter;
+      document.getElementById('confLabel').textContent=`CONF: ${conf}`;
+      const fh=fingerHeights[letter]||[20+Math.random()*26,30+Math.random()*16,32+Math.random()*14,26+Math.random()*16,14+Math.random()*16];
+      for(let i=1;i<=5;i++) document.getElementById(`f${i}`).style.height=Math.round(fh[i-1])+'px';
+      if(t%5===0){buf+=letter;if(buf.length>6)buf=buf.slice(-6);}
+      document.getElementById('ttsBuffer').textContent=buf||'-';
+      const wi=Math.floor(t/25)%words.length;
+      document.getElementById('ttsWord').textContent=t%25<6?words[wi]:'---';
+      document.getElementById('ttsStatus').textContent=t%25<3?'SPEAKING':'IDLE';
+      document.getElementById('ttsFps').textContent=12+Math.floor(Math.random()*4);
+    },500);
+  </script>
+</body>
+</html>

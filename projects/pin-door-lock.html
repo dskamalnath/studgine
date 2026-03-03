@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4-Digit PIN Door Lock – Beginner Project | Studgine</title>
+  <meta name="description" content="Enter a 4-digit PIN on a 4×4 keypad to activate a servo that opens a door latch. Learn matrix keypad scanning, string comparison, and servo control on Arduino." />
+  <meta name="keywords" content="Arduino PIN door lock, keypad servo project, matrix keypad Arduino, beginner security project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="pin-door-lock.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-servo-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .anim-servo-body { width:56px; height:44px; background:#555; border-radius:8px; border:2px solid #333; position:relative; overflow:visible; }
+    .anim-servo-arm  { width:60px; height:10px; background:#e0c080; border-radius:5px;
+                       transform-origin:9px 5px; position:absolute; top:17px; left:8px;
+                       animation: servo-sweep 2.5s ease-in-out infinite alternate; }
+    @keyframes servo-sweep { 0%{transform:rotate(-55deg)} 100%{transform:rotate(55deg)} }
+    .anim-lock-icon { font-size:2rem; animation: lock-toggle 2.5s ease-in-out infinite alternate; }
+    @keyframes lock-toggle { 0%{content:'🔒'} 100%{content:'🔓'} }
+    .anim-status { font-family:monospace; font-size:.9rem; animation: status-cycle 2.5s steps(1) infinite alternate; }
+    @keyframes status-cycle { 0%{color:#ff4444;} 100%{color:#44ff44;} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine"><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="obstacle-avoidance-robot.html">Obstacle Robot</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+  <script>
+    var locked = true;
+    setInterval(function(){
+      locked = !locked;
+      var icon = document.getElementById('lock-icon');
+      var status = document.getElementById('lock-status');
+      if(icon) icon.textContent = locked ? '🔒' : '🔓';
+      if(status){ status.textContent = locked ? 'LOCKED' : 'ACCESS GRANTED'; status.style.color = locked ? '#ff4444' : '#44ff44'; }
+    }, 2500);
+  </script>
+</body>
+</html>

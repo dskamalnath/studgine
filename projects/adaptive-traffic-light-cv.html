@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adaptive Traffic Light (CV) – Advanced Project | Studgine</title>
+  <meta name="description" content="A Pi Camera detects vehicle queue density per lane using YOLOv8 and dynamically allocates green-light duration proportionally for smart-city traffic management." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#050808;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .tl-info{font-family:monospace;font-size:9px;color:#ffcc00;display:flex;flex-direction:column;gap:3px;}
+    .q-bar{width:60px;height:7px;background:#0a1010;border-radius:3px;overflow:hidden;}
+    .q-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Adaptive Traffic Light (CV)</h1>
+      <p>A Pi Camera detects vehicle queue density per lane using YOLOv8 object detection and dynamically allocates green-light duration proportional to queue length — a hardware proof-of-concept of a smart-city adaptive traffic management system controlled by computer vision.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Adaptive Traffic Light (CV)</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="tlCanvas" width="140" height="100"></canvas>
+                <div class="tl-info">
+                  <div>LANE A QUEUE</div>
+                  <div class="q-bar"><div class="q-fill" id="qA" style="width:70%;background:#ff4444;"></div></div>
+                  <div><span id="qAv">7</span> vehicles</div>
+                  <div style="margin-top:3px;">LANE B QUEUE</div>
+                  <div class="q-bar"><div class="q-fill" id="qB" style="width:30%;background:#4444ff;"></div></div>
+                  <div><span id="qBv">3</span> vehicles</div>
+                  <div style="margin-top:3px;">GREEN A: <span id="tA" style="color:#00ff44;">28s</span></div>
+                  <div>GREEN B: <span id="tB" style="color:#ffaa00;">12s</span></div>
+                  <div style="color:#00ff88;margin-top:2px;">ADAPTIVE</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Raspberry+Pi+YOLOv8+traffic+detection+smart+traffic+light+adaptive" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Traditional traffic lights run on fixed-time cycles, keeping queues waiting even when the opposing lane is empty. Adaptive signal control systems (used in cities like Sydney and London) analyse real-time queue density and allocate green phases proportionally. This project implements the concept on a tabletop scale model: miniature toy cars represent vehicles, a Pi Camera captures each lane's ROI (region of interest), YOLOv8n detects and counts vehicles, and an Arduino Mega controls 8 physical LEDs forming a 4-way intersection traffic light array based on the Pi's allocation decisions.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Raspberry Pi Camera Module v2</span><span class="comp-note"> — Overhead mount above intersection model; 640×480; 30fps; wide-angle lens for all 4 lanes in frame</span></div></li>
+                <li><span class="comp-icon">🚗</span><div><span class="comp-name">Tabletop Road Model + Toy Cars</span><span class="comp-note"> — 600×600mm printed road layout; Lego or diecast 1:64 cars; contrasting colours for YOLO detection</span></div></li>
+                <li><span class="comp-icon">🚦</span><div><span class="comp-name">Arduino Mega + 8-12 RGB LEDs</span><span class="comp-note"> — Physical 4-way traffic light array; red/amber/green per direction; Pi sends commands via UART serial</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — YOLOv8n TFLite at ~10fps; queue density per ROI; adaptive allocation algorithm; sends commands to Arduino</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Multi-Lane ROI Vehicle Detection</h4><p>Define 4 lane ROIs by pixel regions in the camera frame: <code>ROIS = {'N':(0,0,160,240), 'S':(160,0,320,240), 'E':(320,0,480,240), 'W':(480,0,640,240)}</code>. For each ROI, crop frame, run YOLOv8n: <code>results = model.predict(crop, classes=[2,5,7])</code> (car, bus, truck). Count detections per lane: <code>queue[lane] = len(results[0].boxes)</code>. Runs at ~10fps on Pi 4. Alternative: use background subtraction (MOG2) for faster detection without YOLO.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Proportional Green Time Allocation</h4><p>Adaptive algorithm: compute total queue: <code>total = sum(queue.values())</code>. Allocate green time per lane proportional to queue: <code>green_time[lane] = MAX_CYCLE * queue[lane] / max(total, 1)</code>. Clamp: min 5s, max 60s per phase. Sort lanes by queue depth (serve longest queue first). Emergency mode: if any lane queues &gt;20 vehicles, double its allocation. Compare to baseline fixed-60s cycle: adaptive reduces average wait time by ~35% in simulations.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Arduino Traffic Light Controller</h4><p>Pi sends traffic plan via UART: <code>serial.write(f"A:{gA},B:{gB},C:{gC},D:{gD}\n".encode())</code>. Arduino parses and executes: set active lane to GREEN, others RED, wait green_time. Amber transition: 3s. Full sequence: RGRG cycle with proportional durations. LED pins: each direction has R+G+Y on 3 GPIO pins. Cycle report sent back: <code>Serial.print("CYCLE_DONE")</code>. Pi logs each cycle duration + queue counts to CSV for statistics.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Performance Dashboard</h4><p>Overlaid CV display: draw ROI rectangles, vehicle bounding boxes, queue count per lane, active green direction. Flask web dashboard: real-time queue bar chart + cumulative wait time comparison (adaptive vs. fixed baseline). Log 100 cycles and compute: average queue length, max wait time, throughput (vehicles cleared per minute). Demonstrate improvement with varying traffic densities — creates compelling data for project presentation.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>from ultralytics import YOLO
+from picamera2 import Picamera2
+import serial, time, cv2, numpy as np
+
+model = YOLO('yolov8n.pt')  # or TFLite version
+cam = Picamera2(); cam.start()
+arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+
+ROIS = {
+    'N': (0,   0,   320, 240),
+    'S': (320, 0,   640, 240),
+    'E': (0,   240, 320, 480),
+    'W': (320, 240, 640, 480),
+}
+MIN_GREEN, MAX_GREEN, CYCLE = 5, 60, 80
+
+def count_vehicles(frame, roi):
+    x1,y1,x2,y2 = roi
+    crop = frame[y1:y2, x1:x2]
+    results = model.predict(crop, classes=[2,5,7], verbose=False)
+    return len(results[0].boxes)
+
+def adaptive_schedule(queues):
+    total = max(sum(queues.values()), 1)
+    schedule = {lane: max(MIN_GREEN, min(MAX_GREEN,
+        int(CYCLE * q / total))) for lane, q in queues.items()}
+    # Serve longest queue first
+    return dict(sorted(schedule.items(), key=lambda x: x[1], reverse=True))
+
+while True:
+    frame = cam.capture_array()
+    queues = {lane: count_vehicles(frame, roi)
+              for lane, roi in ROIS.items()}
+    sched = adaptive_schedule(queues)
+    cmd = ','.join(f'{l}:{t}' for l,t in sched.items()) + '\n'
+    arduino.write(cmd.encode())
+    print(f"Queue: {queues} → Schedule: {sched}")
+    time.sleep(1)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🚑 Emergency Vehicle Priority</span>
+                <span class="app-tag">🚲 Pedestrian + Cyclist Detection</span>
+                <span class="app-tag">🌐 Multi-Intersection Co-ordination</span>
+                <span class="app-tag">📊 Traffic Flow Simulation</span>
+                <span class="app-tag">🔮 Predictive Green Wave</span>
+                <span class="app-tag">📱 Live Web Dashboard Map</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $55 – $100</li><li><strong>Build Time:</strong> 8 – 14 hours</li><li><strong>Detection:</strong> ~10fps YOLOv8n</li><li><strong>Wait Reduction:</strong> ~35%</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>YOLOv8 object detection</li><li>ROI-based multi-lane analysis</li><li>Proportional allocation algorithm</li><li>UART Pi-Arduino communication</li><li>Traffic signal state machine</li><li>Performance metrics + comparison</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">ultralytics (YOLOv8)</span><span class="lib-desc"> — Vehicle detection</span></li><li><span class="lib-name">picamera2</span><span class="lib-desc"> — Camera capture</span></li><li><span class="lib-name">pyserial</span><span class="lib-desc"> — Arduino communication</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const tlC=document.getElementById('tlCanvas');
+    const tCtx=tlC.getContext('2d');
+    let tlPhase=0,greenLane=0,countdown=20;
+    const laneNames=['N','S','E','W'];
+    function drawTL(){
+      tCtx.fillStyle='rgba(5,8,8,0.4)';tCtx.fillRect(0,0,140,100);
+      // Road cross
+      tCtx.fillStyle='#1a2a1a';
+      tCtx.fillRect(50,0,40,100);tCtx.fillRect(0,40,140,20);
+      tCtx.fillStyle='#333';
+      [[65,0,10,40],[65,60,10,40],[0,45,50,10],[90,45,10,50]].forEach(([x,y,w,h])=>{
+        tCtx.fillRect(x,y,w,h);
+      });
+      // Traffic lights per direction
+      const lPos=[[55,5],[55,75],[5,45],[100,45]];
+      lPos.forEach(([lx,ly],i)=>{
+        const isGreen=i===greenLane;
+        tCtx.fillStyle='#222';tCtx.fillRect(lx,ly,12,16);
+        tCtx.fillStyle=isGreen?'#ff3333':'#441111';
+        tCtx.beginPath();tCtx.arc(lx+6,ly+4,3,0,Math.PI*2);tCtx.fill();
+        tCtx.fillStyle=isGreen?'#00ff44':'#114411';
+        tCtx.beginPath();tCtx.arc(lx+6,ly+12,3,0,Math.PI*2);tCtx.fill();
+      });
+      // Queue indicators (dots)
+      const [qA,qB]=[Math.round(7+3*Math.sin(tlPhase*0.2)),Math.round(3+2*Math.cos(tlPhase*0.3))];
+      tCtx.fillStyle='#ffcc00';tCtx.font='8px monospace';
+      tCtx.fillText(`A:${qA}`,5,12);tCtx.fillText(`B:${qB}`,110,12);
+      countdown--;
+      if(countdown<=0){greenLane=(greenLane+1)%4; countdown=15+Math.round(Math.random()*10);}
+      tlPhase+=0.05;
+      document.getElementById('qA').style.width=Math.round(Math.min(100,(7+3*Math.sin(tlPhase*0.2))*10))+'%';
+      document.getElementById('qB').style.width=Math.round(Math.min(100,(3+2*Math.cos(tlPhase*0.3))*10))+'%';
+      document.getElementById('qAv').textContent=Math.round(7+3*Math.sin(tlPhase*0.2));
+      document.getElementById('qBv').textContent=Math.round(3+2*Math.cos(tlPhase*0.3));
+      document.getElementById('tA').textContent=Math.round(28+5*Math.sin(tlPhase*0.15))+'s';
+      document.getElementById('tB').textContent=Math.round(12+3*Math.cos(tlPhase*0.25))+'s';
+      setTimeout(drawTL,100);
+    }
+    drawTL();
+  </script>
+</body>
+</html>

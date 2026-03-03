@@ -1,0 +1,211 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LiDAR Obstacle Mapper – Advanced Project | Studgine</title>
+  <meta name="description" content="Mount an RPLIDAR A1 on a Raspberry Pi robot to build live 2D occupancy grid maps using ROS Hector SLAM. A gateway into real autonomous navigation." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#050f15;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .slam-map{width:130px;height:130px;background:#0a1a2a;border:2px solid #00aaff33;border-radius:4px;position:relative;overflow:hidden;}
+    #slamCanvas{position:absolute;top:0;left:0;}
+    .lidar-info{font-family:monospace;font-size:9px;color:#00aaff;display:flex;flex-direction:column;gap:4px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>LiDAR Obstacle Mapper</h1>
+      <p>Mount an RPLIDAR A1 on a Raspberry Pi 4 differential-drive robot and run ROS Noetic Hector SLAM to build a live 2D occupancy grid map of your environment in real time — a genuine entry point into autonomous robotics navigation.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">LiDAR Obstacle Mapper</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div class="slam-map"><canvas id="slamCanvas" width="130" height="130"></canvas></div>
+                  <div style="font-family:monospace;font-size:7px;color:#00aaff;">2D OCCUPANCY GRID</div>
+                </div>
+                <div class="lidar-info">
+                  <div>SCAN: <span id="lidarScan">360°</span></div>
+                  <div>RATE: <span id="lidarRate">10Hz</span></div>
+                  <div>RANGE:<span id="lidarRange">6m</span></div>
+                  <div>PTS:  <span id="lidarPts">360</span>/scan</div>
+                  <div>MAP:  <span id="lidarMap">0.05m/px</span></div>
+                  <div style="color:#00ff88;">HECTOR SLAM</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=RPLIDAR+A1+Raspberry+Pi+ROS+Hector+SLAM+mapping" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>SLAM (Simultaneous Localisation and Mapping) lets a robot build a map of an unknown environment while tracking its own position within that map. The RPLIDAR A1 performs 360° laser ranging at 10 Hz, producing 360 distance measurements per rotation. ROS (Robot Operating System) provides the software framework: drivers publish <code>sensor_msgs/LaserScan</code> messages, Hector SLAM subscribes and incrementally updates a 2D occupancy grid map (grey = unknown, white = free, black = occupied).</p><p>The occupancy map can then drive autonomous navigation (ROS Navigation Stack with move_base) for obstacle avoidance and goal-directed movement — a complete mobile robotics stack.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🔴</span><div><span class="comp-name">RPLIDAR A1 (360° 2D LiDAR)</span><span class="comp-note"> — 6m range; 10Hz; 360 points/scan; USB serial; SLAMTEC SDK + ROS driver package</span></div></li>
+                <li><span class="comp-icon">🤖</span><div><span class="comp-name">Raspberry Pi 4 (4 GB) Robot Base</span><span class="comp-note"> — Ubuntu 20.04 Server + ROS Noetic; differential-drive robot base; 2× encoder motors; L298N driver</span></div></li>
+                <li><span class="comp-icon">🧭</span><div><span class="comp-name">IMU MPU-6050 (optional for Hector)</span><span class="comp-note"> — Hector SLAM works without odometry; IMU improves map consistency during fast rotations</span></div></li>
+                <li><span class="comp-icon">💻</span><div><span class="comp-name">RViz Remote Visualisation PC</span><span class="comp-note"> — Same ROS network; RViz displays occupancy grid, robot pose, laser scan overlay in real time over WiFi</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>ROS Setup + RPLIDAR Driver</h4><p>Install ROS Noetic on Ubuntu 20.04. Install driver: <code>sudo apt install ros-noetic-rplidar-ros</code>. Launch: <code>roslaunch rplidar_ros rplidar.launch</code>. This publishes <code>/scan</code> topic as <code>sensor_msgs/LaserScan</code> with 360 ranges. Verify with: <code>rostopic echo /scan | head -30</code>. Check scan frame: set <code>frame_id=laser</code>. Install hector SLAM: <code>sudo apt install ros-noetic-hector-slam</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Hector SLAM Configuration</h4><p>Edit <code>hector_slam.launch</code>: set <code>odom_frame = laser</code> (scan-only SLAM, no wheel odometry required). Key parameters: <code>map_resolution=0.05</code> (5cm/cell), <code>map_size=1024</code> (51.2m map), <code>map_update_distance_thresh=0.4</code>. Launch: <code>roslaunch hector_slam_launch tutorial.launch</code>. The algorithm correlates each incoming scan to the current map to estimate rigid-body transform (Gauss-Newton scan-matching).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>RViz Visualisation + Map Save</h4><p>On remote PC: <code>export ROS_MASTER_URI=http://raspberrypi.local:11311</code>. Launch RViz: add <code>Map</code> display (topic <code>/map</code>), <code>LaserScan</code> display (topic <code>/scan</code>), <code>TF</code> display. Colour map: grey=unknown, white=free, black=occupied. Drive robot around room to build map. Save: <code>rosrun map_server map_saver -f my_room</code> → creates <code>my_room.pgm</code> + <code>my_room.yaml</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Autonomous Navigation with Saved Map</h4><p>Load saved map: <code>rosrun map_server map_server my_room.yaml</code>. Launch AMCL (Adaptive Monte Carlo Localisation): estimates robot pose within known map via particle filter. Launch move_base: global planner (A* on occupancy grid) + local planner (TEB) computes collision-free paths to <code>/move_base_simple/goal</code> poses clicked in RViz. Close the full autonomous navigation loop from LiDAR scan → SLAM map → AMCL → path planning → motor commands.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#!/usr/bin/env python3
+# ROS node: navigate to a GPS-style goal
+import rospy
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import OccupancyGrid
+import numpy as np
+
+rospy.init_node('goal_sender')
+pub = rospy.Publisher('/move_base_simple/goal', PoseStamped, queue_size=1)
+rospy.sleep(1.0)
+
+def send_goal(x, y, yaw_deg=0):
+    goal = PoseStamped()
+    goal.header.frame_id = "map"
+    goal.header.stamp = rospy.Time.now()
+    goal.pose.position.x = x
+    goal.pose.position.y = y
+    # Simple yaw to quaternion
+    import math
+    goal.pose.orientation.z = math.sin(math.radians(yaw_deg)/2)
+    goal.pose.orientation.w = math.cos(math.radians(yaw_deg)/2)
+    pub.publish(goal)
+    rospy.loginfo(f"Sent goal: ({x:.2f}, {y:.2f})")
+
+# Waypoint tour
+waypoints = [(1.0, 0.5, 0), (2.0, 1.0, 90), (0.0, 0.0, 180)]
+for wp in waypoints:
+    send_goal(*wp)
+    rospy.sleep(8.0)  # allow time to reach each waypoint</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🗺️ 3D Mapping (RTAB-Map)</span>
+                <span class="app-tag">🤖 Autonomous Patrol Route</span>
+                <span class="app-tag">📷 Vision Obstacle Avoidance</span>
+                <span class="app-tag">📡 Multi-Robot SLAM</span>
+                <span class="app-tag">🏠 Room Floor Plan Export</span>
+                <span class="app-tag">🔥 Thermal Overlay Map</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $70 – $140</li><li><strong>Build Time:</strong> 8 – 14 hours</li><li><strong>Map Resolution:</strong> 5cm/cell</li><li><strong>LiDAR Range:</strong> 6m @ 10Hz</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>ROS topic/node architecture</li><li>Hector SLAM scan-matching algorithm</li><li>Occupancy grid map representation</li><li>RViz remote visualisation</li><li>AMCL localisation + move_base nav</li><li>2D LiDAR data processing</li></ul></div>
+            <div class="sidebar-block"><h3>📚 ROS Packages</h3><ul class="libs-list"><li><span class="lib-name">rplidar_ros</span><span class="lib-desc"> — RPLIDAR A1 driver</span></li><li><span class="lib-name">hector_slam</span><span class="lib-desc"> — Scanmatching SLAM</span></li><li><span class="lib-name">amcl + move_base</span><span class="lib-desc"> — Autonomous navigation</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const canvas=document.getElementById('slamCanvas');
+    const ctx=canvas.getContext('2d');
+    const W=130,H=130,CX=65,CY=65;
+    const walls=[[20,20,40,0],[20,20,0,60],[60,20,40,0],[60,80,40,0],[20,80,0,-60],[100,20,0,60]];
+    let angle=0,revealed=0;
+    function drawSlam(){
+      ctx.fillStyle='rgba(5,15,25,0.2)';
+      ctx.fillRect(0,0,W,H);
+      // Draw walls (obstacles)
+      ctx.strokeStyle='#00aaff';ctx.lineWidth=2;
+      walls.forEach(([x,y,dx,dy])=>{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dx,y+dy);ctx.stroke();});
+      // Scan rays
+      for(let a=angle;a<angle+20;a+=2){
+        const rad=a*Math.PI/180;
+        const len=20+Math.random()*30;
+        ctx.strokeStyle='rgba(0,255,136,0.15)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(CX,CY);ctx.lineTo(CX+Math.cos(rad)*len,CY+Math.sin(rad)*len);ctx.stroke();
+        ctx.fillStyle='#00ff88';ctx.beginPath();ctx.arc(CX+Math.cos(rad)*len,CY+Math.sin(rad)*len,1.5,0,Math.PI*2);ctx.fill();
+      }
+      // Robot dot
+      ctx.fillStyle='#ff4400';ctx.beginPath();ctx.arc(CX,CY,4,0,Math.PI*2);ctx.fill();
+      angle=(angle+5)%360;
+      requestAnimationFrame(drawSlam);
+    }
+    drawSlam();
+  </script>
+</body>
+</html>

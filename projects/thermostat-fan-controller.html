@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thermostat Fan Controller – Studgine</title>
+  <meta name="description" content="Read temperature from a DS18B20 sensor and automatically ramp fan speed with PWM. Arduino PID-lite control and closed-loop feedback project." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:18px; padding:20px; height:120px; }
+    .temp-sensor { width:18px; height:52px; background:linear-gradient(180deg,#dc2626,#b91c1c); border-radius:3px 3px 50% 50%; display:flex; align-items:flex-end; justify-content:center; padding-bottom:4px; position:relative; }
+    .temp-fill { width:8px; border-radius:2px 2px 50% 50%; background:#fca5a5; animation:temp-rise 4s ease-in-out infinite; }
+    @keyframes temp-rise { 0%,100%{height:10px} 60%{height:35px} }
+    .thermo-scale { color:var(--color-text-muted); font-size:.7rem; }
+    .fan-blade { width:52px; height:52px; position:relative; }
+    .fan-blade svg { animation:spin-fan 4s linear infinite; animation-play-state:paused; }
+    .fan-blade.fast svg { animation-play-state:running; animation-duration:.5s; }
+    @keyframes spin-fan{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    .fan-speed-label { font-size:.65rem; color:#94a3b8; text-align:center; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+            </div>
+            <span class="fan-speed-label" id="fan-label">PWM: HIGH</span>
+          </div>
+        </div>
+        <p class="anim-stage-label">DS18B20 temp → map() → analogWrite() fan speed ramp</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+DS18B20+thermostat+fan+PWM+control" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>A <strong>thermostat</strong> is a closed-loop control system: it measures an output (temperature) and adjusts an input (fan speed) to try to keep things in balance. This is the simplest form of feedback control — the foundation of PID controllers used in drones, 3D printers, ovens, and industrial processes.</p>
+        <p>The <strong>DS18B20</strong> is a 1-Wire digital temperature sensor ±0.5°C accurate from −55°C to +125°C. A single data wire (with a 4.7 kΩ pull-up) communicates a full 12-bit temperature reading — no ADC noise, no calibration drift. The fan is driven via an N-MOSFET transistor (e.g. 2N7000 or IRLZ44N) to safely switch motor current from the Arduino's 5 mA logic pin.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DS18B20 Temperature Sensor</span><span class="comp-note">1-Wire digital, ±0.5°C</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">4.7 kΩ pull-up resistor</span><span class="comp-note">For 1-Wire data line</span></div></li>
+          <li><span class="comp-icon">🌀</span><div><span class="comp-name">5 V DC Fan (computer case fan)</span><span class="comp-note">PWM load</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">N-MOSFET (IRLZ44N or 2N7000)</span><span class="comp-note">Fan drive transistor</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">1N4007 flyback diode</span><span class="comp-note">Motor protection</span></div></li>
+          <li><span class="comp-icon">🖥️</span><div><span class="comp-name">I2C LCD (optional)</span><span class="comp-note">Temp & speed display</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire the DS18B20</strong> — Red (VCC) → 5 V, Black (GND) → GND, Yellow (Data) → D4 with 4.7 kΩ pull-up to 5 V. MOSFET: Gate → D9 (~), Drain → Fan –, Source → GND. Fan + → 5 V. Place flyback diode across fan terminals (banded end to +).
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Read temperature</strong> — Include <code>OneWire</code> and <code>DallasTemperature</code> libraries. <code>sensors.requestTemperatures(); float tempC = sensors.getTempCByIndex(0);</code>. Reading takes ~750 ms for 12-bit resolution — use <code>setWaitForConversion(false)</code> and millis() timing to avoid blocking.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Proportional speed ramp</strong> — Define a comfort range: below 28°C = fan off (PWM 0). 28–40°C = map linearly: <code>int speed = map(tempC, 28, 40, 60, 255);</code> — 60 is the minimum PWM to keep the motor spinning (stall threshold). Above 40°C = full speed 255.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Display and hysteresis</strong> — Print temperature and fan % to LCD. Add hysteresis of ±1°C: once the fan turns off, don't re-enable until temp exceeds 29°C (not just 28°C). This prevents rapid on/off cycling — a key real-world thermostat technique.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">💻 PC case thermal control</span>
+          <span class="app-tag">🖨️ 3D printer hotend cooling</span>
+          <span class="app-tag">🌿 Greenhouse ventilation</span>
+          <span class="app-tag">⚙️ Motor driver heat management</span>
+          <span class="app-tag">🏭 Industrial process cooling</span>
+          <span class="app-tag">📊 Temperature data logger</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$6 – $14</span></li>
+            <li class="fact-row"><span>Build Time</span><span>2 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Protocol</span><span>1-Wire</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">1-Wire protocol</span></li>
+            <li><span class="skill-tag">DS18B20 reading</span></li>
+            <li><span class="skill-tag">MOSFET motor switching</span></li>
+            <li><span class="skill-tag">Proportional PWM ramp</span></li>
+            <li><span class="skill-tag">Thermostat hysteresis</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">OneWire by Paul Stoffregen</span></li>
+            <li><span class="skill-tag">DallasTemperature</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="fan-speed-pwm-controller.html" class="skill-tag">Fan Speed PWM</a></li>
+            <li><a href="temperature-humidity-monitor.html" class="skill-tag">Temp Humidity Monitor</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const temps = [28,30,33,36,39,42,39,35,30,28];
+    let ti = 0;
+    function updateFanAnim(){
+      const t = temps[ti % temps.length]; ti++;
+      document.getElementById('temp-val').textContent = t + '°C';
+      const fill = document.getElementById('temp-fill');
+      const pct = Math.min(1, Math.max(0, (t - 20) / 30));
+      fill.style.height = (8 + pct * 30) + 'px';
+      const fanEl = document.getElementById('fan-anim');
+      const svg = fanEl.querySelector('svg');
+      const speed = t < 28 ? 0 : Math.max(60, ((t - 28) / 14) * 255);
+      const dur = speed < 60 ? 'none' : Math.max(0.3, 2 - (speed / 255) * 1.7) + 's';
+      svg.style.animationDuration = speed < 60 ? '999s' : dur;
+      document.getElementById('fan-label').textContent = speed < 60 ? 'PWM: OFF' : 'PWM: ' + Math.round(speed / 255 * 100) + '%';
+    }
+    setInterval(updateFanAnim, 1600);
+  </script>
+</body>
+</html>

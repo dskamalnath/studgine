@@ -1,0 +1,205 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gesture-Controlled LEDs – Studgine</title>
+  <meta name="description" content="Swipe left/right and up/down to control LEDs with an APDS-9960 gesture sensor. Learn I2C libraries and gesture event handling with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:32px; padding:28px 16px; }
+    .hand-swipe { font-size:2.2rem; animation:swipe-anim 3s ease-in-out infinite; }
+    @keyframes swipe-anim { 0%{transform:translateX(-30px);opacity:0} 20%,50%{transform:translateX(0);opacity:1} 80%{transform:translateX(30px);opacity:0} 100%{transform:translateX(-30px);opacity:0} }
+    .led-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .g-led { width:28px; height:28px; border-radius:50%; background:#1a1a1a; transition:background .3s, box-shadow .3s; }
+    .g-led.r { background:#ef4444; box-shadow:0 0 12px rgba(239,68,68,.7); }
+    .g-led.g { background:#22c55e; box-shadow:0 0 12px rgba(34,197,94,.7); }
+    .g-led.b { background:#3b82f6; box-shadow:0 0 12px rgba(59,130,246,.7); }
+    .g-led.y { background:#f59e0b; box-shadow:0 0 12px rgba(245,158,11,.7); }
+    .g-led.p { background:#a855f7; box-shadow:0 0 12px rgba(168,85,247,.7); }
+    .g-led.c { background:#06b6d4; box-shadow:0 0 12px rgba(6,182,212,.7); }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Gesture-Controlled LEDs</h1>
+      <p class="hero-sub">Swipe left, right, up, or down to change LED colours and animations — introduces the APDS-9960 I2C gesture sensor and event-driven programming.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Gesture-Controlled LEDs</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="hand-swipe">👋</div>
+          <div class="led-grid" id="ledGrid">
+            <div class="g-led" id="l0"></div><div class="g-led" id="l1"></div><div class="g-led" id="l2"></div>
+            <div class="g-led" id="l3"></div><div class="g-led" id="l4"></div><div class="g-led" id="l5"></div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Swipe gesture → APDS-9960 I2C event → LED colour change</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+APDS+9960+gesture+sensor+LED" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The <strong>APDS-9960</strong> is a tiny I2C sensor that detects four directional gestures (LEFT, RIGHT, UP, DOWN) by measuring IR light reflected from a moving hand across its photodiode array. It also provides ambient light, colour (RGBC), and proximity readings — all in one compact module.</p>
+        <p>In this project, each swipe direction cycles through a colour on an RGB LED or triggers a different light animation on a strip. It's your first step into event-driven, gesture-based user interfaces — the same concept used in smart displays and touchless kiosks.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note">Main microcontroller</span></div></li>
+          <li><span class="comp-icon">👋</span><div><span class="comp-name">APDS-9960 Gesture Sensor</span><span class="comp-note">I2C gesture, proximity, light sensor</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">RGB LED (common cathode)</span><span class="comp-note">Colour output</span></div></li>
+          <li><span class="comp-icon">🟫</span><div><span class="comp-name">3× 220 Ω resistors</span><span class="comp-note">Current limiting for R/G/B channels</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype connections</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">USB cable</span><span class="comp-note">5 V power (sensor runs on 3.3 V via module regulator)</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire I2C</strong> — APDS-9960 SDA → A4, SCL → A5 (Arduino Uno). Power at 3.3 V. Include <code>#include &lt;SparkFun_APDS9960.h&gt;</code>, initialise with <code>apds.init()</code> and <code>apds.enableGestureSensor(true)</code> in <code>setup()</code>.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Read gestures</strong> — In <code>loop()</code>: if <code>apds.isGestureAvailable()</code> is true, call <code>int gesture = apds.readGesture()</code>. Returns <code>DIR_LEFT</code>, <code>DIR_RIGHT</code>, <code>DIR_UP</code>, or <code>DIR_DOWN</code> constants from the library.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Change LED colour</strong> — Use a <code>switch(gesture)</code> block. Each case sets different PWM values on R (pin 9), G (pin 10), B (pin 11). For example: LEFT→red (255,0,0), RIGHT→green, UP→blue, DOWN→yellow. Store the current colour in a variable so it persists between gestures.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Add animations</strong> — Extend with colour-cycling: each LEFT/RIGHT swipe steps through a predefined colour array. UP triggers a fast blink animation, DOWN triggers a slow pulse using an <code>abs(sin())</code> brightness fade in a loop.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">💡 Gesture light switch</span>
+          <span class="app-tag">🎮 Touchless game controller</span>
+          <span class="app-tag">🖥️ Presentation slide control</span>
+          <span class="app-tag">🎵 Volume swipe controller</span>
+          <span class="app-tag">🏥 Sanitary touchless panel</span>
+          <span class="app-tag">🤖 Robot arm gesture steering</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$6 – $14</span></li>
+            <li class="fact-row"><span>Build Time</span><span>2 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Interface</span><span>I2C</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">I2C communication</span></li>
+            <li><span class="skill-tag">Library initialisation</span></li>
+            <li><span class="skill-tag">Gesture event handling</span></li>
+            <li><span class="skill-tag">RGB PWM mixing</span></li>
+            <li><span class="skill-tag">switch-case logic</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;"><strong>SparkFun APDS-9960</strong> — install via Library Manager.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="tilt-angle-display.html" class="skill-tag">Tilt Angle Display</a></li>
+            <li><a href="rgb-color-mixer.html" class="skill-tag">RGB Color Mixer</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const colours = [
+      ['r','','','','','r'],['','g','','','g',''],['','','b','b','',''],
+      ['y','','y','','','y'],['','p','','p','',''],['c','c','','','c','c']
+    ];
+    let ci = 0;
+    const leds = Array.from({length:6},(_,i)=>document.getElementById('l'+i));
+    setInterval(()=>{
+      leds.forEach((l,i)=>{ l.className='g-led '+(colours[ci][i]||''); });
+      ci=(ci+1)%colours.length;
+    },600);
+  </script>
+</body>
+</html>

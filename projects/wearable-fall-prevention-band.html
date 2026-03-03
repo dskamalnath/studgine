@@ -1,0 +1,227 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wearable Fall Prevention Band – Advanced Project | Studgine</title>
+  <meta name="description" content="Arduino Nano BLE wristband detects pre-fall postural instability and triggers haptic warning 200ms before loss-of-balance events using MPU-6050 and ML classification." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#020005;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .fp-info{font-family:monospace;font-size:9px;color:#aa88ff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Wearable Fall Prevention Band</h1>
+      <p>A 3D-printed wristband with Arduino Nano BLE Sense, MPU-6050 IMU, and small haptic motor. Samples wrist acceleration at 200Hz, extracts real-time features (CoM acceleration variance, jerk), and runs a TFLite Micro classifier that detects pre-fall postural instability 200ms before a loss-of-balance event — vibrating a warning before the fall.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Wearable Fall Prevention Band</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="fpCanvas" width="120" height="90"></canvas>
+                <div class="fp-info">
+                  <div>ACCEL (mG)</div>
+                  <div>X: <span id="fpX">12</span></div>
+                  <div>Y: <span id="fpY">-8</span></div>
+                  <div>Z: <span id="fpZ">1031</span></div>
+                  <div style="margin-top:3px;">FEATURES</div>
+                  <div>JERK: <span id="fpJerk">2.4</span> m/s³</div>
+                  <div>VAR: <span id="fpVar">0.08</span></div>
+                  <div style="margin-top:3px;">RISK</div>
+                  <div>SCORE: <span id="fpScore" style="color:#00ff88;">0.12</span></div>
+                  <div>STATE: <span id="fpState" style="color:#00ff88;">STABLE</span></div>
+                  <div>HAPTIC: OFF</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Arduino+Nano+BLE+TFLite+Micro+fall+detection+IMU+wearable" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Falls are the leading cause of injury death in adults over 65. A preventive wearable that detects the characteristic instability pattern 200ms before a fall — enough time for a muscle reflex-triggering haptic cue — could prevent millions of injuries. The key insight: falls are preceded by a characteristic increase in body sway (centre of mass jerk) before the actual rapid acceleration of falling. This project trains a 1D CNN on labelled accelerometer windows (stable walk/stand, pre-fall sway, actual fall), quantises it to TFLite Micro, and runs on the Arduino Nano BLE Sense — 36kB flash, 256kB RAM.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">💻</span><div><span class="comp-name">Arduino Nano BLE Sense 33</span><span class="comp-note"> — nRF52840 Cortex-M4F; built-in LSM9DS1 IMU; 256kB RAM; BLE for data logging; TFLite Micro support</span></div></li>
+                <li><span class="comp-icon">📳</span><div><span class="comp-name">Vibration Motor (ERM or LRA) + DRV2605L Driver</span><span class="comp-note"> — LRA haptic actuator 3V; DRV2605L I²C driver with 123 waveform library; distinct pre-warning buzz pattern</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">LiPo 100mAh + MCP73831 Charger</span><span class="comp-note"> — 3.7V 100mAh flat cell; micro-USB charging; ~8hr runtime; housed in 3D-printed PETG wristband enclosure</span></div></li>
+                <li><span class="comp-icon">🧩</span><div><span class="comp-name">Training Hardware (PC + Dataset)</span><span class="comp-note"> — Collect data via BLE serial logger; label segments; train Keras 1D CNN; quantise to TFLite INT8; convert to C array</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Data Collection + Feature Engineering</h4><p>Wear device during normal activities (walking, sitting, standing) and simulated near-falls (controlled leans, catching balance). Log 200Hz accel data via BLE Serial to Python. Label windows: STABLE (0), PRE_FALL (1), FALL (2). Feature extraction per 50-sample (250ms) window: <code>jerk = np.diff(accel_magnitude) * 200; svm_var = np.var(np.sqrt(ax**2+ay**2+az**2)); max_jerk = np.max(np.abs(jerk))</code>. Dataset: ~5000 labelled windows. Split 80/10/10.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>1D CNN Model Training</h4><p>Input: (50, 3) float32 window (ax, ay, az). Architecture: <code>Conv1D(32, 5, relu) → MaxPool1D(2) → Conv1D(64, 3, relu) → MaxPool1D(2) → Flatten → Dense(32, relu) → Dense(3, softmax)</code>. Train 100 epochs, Adam lr=0.001, batch=32. Test accuracy ~92%. Quantise to INT8: <code>converter = tf.lite.TFLiteConverter.from_keras_model(model); converter.optimizations=[tf.lite.Optimize.DEFAULT]; tflite_model = converter.convert()</code>. Convert to C array: <code>xxd -i model.tflite > model_data.cc</code> for Arduino.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>TFLite Micro Inference on Arduino</h4><p>Arduino sketch: include TensorFlowLite_ESP32 or Arduino_TensorFlowLite library. Load model: <code>tflite::MicroInterpreter interpreter(model_data, resolver, tensor_arena, TENSOR_ARENA_SIZE, &error_reporter)</code>. Sliding window buffer: collect 50 accel samples at 200Hz, then infer. Copy to input tensor, invoke, read output probabilities. If output[1] &gt; 0.8 (pre-fall risk), activate haptic: <code>drv.setWaveform(0, 14); drv.setWaveform(1, 0); drv.go()</code>. Inference time: ~4ms on M4F at 64MHz.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>BLE Logging + Caregiver Alert</h4><p>BLE service: transmit fall risk score + event log to smartphone app. Use ArduinoBLE library: <code>BLECharacteristic riskChar("UUID-HERE", BLERead|BLENotify, 4); riskChar.writeFloat(risk_score)</code>. Phone app (MIT App Inventor or React Native): display real-time risk score, vibrate phone on fall detected. Send SMS alert to caregiver via Twilio API when actual fall confirmed (rapid deceleration after high acceleration). Battery indicator: voltage divider → ADC → BLE battery service advertise charge level.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>// Arduino Nano BLE — TFLite Micro sliding-window fall classifier
+#include <TensorFlowLite.h>
+#include "model_data.h"
+#include <Arduino_LSM9DS1.h>
+
+namespace {
+  tflite::MicroErrorReporter error_reporter;
+  const tflite::Model* model;
+  tflite::MicroInterpreter* interpreter;
+  TfLiteTensor* input; TfLiteTensor* output;
+  constexpr int ARENA_SIZE = 30*1024;
+  uint8_t tensor_arena[ARENA_SIZE];
+  float window[50][3];  int win_idx = 0;
+}
+
+void setup() {
+  IMU.begin();
+  model = tflite::GetModel(model_data);
+  static tflite::MicroMutableOpResolver<5> resolver;
+  resolver.AddConv2D(); resolver.AddPooling2D();
+  resolver.AddFullyConnected(); resolver.AddSoftmax(); resolver.AddReshape();
+  static tflite::MicroInterpreter static_interp(model, resolver, tensor_arena, ARENA_SIZE, &error_reporter);
+  interpreter = &static_interp; interpreter->AllocateTensors();
+  input = interpreter->input(0); output = interpreter->output(0);
+}
+
+void loop() {
+  float ax, ay, az; IMU.readAcceleration(ax, ay, az);
+  window[win_idx][0] = ax; window[win_idx][1] = ay; window[win_idx][2] = az;
+  if (++win_idx >= 50) {
+    win_idx = 0;
+    memcpy(input->data.f, window, 50*3*sizeof(float));
+    interpreter->Invoke();
+    float pre_fall_prob = output->data.f[1];
+    if (pre_fall_prob > 0.80) {
+      digitalWrite(LED_BUILTIN, HIGH);  // Trigger haptic motor
+    }
+  }
+  delayMicroseconds(5000);  // 200Hz
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📱 Caregiver Alert App</span>
+                <span class="app-tag">📊 Gait Quality Dashboard</span>
+                <span class="app-tag">🦵 Ankle + Wrist Dual IMU</span>
+                <span class="app-tag">🔮 Personalised Risk Profiles</span>
+                <span class="app-tag">🏥 Clinical Trial Data Logger</span>
+                <span class="app-tag">🪑 Smart Chair Integration</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $45 – $85</li><li><strong>Build Time:</strong> 10 – 16 hours</li><li><strong>Warning Time:</strong> 200ms pre-fall</li><li><strong>Inference:</strong> 4ms on M4F</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>1D CNN for time-series classification</li><li>TFLite Micro deployment</li><li>IMU sliding-window features</li><li>INT8 quantisation</li><li>ArduinoBLE service advertising</li><li>Haptic feedback patterns</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">TensorFlowLite (Arduino)</span><span class="lib-desc"> — Micro inference engine</span></li><li><span class="lib-name">Arduino_LSM9DS1</span><span class="lib-desc"> — IMU sensor driver</span></li><li><span class="lib-name">ArduinoBLE</span><span class="lib-desc"> — BLE data streaming</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const fpC=document.getElementById('fpCanvas');const fpCtx=fpC.getContext('2d');
+    let fpPhase=0,fpRisk=0.1;
+    function drawFP(){
+      fpCtx.fillStyle='rgba(2,0,5,0.4)';fpCtx.fillRect(0,0,120,90);
+      // Wrist accel trace
+      fpCtx.strokeStyle='#aa88ff';fpCtx.lineWidth=1;fpCtx.beginPath();
+      for(let x=0;x<120;x++){
+        const y=45+15*Math.sin(x*0.15+fpPhase)*Math.exp(-Math.pow(x-60,2)/2000);
+        x===0?fpCtx.moveTo(x,y):fpCtx.lineTo(x,y);
+      }
+      fpCtx.stroke();
+      // Risk bar
+      const riskH=fpRisk*60;
+      fpCtx.fillStyle=fpRisk>0.7?'#ff4444':fpRisk>0.4?'#ffaa00':'#44ff88';
+      fpCtx.fillRect(108,82-riskH,10,riskH);
+      fpCtx.strokeStyle='rgba(150,100,255,0.5)';fpCtx.lineWidth=1;fpCtx.strokeRect(108,22,10,60);
+      fpCtx.fillStyle='#aaaaaa';fpCtx.font='6px monospace';fpCtx.fillText('RISK',106,18);
+      fpPhase+=0.05;fpRisk=fpRisk*0.97+0.03*(0.1+0.05*Math.sin(fpPhase*0.3));
+      document.getElementById('fpX').textContent=(12+5*Math.sin(fpPhase)).toFixed(0);
+      document.getElementById('fpY').textContent=(-8+4*Math.cos(fpPhase*0.7)).toFixed(0);
+      document.getElementById('fpZ').textContent=(1031+10*Math.sin(fpPhase*0.5)).toFixed(0);
+      document.getElementById('fpJerk').textContent=(2.4+0.8*Math.abs(Math.sin(fpPhase))).toFixed(1);
+      document.getElementById('fpVar').textContent=(0.08+0.03*Math.sin(fpPhase*1.5)).toFixed(3);
+      document.getElementById('fpScore').textContent=fpRisk.toFixed(2);
+      document.getElementById('fpScore').style.color=fpRisk>0.7?'#ff4444':fpRisk>0.4?'#ffaa00':'#00ff88';
+      document.getElementById('fpState').textContent=fpRisk>0.7?'HIGH RISK':fpRisk>0.4?'CAUTION':'STABLE';
+      document.getElementById('fpState').style.color=fpRisk>0.7?'#ff4444':fpRisk>0.4?'#ffaa00':'#00ff88';
+      requestAnimationFrame(drawFP);
+    }
+    drawFP();
+  </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CV Robotic Sorting System – Advanced Project | Studgine</title>
+  <meta name="description" content="A camera classifies items by colour/shape using OpenCV and commands a 2-axis servo arm to sort them into bins — a miniaturised factory automation demonstrator." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#050505;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .sort-info{font-family:monospace;font-size:9px;color:#ffaa44;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>CV Robotic Sorting System</h1>
+      <p>An overhead Pi Camera classifies coloured objects by HSV colour segmentation and contour shape recognition using OpenCV — then commands a 2-axis servo arm to pick and sort them into labelled bins. A miniaturised, programmable factory automation demonstrator with computer vision at its core.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">CV Robotic Sorting System</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="sortCanvas" width="150" height="100"></canvas>
+                <div class="sort-info">
+                  <div>ITEM: <span id="sortItem" style="color:#ff4444;">RED CIRCLE</span></div>
+                  <div>X:<span id="sortX">120</span> Y:<span id="sortY">75</span></div>
+                  <div>SERVO1: <span id="sortS1">85</span>°</div>
+                  <div>SERVO2: <span id="sortS2">45</span>°</div>
+                  <div style="margin-top:3px;">BIN COUNTS</div>
+                  <div>🔴 RED: <span id="binR">7</span></div>
+                  <div>🟢 GRN: <span id="binG">5</span></div>
+                  <div>🔵 BLU: <span id="binB">6</span></div>
+                  <div style="color:#00ff88;margin-top:2px;">SORTING...</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Raspberry+Pi+OpenCV+colour+detection+servo+arm+sorting+robot" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Industrial sorting robots use machine vision to classify and route products at high speed. This project replicates the core concept at maker scale: an overhead camera detects objects on a conveyor (or flat surface), classifies them by colour (HSV masking) and shape (contour circularity/aspect ratio), computes the object centroid position, then drives a 2-DOF servo arm to the calculated X/Y position to nudge or pick the item into the correct bin. Supports 3+ colour classes and 2 shape classes (round vs. rectangular). Process time: ~200ms per object.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Raspberry Pi Camera Module v2</span><span class="comp-note"> — 640×480 @ 30fps overhead mount; consistent lighting essential; use diffuse LED ringlight for shadow-free imaging</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">2× MG996R Servos + 3D-Printed Arm</span><span class="comp-note"> — Shoulder + elbow joints; 3D-printed arm links 120mm + 80mm; reach: 180mm; driven by PCA9685</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (2 GB)</span><span class="comp-note"> — OpenCV 4.x; picamera2; adafruit PCA9685; servo IK calculation; real-time video display</span></div></li>
+                <li><span class="comp-icon">🏗️</span><div><span class="comp-name">Conveyor Belt (optional) / Flat Stage</span><span class="comp-note"> — DIY belt: DC motor + timing belt + HCSR04 trigger sensor; or place items manually on white platform</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>HSV Colour Segmentation</h4><p>Convert frame to HSV: <code>hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)</code>. Define colour masks: Red: <code>H=[0-10 ∪ 170-180], S=[100-255], V=[100-255]</code>. Green: <code>H=[40-80]</code>. Blue: <code>H=[100-130]</code>. Apply: <code>mask = cv2.inRange(hsv, lower, upper)</code>. Morphological cleanup: <code>cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)</code>. Find contours: <code>contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Shape Classification + Centroid</h4><p>For each detected contour (area &gt; 500 px²): compute circularity = <code>4π*area / perimeter²</code>. Circularity &gt; 0.8 = circle; &lt;0.6 = rectangle. Bounding rect aspect ratio for square vs. elongated. Compute centroid: <code>M = cv2.moments(cnt); cx, cy = M['m10']/M['m00'], M['m01']/M['m00']</code>. Convert pixel coords to world coords: <code>world_x = (cx - CAM_CX) * SCALE</code> with calibration from checkerboard.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>2DOF Arm Inverse Kinematics</h4><p>Given target world position (Wx, Wy), solve 2-link planar IK: <code>c2 = (Wx²+Wy²-L1²-L2²)/(2*L1*L2); s2=√(1-c2²)</code>. <code>θ2 = atan2(s2,c2); θ1 = atan2(Wy,Wx)-atan2(L2*s2, L1+L2*c2)</code>. Clamp to servo limits [0°–180°]. Smooth motion: interpolate from current to target angles in 10 steps at 20ms each to prevent servo jerk. Drive PCA9685: <code>set_pulse(channel, angle_to_pulse(theta))</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Bin Assignment + Object Tracking</h4><p>Bin map: Red objects → Bin 0 (left), Green → Bin 1 (centre), Blue → Bin 2 (right). Arm state machine: IDLE → DETECT → APPROACH → PICK (activate suction cup or claw servo) → PLACE at bin coords → RETURN. Track sorted items: increment bin counters. Display classification overlay on live video: draw bounding box, class label, confidence. Log each sort event to CSV with timestamp. Sort rate: ~5 objects/minute with 2-second settle time.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import cv2, numpy as np
+from picamera2 import Picamera2
+from adafruit_pca9685 import PCA9685
+import math, busio, board
+
+cam = Picamera2(); cam.start()
+L1, L2 = 120, 80  # arm link lengths mm
+
+COLOR_RANGES = {
+    'RED':   [(0,100,100),(10,255,255)],
+    'GREEN': [(40,80,80),(80,255,255)],
+    'BLUE':  [(100,80,80),(130,255,255)]
+}
+
+def detect_objects(frame):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    objects = []
+    for color, (lower, upper) in COLOR_RANGES.items():
+        mask = cv2.inRange(hsv, np.array(lower), np.array(upper))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(7,7))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
+                                       cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            if cv2.contourArea(cnt) < 500: continue
+            M = cv2.moments(cnt)
+            if M['m00'] == 0: continue
+            cx, cy = int(M['m10']/M['m00']), int(M['m01']/M['m00'])
+            # Circularity
+            peri = cv2.arcLength(cnt, True)
+            circ = 4*math.pi*cv2.contourArea(cnt)/(peri**2+1e-6)
+            shape = 'circle' if circ > 0.75 else 'rectangle'
+            objects.append({'color':color,'shape':shape,'cx':cx,'cy':cy})
+    return objects
+
+def solve_ik(wx, wy):
+    """2-link planar IK → (theta1, theta2) in radians"""
+    c2 = (wx**2+wy**2-L1**2-L2**2)/(2*L1*L2)
+    c2 = max(-1, min(1, c2))
+    s2 = math.sqrt(1-c2**2)
+    t2 = math.atan2(s2, c2)
+    t1 = math.atan2(wy, wx) - math.atan2(L2*s2, L1+L2*c2)
+    return math.degrees(t1), math.degrees(t2)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🤖 3-DOF Arm with Gripper</span>
+                <span class="app-tag">🏷️ QR Code / Barcode Reading</span>
+                <span class="app-tag">🔢 Digit Recognition (MNIST)</span>
+                <span class="app-tag">⚡ Conveyor Belt Integration</span>
+                <span class="app-tag">📊 Production Rate Analytics</span>
+                <span class="app-tag">🏭 Multi-Class YOLOv8 Detection</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $65 – $120</li><li><strong>Build Time:</strong> 8 – 14 hours</li><li><strong>Sort Rate:</strong> ~5 objects/min</li><li><strong>CV Accuracy:</strong> &gt;95% (good lighting)</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>HSV colour space segmentation</li><li>Contour analysis + shape detection</li><li>2-link planar inverse kinematics</li><li>Servo arm trajectory planning</li><li>Object centroid tracking</li><li>Camera-to-world coordinate mapping</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">OpenCV 4</span><span class="lib-desc"> — Colour detection + contours</span></li><li><span class="lib-name">adafruit-pca9685</span><span class="lib-desc"> — Servo control</span></li><li><span class="lib-name">picamera2</span><span class="lib-desc"> — Camera capture</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const sortC=document.getElementById('sortCanvas');
+    const sCtx=sortC.getContext('2d');
+    const ITEMS=[{x:40,y:50,c:'#ff3333',label:'RED CIRCLE',r:true},{x:90,y:35,c:'#33ff33',label:'GREEN RECT',r:false},{x:60,y:70,c:'#3366ff',label:'BLUE CIRCLE',r:true}];
+    let sortPhase=0,active=0,counts={R:7,G:5,B:6};
+    function drawSort(){
+      sCtx.fillStyle='rgba(5,5,5,0.4)';sCtx.fillRect(0,0,150,100);
+      // Bins
+      ['#ff3333','#33ff33','#3366ff'].forEach((c,i)=>{
+        sCtx.fillStyle=c+'33';sCtx.strokeStyle=c;sCtx.lineWidth=1;
+        sCtx.beginPath();sCtx.rect(10+i*45,70,35,25);sCtx.fill();sCtx.stroke();
+      });
+      // Items
+      ITEMS.forEach((item,i)=>{
+        const scale=i===active?(1+0.2*Math.abs(Math.sin(sortPhase*3))):1;
+        sCtx.fillStyle=item.c;
+        if(item.r){sCtx.beginPath();sCtx.arc(item.x,item.y,8*scale,0,Math.PI*2);sCtx.fill();}
+        else{sCtx.fillRect(item.x-8*scale,item.y-5*scale,16*scale,10*scale);}
+      });
+      // Arm
+      const ax=75,ay=10,targetX=ITEMS[active].x,targetY=ITEMS[active].y;
+      const elbowX=ax+(targetX-ax)*0.6,elbowY=ay+(targetY-ay)*0.6+10;
+      sCtx.strokeStyle='#ffaa44';sCtx.lineWidth=3;
+      sCtx.beginPath();sCtx.moveTo(ax,ay);sCtx.lineTo(elbowX,elbowY);sCtx.lineTo(targetX,targetY);sCtx.stroke();
+      sCtx.fillStyle='#ffaa44';sCtx.beginPath();sCtx.arc(ax,ay,4,0,Math.PI*2);sCtx.fill();
+      sortPhase+=0.06;
+      if(Math.round(sortPhase)%6===0){active=(active+1)%3;}
+      const item=ITEMS[active];
+      document.getElementById('sortItem').textContent=item.label;
+      document.getElementById('sortItem').style.color=item.c;
+      document.getElementById('sortX').textContent=item.x;
+      document.getElementById('sortY').textContent=item.y;
+      document.getElementById('sortS1').textContent=Math.round(45+sortPhase%60);
+      document.getElementById('sortS2').textContent=Math.round(30+sortPhase%40);
+      requestAnimationFrame(drawSort);
+    }
+    drawSort();
+  </script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vibration Knock Detector – Studgine</title>
+  <meta name="description" content="Mount a piezoelectric disk on a surface to detect knocks and taps, triggering LEDs or a buzzer. An intro to piezoelectric sensing and analog debouncing with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:18px; }
+    .surface { width:80px; height:50px; background:#1e293b; border:2px solid #4b5563; border-radius:6px; display:flex; align-items:center; justify-content:center; position:relative; }
+    .piezo { width:30px; height:30px; border-radius:50%; background:radial-gradient(circle, #fde68a, #d97706); border:2px solid #92400e; }
+    .knock-wave { position:absolute; border-radius:50%; border:2px solid rgba(251,191,36,.5); animation:knock-expand 1s ease-out infinite; opacity:0; width:10px; height:10px; left:50%;top:50%;transform:translate(-50%,-50%); }
+    .knock-wave.active { opacity:1; }
+    @keyframes knock-expand { 0%{width:10px;height:10px;opacity:.7;} 100%{width:70px;height:70px;opacity:0;} }
+    .knock-info { text-align:center; }
+    .knock-adc { font-family:'Courier New',monospace; font-size:1.1rem; color:#e2e8f0; }
+    .knock-label { font-size:.6rem; color:#64748b; margin-top:2px; }
+    .knock-leds { display:flex; gap:6px; }
+    .k-led { width:16px; height:16px; border-radius:50%; background:#1e293b; border:2px solid #374151; transition:background .1s, box-shadow .1s; }
+    .k-led.knock { background:#f97316; border-color:#ea580c; box-shadow:0 0 8px #f97316; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Vibration Knock Detector</h1>
+      <p class="hero-sub">Mount a piezoelectric disk on a surface to detect knocks and taps, triggering LEDs or a buzzer in response. An accessible intro to piezoelectric sensing and analog debouncing.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Vibration Knock Detector</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="surface">
+            <div class="piezo"></div>
+            <div class="knock-wave" id="knock-wave"></div>
+          </div>
+          <div class="knock-info">
+            <div class="knock-adc" id="knock-adc">---</div>
+            <div class="knock-label">ADC peak</div>
+          </div>
+          <div class="knock-leds">
+            <div class="k-led" id="kl0"></div>
+            <div class="k-led" id="kl1"></div>
+            <div class="k-led" id="kl2"></div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Piezo voltage spike → analogRead() threshold → LED knock response</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+vibration+sensor+knock+piezo+disk" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>A piezoelectric disk converts mechanical deformation (vibration, tapping, pressure) into a small electrical voltage — and vice versa. When someone knocks on the surface it's attached to, the disk flexes, generating a voltage spike detectable by Arduino's analog-to-digital converter.</p>
+        <p>The challenge is <strong>analog debouncing</strong>: a single knock produces a damped oscillating waveform (ring-down) that can trigger multiple "readings" as the piezo vibrates. We must implement a lockout window after the first detection — the same concept as button software debouncing but applied to analog signal peaks.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">27 mm piezoelectric disk</span><span class="comp-note">20–35 mm diameter discs work well</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">1 MΩ resistor</span><span class="comp-note">Bleed resistor to discharge piezo capacitance</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">3× LEDs</span><span class="comp-note">Knock intensity bar</span></div></li>
+          <li><span class="comp-icon">🔔</span><div><span class="comp-name">Buzzer (optional)</span><span class="comp-note">Audio confirmation of knock</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire piezo to analog pin</strong> — Connect one lead of the piezo disk to A0 and the other to GND. Add a 1 MΩ bleed resistor between A0 and GND — this bleeds off stored charge slowly (time constant ~1 ms for typical piezo) preventing the ADC from seeing a prolonged voltage. Without it, a single tap might show as a square-wave plateau lasting 100+ ms.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Read and threshold</strong> — Continuously read: <code>int val = analogRead(A0);</code>. A resting piezo reads ~0–5. A light knock produces 50–200; a hard knock 300–700+. Set a threshold: <code>const int THRESHOLD = 60;</code>. if (<code>val &gt; THRESHOLD</code>) trigger knock actions and record <code>lastKnockTime = millis();</code>
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Analog debounce lockout</strong> — After detecting a knock, ignore all further readings for a lockout window: <code>if (millis() - lastKnockTime &lt; 200) return;</code>. This 200 ms window absorbs the ring-down. Without it a single knock fires 5–50+ times depending on mounting surface and material stiffness.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Knock pattern recognition</strong> — Track knock timing to recognise patterns: store the last 5 inter-knock intervals. Compare them to a stored pattern (e.g. "knock-knock-pause-knock knock" = 2, 3, 1 beat pattern for a door code). If times match within ±30% tolerance, trigger a special action — turning on a relay, unlocking a servo, or sending a Serial message.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🚪 Secret knock door unlock</span>
+          <span class="app-tag">🥁 Electronic drum trigger pad</span>
+          <span class="app-tag">🏠 Table/wall vibration alarm</span>
+          <span class="app-tag">🎮 Tap-based game controller</span>
+          <span class="app-tag">🔬 Seismic vibration logger</span>
+          <span class="app-tag">🛡️ Anti-tamper case sensor</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$3 – $8</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 1.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Sensor</span><span>Piezo disk (27 mm)</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Piezoelectric transduction</span></li>
+            <li><span class="skill-tag">Analog threshold detection</span></li>
+            <li><span class="skill-tag">Analog debounce lockout</span></li>
+            <li><span class="skill-tag">Bleed resistor function</span></li>
+            <li><span class="skill-tag">Knock pattern matching</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">No libraries needed</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="clap-switch.html" class="skill-tag">Clap-Switch Light</a></li>
+            <li><a href="pir-motion-alarm.html" class="skill-tag">PIR Motion Alarm</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const wave = document.getElementById('knock-wave');
+    const adcEl = document.getElementById('knock-adc');
+    const leds = [document.getElementById('kl0'), document.getElementById('kl1'), document.getElementById('kl2')];
+    const knockEvents = [220, 480, 95, 340, 650, 180, 410, 72];
+    let ki = 0;
+    function doKnock() {
+      const v = knockEvents[ki % knockEvents.length];
+      adcEl.textContent = v;
+      wave.classList.remove('active');
+      void wave.offsetWidth;
+      wave.classList.add('active');
+      const bars = v > 400 ? 3 : v > 150 ? 2 : 1;
+      leds.forEach((l, i) => {
+        l.className = 'k-led' + (i < bars ? ' knock' : '');
+      });
+      setTimeout(() => { leds.forEach(l => l.className = 'k-led'); wave.classList.remove('active'); adcEl.textContent = '---'; }, 500);
+      ki++;
+    }
+    setTimeout(doKnock, 800);
+    setInterval(doKnock, 3500);
+  </script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RT Language Translator Device – Advanced Project | Studgine</title>
+  <meta name="description" content="Offline real-time speech translation on Raspberry Pi using Whisper tiny for STT, NLLB-200 for translation, and Piper TTS — no internet required." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000805;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .tl-info{font-family:monospace;font-size:9px;color:#00ffaa;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>RT Language Translator Device</h1>
+      <p>A fully offline real-time language translator: speak English, hear Spanish (or any of 200 languages). Whisper tiny speech-to-text, Meta's NLLB-200-distilled translation model, and Piper neural TTS all run on a Raspberry Pi 4 — no cloud API needed. Complete audio pipeline with hardware push-to-talk button and 2.8" touchscreen language selector.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">RT Language Translator Device</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="tlCanvas" width="120" height="90"></canvas>
+                <div class="tl-info">
+                  <div>STT: Whisper-tiny</div>
+                  <div>TRANS: NLLB-200</div>
+                  <div>TTS: Piper</div>
+                  <div style="margin-top:3px;">INPUT: EN</div>
+                  <div>"Hello, how are</div>
+                  <div> you today?"</div>
+                  <div style="margin-top:3px;">OUTPUT: ES</div>
+                  <div style="color:#ffff44;">"Hola, ¿cómo</div>
+                  <div style="color:#ffff44;"> estás hoy?"</div>
+                  <div style="margin-top:3px;">LATENCY: 3.2s</div>
+                  <div style="color:#00ffaa;">OFFLINE ✓</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Whisper+NLLB+offline+translator+Raspberry+Pi+Python" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Commercial real-time translators (Pocketalk, ili) cost $200–$300 and require internet. This project builds a comparable device for $55 in hardware. The AI pipeline: (1) Whisper tiny (39M parameters, 77MB) transcribes speech to text in ~1.5s on Pi 4. (2) NLLB-200-distilled (600M parameters) translates between 200 languages in ~1.5s. (3) Piper TTS speaks the translation through a small speaker in ~0.5s. Total latency ~3.5s — fast enough for conversational use. Pushed-to-talk button; 2.8" capacitive touchscreen for language pair selection; runs from a USB power bank.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎤</span><div><span class="comp-name">USB Microphone (Samson Go or ReSpeaker 2-Mic)</span><span class="comp-note"> — Cardioid pattern; 44.1kHz; close-range speech capture; ReSpeaker HAT optional for better SNR and LED feedback ring</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">Speaker + MAX98357A I²S Amp</span><span class="comp-note"> — 3W 8Ω speaker; MAX98357A I²S amplifier HAT; or USB audio dongle + 3.5mm speaker; 16kHz TTS output</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">2.8" SPI Touchscreen (ILI9341)</span><span class="comp-note"> — 320×240 capacitive; language pair selector UI; Pygame on Pi; show source/target text live during translation</span></div></li>
+                <li><span class="comp-icon">🔘</span><div><span class="comp-name">Push-to-Talk Button + Raspberry Pi 4</span><span class="comp-note"> — Momentary button GPIO; press-record-release-translate pattern; optional LED ring for recording/processing/speaking states</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Speech-to-Text with Whisper</h4><p>Install: <code>pip install openai-whisper; pip install faster-whisper</code>. Use faster-whisper (CTranslate2 optimised): <code>from faster_whisper import WhisperModel; model = WhisperModel("tiny", device="cpu", compute_type="int8")</code>. Record audio on button press: <code>import sounddevice as sd; audio = sd.rec(int(5*44100), samplerate=44100, channels=1); sd.wait()</code>. Transcribe: <code>segments, _ = model.transcribe(audio.flatten(), language="en")</code>. Whisper tiny: ~1.5s for 5s speech on Pi 4 with INT8 quantisation.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Neural Machine Translation with NLLB</h4><p>Meta NLLB-200 (No Language Left Behind) translates 200 language pairs with state-of-the-art accuracy. Install: <code>pip install transformers; from transformers import AutoTokenizer, AutoModelForSeq2SeqLM</code>. Load distilled 600M model: <code>model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")</code>. Translate: <code>inputs = tokenizer(text, return_tensors="pt", src_lang="eng_Latn"); translated = model.generate(**inputs, forced_bos_token_id=tokenizer.lang_code_to_id["spa_Latn"]); result = tokenizer.batch_decode(translated, skip_special_tokens=True)[0]</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Text-to-Speech with Piper TTS</h4><p>Piper TTS is a fast, high-quality offline neural TTS: <code>pip install piper-tts</code>. Download voice model (Spanish es_MX, ~56MB): <code>piper --model es_MX-claude-high --download-dir /models</code>. Synthesise: <code>import subprocess; subprocess.run(["piper", "--model", "/models/es_MX-claude-high.onnx", "--output_file", "/tmp/speech.wav"], input=translated_text.encode(), check=True)</code>. Play: <code>import pygame; pygame.mixer.music.load("/tmp/speech.wav"); pygame.mixer.music.play()</code>. Piper is ~300ms for typical sentence on Pi 4.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Touchscreen UI + Language Selector</h4><p>Pygame UI on ILI9341 320×240 display. Language grid: display 8 target language buttons. On selection, update NLLB target language code and Piper voice model. State machine: IDLE (show flag icons) → RECORDING (red LED + waveform) → PROCESSING (spinner) → SPEAKING (text scroll + green LED). Show source + translated text on screen. Save translations to log file for session review. Optional: QR code display of translated text for reading by the other party.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import sounddevice as sd, numpy as np, subprocess
+from faster_whisper import WhisperModel
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+
+# Load models once at startup (~30s on Pi 4)
+stt = WhisperModel("tiny", device="cpu", compute_type="int8")
+nllb_name = "facebook/nllb-200-distilled-600M"
+tokenizer = AutoTokenizer.from_pretrained(nllb_name)
+nmt = AutoModelForSeq2SeqLM.from_pretrained(nllb_name)
+
+LANG_PAIRS = {"Spanish": "spa_Latn", "French": "fra_Latn", "Arabic": "arb_Arab"}
+target_lang = "spa_Latn"
+
+def translate_speech(duration=5, src_lang="eng_Latn"):
+    # 1. Record
+    print("Recording..."); audio = sd.rec(int(duration*16000), samplerate=16000, channels=1, dtype='float32'); sd.wait()
+    # 2. STT
+    segments, _ = stt.transcribe(audio.flatten(), language="en")
+    text = " ".join(s.text for s in segments).strip()
+    print(f"STT: {text}")
+    # 3. NMT
+    inputs = tokenizer(text, return_tensors="pt", src_lang=src_lang)
+    out = nmt.generate(**inputs, forced_bos_token_id=tokenizer.lang_code_to_id[target_lang], max_new_tokens=256)
+    translated = tokenizer.batch_decode(out, skip_special_tokens=True)[0]
+    print(f"Translation: {translated}")
+    # 4. TTS
+    subprocess.run(["piper","--model","models/es_MX.onnx","--output_file","/tmp/out.wav"], input=translated.encode())
+    subprocess.run(["aplay","/tmp/out.wav"])
+
+translate_speech()</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌍 200 Language Pairs</span>
+                <span class="app-tag">📋 Translation History Log</span>
+                <span class="app-tag">🖨️ Thermal Printer Output</span>
+                <span class="app-tag">📱 BLE Earpiece Speaker</span>
+                <span class="app-tag">🎭 Bidirectional Conversation Mode</span>
+                <span class="app-tag">✈️ Phrase Book Offline Cache</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $95</li><li><strong>Build Time:</strong> 8 – 15 hours</li><li><strong>Latency:</strong> ~3.5 seconds</li><li><strong>Languages:</strong> 200 pairs</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Whisper STT optimisation</li><li>NLLB transformer NMT</li><li>Piper neural TTS</li><li>Audio pipeline (sounddevice)</li><li>Pygame touchscreen UI</li><li>Offline AI model deployment</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">faster-whisper</span><span class="lib-desc"> — INT8 optimised STT</span></li><li><span class="lib-name">transformers (NLLB)</span><span class="lib-desc"> — Neural machine translation</span></li><li><span class="lib-name">piper-tts</span><span class="lib-desc"> — Fast offline TTS</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const tlC=document.getElementById('tlCanvas');const tlCtx=tlC.getContext('2d');
+    let tlPhase=0;
+    const tlTexts=['"Hello, how are you?"','"Hola, ¿cómo estás?"','"Bonjour, comment ça va?"','"How much does this cost?"','"¿Cuánto cuesta esto?"'];
+    let tlIdx=0,tlTimer=0;
+    function drawTL(){
+      tlCtx.fillStyle='rgba(0,8,5,0.5)';tlCtx.fillRect(0,0,120,90);
+      // Waveform
+      tlCtx.strokeStyle='#00ffaa';tlCtx.lineWidth=1;tlCtx.beginPath();
+      for(let x=0;x<120;x++){
+        const y=45+10*Math.sin(x*0.3+tlPhase)*Math.exp(-Math.abs(x-60)/30);
+        x===0?tlCtx.moveTo(x,y):tlCtx.lineTo(x,y);
+      }
+      tlCtx.stroke();
+      // Language pipeline icons
+      const stages=['🎤 STT','🔀 NMT','🔊 TTS'];
+      const activeStage=Math.floor(tlPhase/2)%3;
+      tlCtx.font='8px sans-serif';
+      stages.forEach((s,i)=>{
+        tlCtx.fillStyle=i===activeStage?'#ffff44':'rgba(100,200,150,0.5)';
+        tlCtx.fillText(s,2+i*40,15);
+      });
+      tlCtx.fillStyle='rgba(0,50,30,0.7)';tlCtx.fillRect(0,55,120,35);
+      tlCtx.fillStyle=tlIdx%2===0?'#00ffaa':'#ffff44';
+      tlCtx.font='7px monospace';
+      const txt=tlTexts[tlIdx%tlTexts.length];
+      tlCtx.fillText(txt.substring(0,18),2,68);
+      if(txt.length>18)tlCtx.fillText(txt.substring(18),2,78);
+      tlPhase+=0.05;tlTimer++;
+      if(tlTimer>80){tlTimer=0;tlIdx++;}
+      requestAnimationFrame(drawTL);
+    }
+    drawTL();
+  </script>
+</body>
+</html>

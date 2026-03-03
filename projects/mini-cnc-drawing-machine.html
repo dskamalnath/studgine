@@ -1,0 +1,233 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini CNC Drawing Machine – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a mini CNC drawing machine with Arduino CNC shield, two stepper motors, and pen servo. Feed G-code from PC to draw logos, text, and shapes automatically." />
+  <meta name="keywords" content="mini CNC drawing machine Arduino, GRBL CNC shield stepper, pen plotter Arduino, G-code Arduino project, XY plotter DIY" />
+  <link rel="canonical" href="mini-cnc-drawing-machine.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080808 0%,#101010 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .cnc-canvas{width:240px;height:140px;background:#f5f0e8;border-radius:4px;position:relative;overflow:hidden;border:2px solid #888;}
+    .pen-dot{width:6px;height:6px;border-radius:50%;background:#1a1a80;position:absolute;transition:left 0.05s linear,top 0.05s linear;}
+    .cnc-path{position:absolute;top:0;left:0;width:100%;height:100%;}
+    .cnc-head{position:absolute;width:16px;height:28px;background:#555;border-radius:3px 3px 8px 8px;transition:left 0.05s,top 0.05s;transform:translate(-8px,-14px);}
+    .cnc-head::after{content:'';width:3px;height:8px;background:#333;border-radius:0 0 2px 2px;position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);}
+    .gcode-box{background:#0a0a0a;border:1px solid #2a2a2a;border-radius:4px;padding:8px 12px;font-family:monospace;font-size:11px;color:#60ff60;width:200px;max-height:60px;overflow:hidden;}
+    .gcode-line{opacity:0.3;transition:opacity 0.3s;}
+    .gcode-line.active{opacity:1;color:#fff;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                  <div class="cnc-head" id="cncHead"></div>
+                </div>
+                <div class="gcode-box" id="gcodeBox">
+                  <div class="gcode-line active" id="gc0">G21 ; mm mode</div>
+                  <div class="gcode-line" id="gc1">G0 X10 Y10</div>
+                  <div class="gcode-line" id="gc2">M3 S90 ; pen down</div>
+                  <div class="gcode-line" id="gc3">G1 X80 Y10 F800</div>
+                  <div class="gcode-line" id="gc4">G1 X80 Y80</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=mini+CNC+drawing+machine+Arduino+GRBL+pen+plotter" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>A mini CNC (Computer Numerical Control) drawing machine — also known as an XY plotter — is one of the most satisfying intermediate builds. The core principle is simple: two stepper motors drive an X and Y carriage independently; a servo lifts and lowers the pen. By controlling all three axes in coordinated moves, you can draw anything a CAD program can describe.</p>
+              <p>The firmware is GRBL, an open-source CNC controller that runs entirely on an Arduino Uno and interprets industry-standard G-code over serial. The hardware cost is low (scavenged DVD-drive rails are popular for the linear slides), and the software toolchain is well-established: Inkscape with the G-code extension converts vector art to G-code, and Universal G-Code Sender (UGS) streams it to the Arduino. The result is a fully functional pen plotter for under $35.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno + CNC Shield V3</span><span class="comp-note"> — GRBL firmware upload target; accepts 4× A4988 drivers</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">2× NEMA 17 (or DVD stepper) + A4988 Drivers</span><span class="comp-note"> — X and Y axis movement, 1/16 microstepping for smoothness</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">SG90 Micro Servo</span><span class="comp-note"> — Pen lift/lower via M3/M5 spindle commands mapped in GRBL</span></div></li>
+                <li><span class="comp-icon">🏗️</span><div><span class="comp-name">Linear Rail (DVD drive slides or MDF/acrylic)</span><span class="comp-note"> — Smooth XY travel; belt-drive via GT2 belt + 20T pulley or threaded rod</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">12 V 2 A Power Supply</span><span class="comp-note"> — Regulated 12 V for stepper motors; Arduino powered via USB from PC</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">PC with Universal G-Code Sender + Inkscape</span><span class="comp-note"> — G-code generation and streaming via COM port at 115200 baud</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Flash GRBL Firmware to Arduino</h4><p>Download grbl-master from GitHub, add to Arduino IDE as a library, then upload "grblUpload" sketch. No custom code needed! GRBL configures all step/direction pins automatically. After upload, open UGS at 115200 baud, type <code>$$</code> to view settings, and set <code>$100</code>/<code>$101</code> steps/mm based on your pulley/belt geometry (GT2 belt + 20T pulley → 80 steps/mm at 1/16 micro).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Map Pen Up/Down to Servo via Spindle</h4><p>GRBL's spindle enable pin (D12) drives the SG90 servo signal wire. In GRBL settings, enable spindle with <code>$30=1000</code>. In your G-code, <code>M3 S90</code> (pen down) sets D12 PWM to ≈ 1.5 ms pulse, and <code>M5</code> (pen up) sets 1 ms. Calibrate servo angles by adjusting S value so the pen just touches paper without pressing hard.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Generate G-code from Vector Art</h4><p>In Inkscape, draw or import an SVG. Use the "Gcodetools" or "J Tech Photonics" extension to export G-code. Alternatively, use the web-based SVG-to-G-code converter at jscut.org. Key parameters: feed rate (F800, mm/min), pen-up height, and coordinate origin. GRBL's work coordinate system lets you set origin with <code>G92 X0 Y0</code> before each job.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Stream and Monitor via UGS</h4><p>Open the .gcode file in Universal G-Code Sender. The visualizer shows the toolpath in 3D before sending. Click "Send" to stream line-by-line. UGS buffers 16 lines ahead (RX buffer technique) for smooth motion. Watch for "ALARM:1" (soft limit hit) — set machine limits with <code>$130</code>/<code>$131</code> to your actual travel in mm. Cancel mid-job with the Feed Hold button.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>; Example G-code — draw a 60×60mm square on A4 paper
+G21          ; Units in millimetres
+G90          ; Absolute coordinates
+G92 X0 Y0    ; Set origin at current position
+
+M5           ; Pen UP (servo retract)
+G0 X0 Y0     ; Rapid move to start corner (safe height)
+M3 S90       ; Pen DOWN (servo deploy)
+
+G1 X60 Y0  F800   ; Draw right edge  → (60, 0)
+G1 X60 Y60        ; Draw top edge    → (60, 60)
+G1 X0  Y60        ; Draw left edge   → (0,  60)
+G1 X0  Y0         ; Draw bottom edge → back to origin
+
+M5           ; Pen UP
+G0 X0 Y0     ; Return home
+M2           ; End program
+
+; GRBL key settings ($$ command):
+; $100 = 80.000 (X steps/mm, GT2+20T+1/16 micro)
+; $101 = 80.000 (Y steps/mm same)
+; $110 = 800.000 (X max feed rate mm/min)
+; $130 = 200.000 (X max travel mm)
+; $131 = 200.000 (Y max travel mm)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">✏️ Personalised Greeting Cards</span>
+                <span class="app-tag">🏷️ PCB Silkscreen Plotting</span>
+                <span class="app-tag">🗺️ Circuit Diagram Printer</span>
+                <span class="app-tag">🖊️ Signature Automation</span>
+                <span class="app-tag">🎨 Art Poster Generation</span>
+                <span class="app-tag">🔬 Upgrade to Laser Engraver</span>
+                <span class="app-tag">📐 Vinyl Cutter Variant</span>
+                <span class="app-tag">🤖 Full 3-Axis (Z-axis add)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $25 – $50</li>
+                <li><strong>Build Time:</strong> 8 – 15 hours</li>
+                <li><strong>Firmware:</strong> GRBL 1.1h</li>
+                <li><strong>Draw Area:</strong> 40–200 mm² (build-dependent)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>GRBL CNC firmware</li>
+                <li>G-code programming</li>
+                <li>Stepper motor + A4988 driver</li>
+                <li>Servo pen lift mechanism</li>
+                <li>Inkscape SVG to G-code</li>
+                <li>Mechanical XY rail design</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Software Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">GRBL 1.1h</span><span class="lib-desc"> — CNC firmware (flash once, no loop() code)</span></li>
+                <li><span class="lib-name">Universal G-Code Sender</span><span class="lib-desc"> — Java-based PC streaming app</span></li>
+                <li><span class="lib-name">Inkscape + Gcodetools</span><span class="lib-desc"> — Vector art → G-code exporter</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="3axis-mini-cnc-machine.html">3-Axis Mini CNC Machine (Adv)</a></li>
+                <li><a href="5dof-robotic-arm.html">5-DOF Robotic Arm (Adv)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    // Mini CNC animation — traces a star path
+    const svg = document.getElementById('cncSvg');
+    const head = document.getElementById('cncHead');
+    // Star path (scaled to 240x140 canvas)
+    const path = [
+      [20,120],[120,10],[220,120],[30,50],[210,50],[20,120]
+    ];
+    let seg = 0, t = 0;
+    let drawnPts = [];
+    const gcLines = document.querySelectorAll('.gcode-line');
+    const gcodes = ['G0 X0 Y0','M3 S90 ; pen down','G1 X80 Y0','G1 X120 Y50','G1 X80 Y100','M5 ; pen up'];
+
+    function lerp(a,b,t){return a+(b-a)*t;}
+    function tick(){
+      t += 0.018;
+      if(t > 1){t=0;seg=(seg+1)%path.length;}
+      let from = path[seg], to = path[(seg+1)%path.length];
+      let cx = lerp(from[0],to[0],t), cy = lerp(from[1],to[1],t);
+      head.style.left = cx+'px'; head.style.top = cy+'px';
+      drawnPts.push([cx,cy]);
+      if(drawnPts.length > 400) drawnPts.shift();
+      let polyStr = drawnPts.map(p=>p[0]+','+p[1]).join(' ');
+      svg.innerHTML = '<polyline points="'+polyStr+'" fill="none" stroke="#1a1a80" stroke-width="1.8" stroke-linejoin="round"/>';
+      // update gcode highlight
+      gcLines.forEach((el,i)=>el.classList.toggle('active',i===seg%gcLines.length));
+    }
+    setInterval(tick, 30);
+  </script>
+</body>
+</html>

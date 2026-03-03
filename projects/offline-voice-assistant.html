@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline Voice Assistant – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a fully offline voice assistant on Raspberry Pi using Vosk speech-to-text, Ollama local LLM, and pyttsx3 text-to-speech — no internet required." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050508 0%,#080a10 100%);border-radius:12px;padding:20px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .waveform{display:flex;align-items:center;gap:3px;height:50px;}
+    .wave-bar{width:5px;background:#4060c0;border-radius:3px;transition:height 0.15s;}
+    .pipeline-step{display:flex;flex-direction:column;align-items:center;gap:2px;font-family:monospace;font-size:7px;color:#4060a0;}
+    .pipeline-icon{font-size:1.4rem;}
+    .pipeline-arrow{font-size:1rem;color:#203060;}
+    .va-log{font-family:monospace;font-size:8px;color:#4060a0;display:flex;flex-direction:column;gap:3px;max-width:130px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Offline Voice Assistant</h1>
+      <p>Build a fully private, offline voice assistant on Raspberry Pi 4 — Vosk STT transcribes speech, an Ollama-hosted local LLM generates responses, and pyttsx3 speaks them aloud. Zero cloud dependency.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Offline Voice Assistant</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <div class="waveform" id="waveform">
+                    <div class="wave-bar" style="height:10px;"></div><div class="wave-bar" style="height:20px;"></div><div class="wave-bar" style="height:35px;"></div><div class="wave-bar" style="height:25px;"></div><div class="wave-bar" style="height:15px;"></div><div class="wave-bar" style="height:30px;"></div><div class="wave-bar" style="height:10px;"></div>
+                  </div>
+                  <div style="font-family:monospace;font-size:7px;color:#304060;" id="vaState">LISTENING</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <div class="pipeline-step"><div class="pipeline-icon">🎤</div><div>VOSK STT</div></div>
+                  <div class="pipeline-arrow">→</div>
+                  <div class="pipeline-step"><div class="pipeline-icon">🧠</div><div>OLLAMA LLM</div></div>
+                  <div class="pipeline-arrow">→</div>
+                  <div class="pipeline-step"><div class="pipeline-icon">🔊</div><div>pyttsx3</div></div>
+                </div>
+                <div class="va-log">
+                  <div>YOU: <span id="vaQuery" style="color:#80c0ff;">"what time is it"</span></div>
+                  <div>LLM: <span id="vaReply" style="color:#80ff80;">Generating...</span></div>
+                  <div>LATENCY: <span id="vaLatency">2.4s</span></div>
+                  <div>MODEL: <span id="vaModel">phi3.5</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=offline+voice+assistant+raspberry+pi+vosk+ollama+local+LLM" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Commercial voice assistants (Alexa, Google Assistant, Siri) send your audio to cloud servers for processing. This project builds an equivalent that runs entirely on-device: Vosk small English model (~50MB) for offline speech recognition, Ollama running phi3.5 mini (2.8GB quantised) for natural language understanding and response generation, and pyttsx3 for local TTS.</p>
+              <p>Raspberry Pi 4 with 4–8GB RAM can run phi3.5 at ~2–5 tokens/second — slow but functional for a voice assistant responding to short questions. You'll learn audio streaming pipelines, wake word detection, and local LLM serving via Ollama's REST API.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (8GB RAM)</span><span class="comp-note"> — 8GB strongly recommended to fit phi3.5 (2.8GB) + OS overhead; Pi 5 8GB gives better LLM token rate</span></div></li>
+                <li><span class="comp-icon">🎤</span><div><span class="comp-name">USB Microphone (RODE NT-USB Mini or similar)</span><span class="comp-note"> — USB mic avoids Pi's noisy 3.5mm ADC; ReSpeaker 2-Mic HAT excellent for directional sensitivity</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">USB Speaker or Bluetooth Speaker</span><span class="comp-note"> — pyttsx3 uses espeak-ng backend; USB speaker preferred; Bluetooth adds ~0.5s latency for A2DP connect</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">32GB+ MicroSD (or USB SSD)</span><span class="comp-note"> — Ollama models stored on microSD or USB SSD; USB SSD is 10× faster for model loading (2s vs 20s cold start)</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Wake Word Detection</h4><p>Use Porcupine (free tier) or openWakeWord for always-on wake word detection: <code>pip install pvporcupine openwakeword</code>. openWakeWord runs at ~5% CPU on Pi 4. Configure wake word "hey pi" or custom. On detection: play a tone (GPIO buzzer or audio beep) and start recording. This avoids running Vosk STT continuously (too slow). Record until 1.5s of silence detected (using WebRTC VAD): <code>pip install webrtcvad</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Vosk Speech Recognition</h4><p>Download Vosk small model: <code>vosk-model-small-en-us-0.15</code> (~50MB). Load: <code>model = vosk.Model("vosk-model-small-en-us-0.15"); rec = vosk.KaldiRecognizer(model, 16000)</code>. Feed audio bytes (16kHz, mono, 16-bit PCM): <code>rec.AcceptWaveform(audio_bytes)</code>. Get result: <code>json.loads(rec.Result())["text"]</code>. Vosk transcribes at 4–8× real-time on Pi 4, so a 3-second utterance takes ~0.5s to transcribe. Fallback: use OpenAI Whisper tiny model for better accuracy (slower: ~3s transcription for 3s audio).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Local LLM via Ollama</h4><p>Install Ollama on Pi: <code>curl -fsSL https://ollama.com/install.sh | sh</code>. Pull model: <code>ollama pull phi3.5</code> (2.8GB). Ollama runs as background service on port 11434. Query from Python: <code>import requests; r = requests.post("http://localhost:11434/api/generate", json={"model":"phi3.5","prompt":query,"stream":False})</code>. Add system prompt: "You are a concise voice assistant. Reply in 1-2 sentences." Shorter responses = faster TTS playback. Alternatively use llama3.2:1b for faster responses (1B parameters, ~1GB).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Text-to-Speech + Built-in Commands</h4><p>pyttsx3 with espeak-ng: <code>engine = pyttsx3.init(); engine.setProperty('rate', 175); engine.say(response); engine.runAndWait()</code>. Set voice: <code>engine.setProperty('voice', 'english_rp')</code> (British accent). Add built-in commands that bypass LLM for speed: "what time is it" → <code>datetime.now().strftime("%H:%M")</code>. "turn on the light" → GPIO action. These respond in &lt;0.5s. LLM handles everything else. Log all interactions to JSON file for future fine-tuning.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import vosk, pyaudio, json, requests, pyttsx3, time
+
+model = vosk.Model("vosk-model-small-en-us-0.15")
+rec = vosk.KaldiRecognizer(model, 16000)
+engine = pyttsx3.init(); engine.setProperty('rate', 165)
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+SYSTEM = "You are a concise voice assistant. Reply in 1-2 sentences."
+
+def transcribe(audio_data):
+    rec.AcceptWaveform(audio_data)
+    return json.loads(rec.Result()).get("text", "")
+
+def ask_llm(query):
+    prompt = f"{SYSTEM}\n\nUser: {query}\nAssistant:"
+    r = requests.post(OLLAMA_URL, json={"model":"phi3.5","prompt":prompt,"stream":False})
+    return r.json().get("response","").strip()
+
+def speak(text):
+    engine.say(text); engine.runAndWait()
+
+# Main loop: (simplified - full version adds wake word + VAD)
+p = pyaudio.PyAudio()
+stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=8000)
+print("Listening... say something:")
+data = stream.read(32000, exception_on_overflow=False)  # 2 seconds of audio
+text = transcribe(data)
+if text:
+    print(f"You said: {text}")
+    speak("Let me think...")
+    reply = ask_llm(text)
+    print(f"Assistant: {reply}")
+    speak(reply)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🔦 GPIO Smart Home Control</span>
+                <span class="app-tag">🌡️ Sensor Query ("current temp?")</span>
+                <span class="app-tag">📅 Offline Calendar Integration</span>
+                <span class="app-tag">🏠 Multi-Room Speaker Mesh</span>
+                <span class="app-tag">🧮 Calculator / Unit Converter</span>
+                <span class="app-tag">🌐 Flask Web Chat Interface</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $55 – $100</li><li><strong>Build Time:</strong> 6 – 9 hours</li><li><strong>Platform:</strong> Raspberry Pi 4/5</li><li><strong>LLM:</strong> phi3.5 / llama3.2:1b</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Vosk offline speech recognition</li><li>Ollama local LLM REST API</li><li>Wake word detection pipeline</li><li>WebRTC VAD for silence detection</li><li>pyttsx3 + espeak-ng TTS</li><li>Audio streaming with PyAudio</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">vosk</span><span class="lib-desc"> — Offline Kaldi-based ASR engine</span></li><li><span class="lib-name">ollama (REST)</span><span class="lib-desc"> — Local LLM inference server</span></li><li><span class="lib-name">pyttsx3</span><span class="lib-desc"> — Offline text-to-speech</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const queries=["what time is it","tell me a joke","set timer 5 minutes","turn on the light","what is machine learning"];
+    const replies=["It's 3:42 PM.","Why don't scientists trust atoms? They make up everything!","Timer set for 5 minutes.","Light turned on.","Machine learning is training algorithms on data to make predictions."];
+    let t=0,bars=document.getElementById('waveform').children;
+    setInterval(()=>{
+      Array.from(bars).forEach(b=>{b.style.height=(8+Math.random()*36)+'px';});
+    },150);
+    setInterval(()=>{
+      t++;
+      const i=t%queries.length;
+      document.getElementById('vaState').textContent=['LISTENING','PROCESSING','SPEAKING'][t%3];
+      document.getElementById('vaQuery').textContent='"'+queries[i]+'"';
+      document.getElementById('vaReply').textContent=replies[i];
+      document.getElementById('vaLatency').textContent=(1.8+Math.random()*2.5).toFixed(1)+'s';
+    },2500);
+  </script>
+</body>
+</html>

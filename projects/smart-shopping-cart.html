@@ -1,0 +1,295 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Shopping Cart – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a smart shopping cart with RFID item scanning, running total on LCD, and load cell weight verification. Prevents checkout errors with Arduino and RC522 modules." />
+  <meta name="keywords" content="smart shopping cart Arduino RFID, RFID item scanner running total, load cell cart weight verification, IoT retail project Arduino, self checkout cart Arduino" />
+  <link rel="canonical" href="smart-shopping-cart.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050510 0%,#0a0a20 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .cart-win{background:#0a0a1a;border:2px solid #2a2a5a;border-radius:8px;width:240px;padding:0;overflow:hidden;}
+    .cart-bar{background:#1a1a3a;padding:6px 12px;font-family:monospace;font-size:11px;color:#80a0ff;display:flex;justify-content:space-between;}
+    .cart-items{padding:6px 12px;min-height:60px;font-family:monospace;font-size:10px;color:#a0c0ff;}
+    .cart-item{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #1e1e40;animation:slideIn 0.3s ease;}
+    @keyframes slideIn{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
+    .cart-total{background:#1a1a30;padding:6px 12px;display:flex;justify-content:space-between;font-family:monospace;font-size:12px;font-weight:700;color:#60ff80;}
+    .rfid-scan{width:40px;height:26px;border:2px solid #4a4aaa;border-radius:4px;background:#10102a;display:flex;align-items:center;justify-content:center;font-size:16px;transition:box-shadow 0.3s;}
+    .rfid-scan.active{box-shadow:0 0 12px 4px rgba(100,100,255,0.6);}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Smart Shopping Cart</h1>
+      <p>Scan items with an RC522 RFID reader as they're added to the cart. A running total updates on an LCD and a HX711 load cell verifies weight — flagging mismatches before checkout.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Smart Shopping Cart</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;align-items:flex-start;gap:16px;">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                    <div class="rfid-scan" id="rfidScan">📡</div>
+                    <div style="font-family:monospace;font-size:9px;color:#6060cc;" id="scanStatus">ready</div>
+                    <div style="font-family:monospace;font-size:9px;color:#4060a0;">⚖️ <span id="weightVal">0</span> g</div>
+                  </div>
+                  <div class="cart-win">
+                    <div class="cart-bar"><span>🛒 Smart Cart</span><span id="itemCount">0 items</span></div>
+                    <div class="cart-items" id="cartItems"><div style="color:#3a3a6a;text-align:center;padding-top:8px;">scan items to add...</div></div>
+                    <div class="cart-total"><span>TOTAL:</span><span id="cartTotal">₹0.00</span></div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+smart+shopping+cart+RFID+RC522+LCD" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Self-checkout kiosks in modern supermarkets use the same two principles this project teaches: RFID tag scanning for item identification and a weight scale as an anti-theft verification layer. By building a scaled version on Arduino, students learn how product databases, running totals, and sensor fusion work together in retail IoT systems.</p>
+              <p>Each RFID tag stores a UID that maps to a product name, price, and expected weight in an Arduino array (acting as a simple in-memory database). The HX711 continuously weighs the basket. When the Expected Weight (sum of all scanned items) doesn't match the Measured Weight within ±50 g, an alert sounds.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">RC522 RFID Reader Module</span><span class="comp-note"> — SPI-based 13.56 MHz reader; comes with 2 RFID cards + 2 key fobs</span></div></li>
+                <li><span class="comp-icon">⚖️</span><div><span class="comp-name">HX711 + 5 kg Load Cell</span><span class="comp-note"> — 24-bit ADC amplifier; measures cart weight for anti-theft verification</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Uno / Mega</span><span class="comp-note"> — Mega preferred for multiple I2C devices + more program storage for item DB</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">20×4 I2C LCD</span><span class="comp-note"> — Shows item name, unit price, cart total, and weight status on 4 rows</span></div></li>
+                <li><span class="comp-icon">🔔</span><div><span class="comp-name">Buzzer + Red/Green LEDs</span><span class="comp-note"> — Beep on scan; green for weight match, red for mismatch</span></div></li>
+                <li><span class="comp-icon">🛒</span><div><span class="comp-name">Miniature Cart / Basket + Platform</span><span class="comp-note"> — Load cell mounted under basket platform; RFID reader at entry point</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>RFID Tag Scanning &amp; Product Lookup</h4><p>Continuously poll MFRC522 with <code>mfrc522.PICC_IsNewCardPresent()</code>. On new card detected: read UID bytes and format as hex string. Search the product array for matching UID. If found: add item to cart, update running total, play short beep. If not found: display "Unknown Item" — can be used to verify the card isn't a fraudulent tag. Debounce: prevent same UID registering twice in 3 s (same item held too long at reader).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>HX711 Load Cell Weight Reading</h4><p>After each scan, wait 1 s for item to settle in basket, then read load cell: <code>scale.get_units(10)</code> averages 10 readings to reduce noise. Compare measured weight against expected weight (sum of registered item weights). Tolerance band ±50 g accounts for scale drift and sensor noise. Display status: "WEIGHT OK ✓" or "WEIGHT MISMATCH! Check cart". Recalibrate with known reference weight on startup: <code>scale.set_scale(calibration_factor);</code></p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Remove Item Feature</h4><p>A dedicated "Remove Mode" button toggles into removal state. Next RFID scan in remove mode subtracts item from cart and expected weight. LCD shows "REMOVED:" + item name. Subtotal updates immediately. This mirrors supermarket-style "remove from bag" functionality. Prevents negating items that were never added (check: don't allow removal if item not in cart list).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Checkout &amp; Receipt Print</h4><p>Checkout button finalises the session. Print receipt to serial monitor (line-by-line: item, qty, subtotal) — can redirect to a Bluetooth thermal printer for real receipts. Display final total on LCD for 10 s. Reset all cart arrays and weight expected value. Optionally send total to Blynk dashboard for remote checkout verification. Log transaction to SD card for store records.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;MFRC522.h&gt;
+#include &lt;HX711.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+MFRC522 rfid(10, 9);
+HX711 scale;
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+struct Product { char uid[12]; char name[20]; float price; int weight_g; };
+Product catalog[] = {
+  {"A1B2C3D4", "Apple 500g",   45.00, 500},
+  {"E5F6A7B8", "Milk Packet",  60.00, 485},
+  {"C9D0E1F2", "Bread Loaf",   35.00, 400},
+};
+
+float cartTotal = 0; int expectedWeight = 0;
+
+void loop() {
+  if(!rfid.PICC_IsNewCardPresent()) return;
+  rfid.PICC_ReadCardSerial();
+  String uid = "";
+  for(byte i=0;i&lt;rfid.uid.size;i++) uid += String(rfid.uid.uidByte[i], HEX);
+  uid.toUpperCase();
+
+  for(auto&amp; p : catalog) {
+    if(uid == String(p.uid)) {
+      cartTotal += p.price;
+      expectedWeight += p.weight_g;
+      lcd.print(p.name); lcd.print(" "); lcd.print(p.price);
+      float measured = scale.get_units(10);
+      bool ok = abs(measured - expectedWeight) &lt; 50;
+      lcd.print(ok ? " OK" : " MISMATCH!");
+      break;
+    }
+  }
+  rfid.PICC_HaltA();
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🛒 Self-Checkout Prototype</span>
+                <span class="app-tag">🏪 Campus Mini Mart</span>
+                <span class="app-tag">📦 Warehouse Item Picking</span>
+                <span class="app-tag">🔐 Anti-Theft Detection</span>
+                <span class="app-tag">🖨️ Bluetooth Receipt Print</span>
+                <span class="app-tag">💳 RFID Payment Demo</span>
+                <span class="app-tag">📊 Transaction Analytics</span>
+                <span class="app-tag">📲 Blynk Remote Checkout</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $20 – $40</li>
+                <li><strong>Build Time:</strong> 5 – 7 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Mega</li>
+                <li><strong>Weight Accuracy:</strong> ±5 g (HX711)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>RC522 RFID UID reading</li>
+                <li>HX711 load cell calibration</li>
+                <li>Array-based product database</li>
+                <li>Multi-sensor data fusion</li>
+                <li>Cart state management</li>
+                <li>Checkout receipt generation</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">MFRC522</span><span class="lib-desc"> — Miguel Balboa; RC522 RFID reader</span></li>
+                <li><span class="lib-name">HX711</span><span class="lib-desc"> — Bogde; 24-bit load cell ADC driver</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — I2C LCD display driver</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="smart-locker-rfid.html">Smart Locker with RFID</a></li>
+                <li><a href="digital-weight-scale.html">Digital Weight Scale</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const products = [
+      {name:'Apple 500g', price:45.00, weight:500},
+      {name:'Milk Packet', price:60.00, weight:485},
+      {name:'Bread Loaf', price:35.00, weight:400},
+      {name:'Rice 1kg', price:80.00, weight:1000},
+      {name:'Butter 200g', price:55.00, weight:200},
+    ];
+    let cartTotal = 0, totalWeight = 0, items = [], itemCount = 0;
+
+    function scanItem() {
+      const p = products[Math.floor(Math.random() * products.length)];
+      const rfid = document.getElementById('rfidScan');
+      rfid.classList.add('active');
+      document.getElementById('scanStatus').textContent = 'scanning...';
+      setTimeout(() => {
+        rfid.classList.remove('active');
+        items.push(p);
+        cartTotal += p.price;
+        totalWeight += p.weight;
+        itemCount++;
+        document.getElementById('itemCount').textContent = itemCount + ' items';
+        document.getElementById('cartTotal').textContent = '₹' + cartTotal.toFixed(2);
+        document.getElementById('weightVal').textContent = totalWeight;
+        document.getElementById('scanStatus').textContent = 'added ✓';
+        const ci = document.getElementById('cartItems');
+        if(ci.children.length === 1 && ci.children[0].style.color) ci.innerHTML = '';
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        row.innerHTML = '<span>' + p.name + '</span><span>₹' + p.price.toFixed(2) + '</span>';
+        ci.appendChild(row);
+        if(ci.children.length > 4) ci.removeChild(ci.children[0]);
+        setTimeout(() => { document.getElementById('scanStatus').textContent = 'ready'; }, 1200);
+      }, 700);
+    }
+    setInterval(scanItem, 3000);
+  </script>
+</body>
+</html>

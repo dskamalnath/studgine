@@ -1,0 +1,283 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Earthquake Detector – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an Arduino earthquake detector using MPU6050. Measure ground vibration, estimate seismic intensity, log events to SD card with DS3231 timestamps." />
+  <meta name="keywords" content="earthquake detector Arduino, MPU6050 seismograph, vibration alert Arduino, seismic detector ESP32, accelerometer earthquake project" />
+  <link rel="canonical" href="earthquake-detector.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a0600 0%,#1a0800 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .seismo-canvas{width:280px;height:80px;background:#050d00;border-radius:6px;overflow:hidden;position:relative;}
+    .seismo-svg{position:absolute;top:0;left:0;width:100%;height:100%;}
+    .richter-bar{width:240px;height:18px;border-radius:9px;background:linear-gradient(to right,#00c800 30%,#c8c800 60%,#ff8800 80%,#ff0000 100%);position:relative;}
+    .richter-needle{position:absolute;top:-4px;width:4px;height:26px;background:#fff;border-radius:2px;transition:left 0.5s ease;box-shadow:0 0 6px #fff;}
+    .quake-info{font-family:monospace;font-size:13px;display:flex;gap:16px;color:#a0c840;}
+    .led-row{display:flex;gap:8px;}
+    .led-dot{width:18px;height:18px;border-radius:50%;opacity:0.25;transition:opacity 0.3s,background 0.3s;}
+    .led-green{background:#00ff00;}
+    .led-yellow{background:#ffff00;}
+    .led-red{background:#ff3000;}
+    .led-dot.on{opacity:1;box-shadow:0 0 8px currentColor;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                </div>
+                <div class="richter-bar">
+                  <div class="richter-needle" id="richterNeedle" style="left:10%"></div>
+                </div>
+                <div class="quake-info">
+                  <span>Est. M: <b id="magLabel">0.8</b></span>
+                  <span>Peak g: <b id="peakLabel">0.04</b></span>
+                  <span>Status: <b id="statusLabel" style="color:#00ff00">QUIET</b></span>
+                </div>
+                <div class="led-row">
+                  <div class="led-dot led-green on" id="ledG"></div>
+                  <div class="led-dot led-yellow" id="ledY"></div>
+                  <div class="led-dot led-red" id="ledR"></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+earthquake+detector+MPU6050+seismograph" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>MEMS accelerometers like the MPU6050 can detect the subtle ground motion that precedes or accompanies an earthquake. While they are no substitute for professional seismic equipment, a well-calibrated Arduino-based detector can reliably detect local vibrations above ≈ M2 if mounted rigidly to a concrete floor or table and isolated from building-HVAC noise.</p>
+              <p>This project samples X/Y/Z acceleration at 100 Hz, maintains a baseline of "quiet" readings, and triggers when a sustained deviation exceeds tiered thresholds (minor &gt; 0.05g, moderate &gt; 0.15g, major &gt; 0.5g). A simplified magnitude approximation (M ≈ log10(a / 0.001)) maps peak ground acceleration to a Richter-like value for display. All events are logged to a microSD card with timestamps from a DS3231 RTC module.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Controller for sensor reading and alert logic</span></div></li>
+                <li><span class="comp-icon">📐</span><div><span class="comp-name">MPU6050 IMU (GY-521)</span><span class="comp-note"> — 6-axis IMU; I2C @ 0x68; ±2g / ±4g / ±8g / ±16g ranges</span></div></li>
+                <li><span class="comp-icon">🕐</span><div><span class="comp-name">DS3231 RTC Module</span><span class="comp-note"> — Accurate timekeeping for event log timestamps</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">MicroSD SPI Module + 4GB Card</span><span class="comp-note"> — Stores timestamped CSV event files</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">16×2 LCD with I2C backpack</span><span class="comp-note"> — Live intensity and alert display</span></div></li>
+                <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive Buzzer + 3× LEDs (G/Y/R)</span><span class="comp-note"> — Audible + visual alert tiers</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Calibrate Baseline</h4><p>On startup, sample 500 readings over 5 seconds and calculate average X/Y/Z acceleration values (ax0, ay0, az0). Subtract these offsets from every subsequent reading to get Δg values. This removes the constant 1g Earth gravity component and any sensor offset, leaving only dynamic motion.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Calculate Peak Ground Acceleration</h4><p>Compute vector magnitude: <code>a = sqrt(dAx² + dAy² + dAz²)</code>. Maintain a running max over a 0.5-second window. Convert raw ADC values using <code>g = raw * 2.0 / 32768.0</code> at ±2g scale (most sensitive). Filter with a running average over 5 samples to reject single-sample noise spikes from footsteps.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Tiered Alert System</h4><p>Minor (&gt;0.05g): green LED blinks, M ≈ 2-3. Moderate (&gt;0.15g): yellow LED + 2 buzzer beeps, M ≈ 3-4. Major (&gt;0.5g): red LED + continuous siren pattern, M ≈ 4+. Display alert level on LCD. All tiers also log to SD. Alerts auto-clear after 10 seconds of quiet below threshold.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>SD Card Event Logging</h4><p>On each trigger, write a CSV row: <code>timestamp, mag_estimate, peak_g_x, peak_g_y, peak_g_z, duration_ms, alert_level</code>. Log file is named <code>SEISLOG.CSV</code>. On boot, append to existing file so history persists. Use the SD library's append mode; flush after each write to prevent corruption on power loss.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;MPU6050_light.h&gt;
+#include &lt;SD.h&gt;
+#include &lt;RTClib.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+MPU6050 mpu(Wire);
+RTC_DS3231 rtc;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+const int CS_PIN = 10;
+const float MINOR = 0.05, MODERATE = 0.15, MAJOR = 0.5; // g thresholds
+
+void setup() {
+  Wire.begin(); mpu.begin(); mpu.calcOffsets(true, true);
+  rtc.begin(); lcd.init(); lcd.backlight();
+  SD.begin(CS_PIN);
+}
+
+void loop() {
+  mpu.update();
+  float ax = mpu.getAccX(), ay = mpu.getAccY(), az = mpu.getAccZ() - 1.0;
+  float pga = sqrt(ax*ax + ay*ay + az*az);  // Peak Ground Acceleration
+
+  // Richter-like: M ≈ log10(pga / 0.001)
+  float mag = (pga > 0.001) ? log10(pga / 0.001) : 0;
+
+  lcd.setCursor(0, 0);
+  lcd.print("PGA:" + String(pga, 3) + "g M:" + String(mag, 1) + "  ");
+
+  if (pga > MAJOR) {
+    tone(8, 880); digitalWrite(5, HIGH); // RED LED pin 5
+    lcd.setCursor(0, 1); lcd.print("!! MAJOR QUAKE !! ");
+    logEvent(pga, mag, "MAJOR");
+  } else if (pga > MODERATE) {
+    tone(8, 440); digitalWrite(4, HIGH); // YELLOW LED pin 4
+    lcd.setCursor(0, 1); lcd.print("MODERATE event    ");
+    logEvent(pga, mag, "MODERATE");
+  } else if (pga > MINOR) {
+    digitalWrite(3, HIGH); // GREEN LED pin 3
+    lcd.setCursor(0, 1); lcd.print("Minor vibration   ");
+  } else {
+    noTone(8); digitalWrite(3,LOW); digitalWrite(4,LOW); digitalWrite(5,LOW);
+    lcd.setCursor(0, 1); lcd.print("Quiet             ");
+  }
+  delay(10);
+}
+
+void logEvent(float pga, float mag, String level) {
+  DateTime now = rtc.now();
+  File f = SD.open("SEISLOG.CSV", FILE_WRITE);
+  if (f) {
+    f.println(String(now.unixtime()) + "," + String(pga,4) + "," + String(mag,2) + "," + level);
+    f.close();
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏫 School Science Project</span>
+                <span class="app-tag">🏗️ Construction Vibration Monitor</span>
+                <span class="app-tag">📡 IoT Remote Alert via GSM</span>
+                <span class="app-tag">🔔 Wild-Animal Trap Trigger</span>
+                <span class="app-tag">🚂 Railway Track Vibration Log</span>
+                <span class="app-tag">💡 P-Wave vs S-Wave Detection</span>
+                <span class="app-tag">📈 Long-Term Seismic Study</span>
+                <span class="app-tag">🌐 MQTT Cloud Dashboard</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $15 – $25</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno / Nano</li>
+                <li><strong>Sensitivity:</strong> ≈ M2–3 local events</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>MPU6050 I2C accelerometer</li>
+                <li>Vector magnitude calculation</li>
+                <li>Sensor calibration &amp; offset removal</li>
+                <li>SD card CSV logging</li>
+                <li>RTC timestamping</li>
+                <li>Tiered alert FSM design</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">MPU6050_light</span><span class="lib-desc"> — Lightweight DMP-free MPU6050 driver</span></li>
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — DS3231 real-time clock</span></li>
+                <li><span class="lib-name">SD (built-in)</span><span class="lib-desc"> — FAT file-system on microSD</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — LCD I2C display driver</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="realtime-data-logger-sd.html">Real-Time Data Logger (SD)</a></li>
+                <li><a href="iot-flood-sensor-alert.html">IoT Flood Sensor Alert</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    // Seismograph animation
+    const svg = document.getElementById('seismoSvg');
+    let pts = Array(56).fill(40);
+    let phase = 0;
+
+    const events = [
+      {mag:0.8,pga:0.04,label:'QUIET',color:'#00ff00',ledG:true,ledY:false,ledR:false,richterPos:'10%',amp:3},
+      {mag:1.5,pga:0.11,label:'MINOR',color:'#a0d040',ledG:true,ledY:false,ledR:false,richterPos:'22%',amp:10},
+      {mag:2.8,pga:0.28,label:'MODERATE',color:'#ffcc00',ledG:false,ledY:true,ledR:false,richterPos:'52%',amp:24},
+      {mag:3.6,pga:0.65,label:'MAJOR',color:'#ff3000',ledG:false,ledY:false,ledR:true,richterPos:'82%',amp:38},
+      {mag:1.1,pga:0.06,label:'MINOR',color:'#a0d040',ledG:true,ledY:false,ledR:false,richterPos:'18%',amp:7},
+    ];
+    let evIdx = 0, evTimer = 0;
+    let curEvent = events[0];
+
+    function tick() {
+      evTimer++;
+      if(evTimer > 40) { evTimer = 0; evIdx = (evIdx+1) % events.length; curEvent = events[evIdx]; }
+      let noise = (Math.random()-0.5) * 2;
+      let wave = evTimer < 30 ? Math.sin(phase * 0.8) * curEvent.amp + noise : noise;
+      phase++;
+      pts.push(40 + wave); pts.shift();
+      // draw polyline
+      let d = pts.map((y,x) => (x===0?'M':'L') + (x*5) + ' ' + y).join(' ');
+      svg.innerHTML = '<polyline points="' + pts.map((y,i)=>i*5+','+y).join(' ') + '" fill="none" stroke="#7dff40" stroke-width="1.5"/>';
+
+      document.getElementById('magLabel').textContent = curEvent.mag.toFixed(1);
+      document.getElementById('peakLabel').textContent = curEvent.pga.toFixed(2);
+      document.getElementById('statusLabel').textContent = curEvent.label;
+      document.getElementById('statusLabel').style.color = curEvent.color;
+      document.getElementById('richterNeedle').style.left = curEvent.richterPos;
+
+      document.getElementById('ledG').classList.toggle('on', curEvent.ledG);
+      document.getElementById('ledY').classList.toggle('on', curEvent.ledY);
+      document.getElementById('ledR').classList.toggle('on', curEvent.ledR);
+    }
+    setInterval(tick, 80);
+  </script>
+</body>
+</html>

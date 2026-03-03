@@ -1,0 +1,227 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neural Style Transfer on Pi – Advanced Project | Studgine</title>
+  <meta name="description" content="Run TFLite Magenta arbitrary neural style transfer at 2-3fps on Raspberry Pi 4 using Pi Camera live input — transform any scene into a painting in real-time." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#030002;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .nst-info{font-family:monospace;font-size:9px;color:#ffaa44;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Neural Style Transfer on Pi</h1>
+      <p>Transform your Pi Camera live feed into Monet, Van Gogh, or Picasso in real-time using TFLite Magenta arbitrary style transfer. The two-model pipeline (style_predict 256×256 + style_transform 384×384) runs entirely on a Raspberry Pi 4 in INT8-quantised format at 2–3 fps. No GPU, no cloud — pure ARM Cortex-A72 inference.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Neural Style Transfer on Pi</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="nstCanvas" width="140" height="100"></canvas>
+                <div class="nst-info">
+                  <div>MODEL: Magenta NST</div>
+                  <div>RUNTIME: TFLite INT8</div>
+                  <div style="margin-top:3px;">PIPELINE</div>
+                  <div>predict: 256×256</div>
+                  <div>transform: 384×384</div>
+                  <div style="margin-top:3px;">PERF</div>
+                  <div>FPS: <span id="nstFPS">2.3</span></div>
+                  <div>PREDICT: 180ms</div>
+                  <div>TRANSFORM: 240ms</div>
+                  <div style="margin-top:3px;">STYLE</div>
+                  <div id="nstStyle" style="color:#ffaa44;">Starry Night</div>
+                  <div>STRENGTH: 1.0</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=TFLite+Magenta+style+transfer+Raspberry+Pi+real+time" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Neural Style Transfer (NST) was first published in Gatys et al. (2015) — it could apply any painting's style to any photo, but required thousands of optimisation iterations (30+ minutes). Google Magenta's fast arbitrary style transfer (2017) solved this: two small feed-forward networks replace optimisation. The "predict" network encodes the style image into a 100-dimensional style bottleneck. The "transform" network takes the content image + style bottleneck and generates the stylised output in a single forward pass — 400ms total on Pi 4 with INT8 quantisation. Mix multiple styles by interpolating bottlenecks.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Raspberry Pi Camera v2 or HQ</span><span class="comp-note"> — Pi Camera → picamera2 → 384×384 crop for content input; 30fps capture but only 2–3fps processed (every 10th frame); preview at full speed</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">Raspberry Pi 4 (4GB or 8GB)</span><span class="comp-note"> — 4×Cortex-A72 @ 1.8GHz; INT8 quantised TFLite runs in ~420ms per frame; 4GB sufficient for both models loaded simultaneously</span></div></li>
+                <li><span class="comp-icon">📺</span><div><span class="comp-name">HDMI Monitor (or VNC Viewer)</span><span class="comp-note"> — Display live before/after side-by-side in Pygame fullscreen; HDMI framebuffer direct; or stream to Chromebook/laptop via VNC</span></div></li>
+                <li><span class="comp-icon">🎨</span><div><span class="comp-name">Style Image Collection (JPG files)</span><span class="comp-note"> — 20+ painting images at 256×256; a button cycles through styles at runtime; pre-compute style bottlenecks at startup for instant style switching</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Download and Load TFLite Models</h4><p>Two models from Google Magenta: <code>style_predict_quantized_256.tflite</code> (1.3MB) and <code>style_transform_quantized_384.tflite</code> (4.8MB). Download: <code>wget https://tfhub.dev/google/lite-model/magenta/arbitrary-image-stylization-v1-256/int8/predict/1?lite-format=tflite -O predict.tflite; wget ... -O transform.tflite</code>. Load: <code>import tflite_runtime.interpreter as tflite; pred_interp = tflite.Interpreter("predict.tflite"); pred_interp.allocate_tensors()</code>. Get input/output tensor details to know exact shapes and types.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Pre-compute Style Bottlenecks</h4><p>At startup, run each style image through the predict model once. Input: <code>(1, 256, 256, 3)</code> float32. <code>style_img = cv2.resize(cv2.imread("starry_night.jpg"), (256,256)) / 255.0; style_input = style_img[np.newaxis].astype(np.float32); pred_interp.set_tensor(pred_input_idx, style_input); pred_interp.invoke(); bottleneck = pred_interp.get_tensor(pred_output_idx).copy()</code>. Shape: <code>(1, 1, 1, 100)</code>. Cache all style bottlenecks in a dict — instant style switching without re-running predict model.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Real-time Style Transform</h4><p>Capture from Pi Camera: <code>from picamera2 import Picamera2; cam = Picamera2(); cam.start()</code>. Per frame: <code>frame = cam.capture_array(); content = cv2.resize(frame, (384,384)) / 255.0; content_in = content[np.newaxis].astype(np.float32)</code>. Set both inputs to transform model: <code>xfm_interp.set_tensor(content_idx, content_in); xfm_interp.set_tensor(style_idx, current_bottleneck); xfm_interp.invoke(); styled = xfm_interp.get_tensor(output_idx)[0]</code>. Convert back: <code>out_img = (styled * 255).clip(0,255).astype(np.uint8)</code>. Display via Pygame surface.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Style Blending + UI Controls</h4><p>Mix styles by interpolating bottlenecks: <code>blended = alpha * bneck_monet + (1-alpha) * bneck_picasso</code>. Use alpha slider on touchscreen or GPIO buttons. Strength control: scale bottleneck intensity. Side-by-side display: <code>combined = np.hstack([original_resized, styled_display]); surface = pygame.surfarray.make_surface(combined.transpose(1,0,2))</code>. GPIO button mapping: up/down = cycle styles; left/right = adjust strength. Save to file: <code>cv2.imwrite(f"styled_{timestamp}.jpg", out_img)</code>. FPS counter: use time.perf_counter() before/after invoke().</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import cv2, numpy as np, time
+import tflite_runtime.interpreter as tflite
+from picamera2 import Picamera2
+
+# Load models
+pred = tflite.Interpreter("predict_quantized_256.tflite"); pred.allocate_tensors()
+xfm  = tflite.Interpreter("transform_quantized_384.tflite"); xfm.allocate_tensors()
+p_in  = pred.get_input_details()[0]['index']
+p_out = pred.get_output_details()[0]['index']
+c_in  = xfm.get_input_details()[0]['index']   # content
+s_in  = xfm.get_input_details()[1]['index']   # style bottleneck
+x_out = xfm.get_output_details()[0]['index']
+
+def get_bottleneck(style_path):
+    img = cv2.resize(cv2.imread(style_path), (256,256)) / 255.0
+    pred.set_tensor(p_in, img[np.newaxis].astype(np.float32))
+    pred.invoke()
+    return pred.get_tensor(p_out).copy()
+
+style_bn = get_bottleneck("starry_night.jpg")  # pre-compute
+
+cam = Picamera2(); cam.start()
+while True:
+    t0 = time.perf_counter()
+    frame = cam.capture_array()
+    content = cv2.resize(frame[:,:,:3], (384,384))[np.newaxis] / 255.0
+    xfm.set_tensor(c_in, content.astype(np.float32))
+    xfm.set_tensor(s_in, style_bn)
+    xfm.invoke()
+    out = (xfm.get_tensor(x_out)[0] * 255).clip(0,255).astype(np.uint8)
+    fps = 1 / (time.perf_counter() - t0)
+    print(f"FPS: {fps:.1f}")
+    cv2.imshow("NST", cv2.cvtColor(out, cv2.COLOR_RGB2BGR))</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🎨 Real-time Style Blending Slider</span>
+                <span class="app-tag">🖼️ Photo Booth Style-Print Mode</span>
+                <span class="app-tag">⚡ Coral Edge TPU Acceleration</span>
+                <span class="app-tag">🌐 Flask Web Streaming Server</span>
+                <span class="app-tag">🎥 Stylised Video Export</span>
+                <span class="app-tag">🖌️ Custom Style Training</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $45 – $80</li><li><strong>Build Time:</strong> 6 – 12 hours</li><li><strong>Speed:</strong> 2–3 fps on Pi 4</li><li><strong>Style Images:</strong> Any painting JPG</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>TFLite two-model inference</li><li>INT8 image tensor handling</li><li>Style bottleneck pre-computation</li><li>Multi-model interpolation</li><li>Pi Camera + Pygame display</li><li>Inference performance profiling</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">tflite_runtime</span><span class="lib-desc"> — Lightweight TFLite inference</span></li><li><span class="lib-name">picamera2</span><span class="lib-desc"> — Pi Camera live capture</span></li><li><span class="lib-name">Pygame</span><span class="lib-desc"> — Real-time display output</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const nstC=document.getElementById('nstCanvas');const nstCtx=nstC.getContext('2d');
+    let nstPhase=0;
+    const styleNames=['Starry Night','The Scream','Guernica','Water Lilies','Persistence'];
+    let nstSIdx=0,nstStyleTimer=0;
+    function drawNST(){
+      nstCtx.fillStyle='rgba(3,0,2,0.5)';nstCtx.fillRect(0,0,140,100);
+      // Left: content (blue - plain scene)
+      const grd=nstCtx.createLinearGradient(0,0,65,100);
+      grd.addColorStop(0,'rgba(30,80,150,0.7)');grd.addColorStop(1,'rgba(20,60,100,0.7)');
+      nstCtx.fillStyle=grd;nstCtx.fillRect(2,2,63,96);
+      // Content scene
+      nstCtx.fillStyle='rgba(100,180,100,0.8)';nstCtx.fillRect(5,70,57,28);
+      nstCtx.fillStyle='rgba(80,130,200,0.6)';nstCtx.fillRect(10,40,20,30);
+      nstCtx.fillStyle='rgba(255,220,100,0.9)';nstCtx.beginPath();nstCtx.arc(45,20,8,0,Math.PI*2);nstCtx.fill();
+      nstCtx.fillStyle='white';nstCtx.font='7px monospace';nstCtx.fillText('CONTENT',5,12);
+      // Arrow
+      nstCtx.fillStyle='#ffaa44';nstCtx.font='14px bold';nstCtx.fillText('→',67,55);
+      // Right: stylised (swirling brush-stroke appearance)
+      nstCtx.save();nstCtx.rect(75,2,63,96);nstCtx.clip();
+      const hues=[220,280,30,180,60];const h=hues[nstSIdx%hues.length];
+      for(let i=0;i<30;i++){
+        const x=75+Math.random()*63;const y=Math.random()*100;
+        nstCtx.strokeStyle=`hsla(${h+i*5},80%,60%,0.5)`;nstCtx.lineWidth=2;
+        nstCtx.beginPath();
+        nstCtx.moveTo(x,y);nstCtx.bezierCurveTo(x+10*Math.sin(nstPhase+i),y+5,x+15,y+3*Math.cos(nstPhase+i),x+20,y+8);
+        nstCtx.stroke();
+      }
+      nstCtx.restore();
+      nstCtx.fillStyle='white';nstCtx.font='7px monospace';nstCtx.fillText('STYLED',78,12);
+      nstPhase+=0.05;nstStyleTimer++;
+      if(nstStyleTimer>100){nstStyleTimer=0;nstSIdx=(nstSIdx+1)%styleNames.length;}
+      document.getElementById('nstStyle').textContent=styleNames[nstSIdx%styleNames.length];
+      document.getElementById('nstFPS').textContent=(2+0.5*Math.sin(nstPhase*0.1)).toFixed(1);
+      requestAnimationFrame(drawNST);
+    }
+    drawNST();
+  </script>
+</body>
+</html>

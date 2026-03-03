@@ -1,0 +1,293 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPS Vehicle Tracker – Studgine</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage {
+      background: linear-gradient(160deg, #0a1628 0%, #1a2a3a 100%);
+      border-radius: 12px;
+      height: 230px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Map grid */
+    .map-grid {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(255,255,255,0.04) 30px),
+                  repeating-linear-gradient(90deg, transparent, transparent 29px, rgba(255,255,255,0.04) 30px);
+    }
+    /* Roads */
+    .road-h, .road-v {
+      position: absolute;
+      background: rgba(255,255,255,0.08);
+    }
+    .road-h { height: 4px; left: 0; right: 0; }
+    .road-v { width: 4px; top: 0; bottom: 0; }
+    /* Vehicle dot */
+    .vehicle {
+      position: absolute;
+      width: 16px; height: 16px;
+      background: #FF6B35;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 0 12px #FF6B35;
+      transition: left 1.2s ease, top 1.2s ease;
+    }
+    .vehicle::after {
+      content: '🚗';
+      position: absolute;
+      top: -22px; left: -5px;
+      font-size: 1.2rem;
+    }
+    /* Ping ring */
+    .ping-ring {
+      position: absolute;
+      width: 16px; height: 16px;
+      border: 2px solid #FF6B35;
+      border-radius: 50%;
+      animation: ping 1.8s ease-out infinite;
+    }
+    @keyframes ping {
+      0%   { transform: scale(1); opacity: 0.9; }
+      100% { transform: scale(3.5); opacity: 0; }
+    }
+    /* Trail dots */
+    .trail-dot {
+      position: absolute;
+      width: 5px; height: 5px;
+      background: rgba(255,107,53,0.45);
+      border-radius: 50%;
+    }
+    /* Info panels */
+    .gps-info {
+      position: absolute;
+      top: 10px; left: 12px;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid #4a90d9;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.62rem;
+      color: #a0d8ff;
+      font-family: monospace;
+      line-height: 1.7;
+    }
+    .firebase-badge {
+      position: absolute;
+      bottom: 10px; right: 12px;
+      background: rgba(255,165,0,0.15);
+      border: 1px solid #ffa500;
+      border-radius: 20px;
+      padding: 3px 9px;
+      font-size: 0.6rem;
+      color: #ffc966;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="navbar container">
+      <a href="../index.html" class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="16" fill="#FF6B35"/>
+          <path d="M8 22 L16 10 L24 22" stroke="white" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+          <circle cx="16" cy="10" r="2" fill="white"/>
+        </svg>
+        <span>Studgine</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html" class="active">Projects</a></li>
+        <li><a href="../resources.html">Resources</a></li>
+        <li><a href="../about.html">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟡 Intermediate Project</p>
+      <h1>GPS Vehicle Tracker</h1>
+      <p>Log live GPS coordinates from a NEO-6M module on an ESP32, push them to Firebase, and view real-time vehicle location on Google Maps in any browser.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb">
+      <a href="../projects.html">← Back to Projects</a>
+      <span>/</span>
+      <span>GPS Vehicle Tracker</span>
+    </nav>
+
+    <div class="detail-layout">
+      <div class="detail-main">
+
+        <div class="anim-stage" id="gpsStage">
+          <div class="map-grid"></div>
+          <div class="road-h" style="top:60px"></div>
+          <div class="road-h" style="top:120px"></div>
+          <div class="road-h" style="top:175px"></div>
+          <div class="road-v" style="left:80px"></div>
+          <div class="road-v" style="left:200px"></div>
+          <div class="road-v" style="left:320px"></div>
+          <div class="ping-ring" id="pingRing" style="left:160px;top:110px"></div>
+          <div class="vehicle" id="vehicle" style="left:160px;top:110px"></div>
+          <div class="gps-info" id="gpsInfo">
+            LAT: 3.1412 N<br>
+            LNG: 101.6865 E<br>
+            SPD: 0 km/h<br>
+            SAT: 7
+          </div>
+          <div class="firebase-badge">🔥 Firebase RT DB</div>
+        </div>
+        <p class="anim-stage-label">Simulated GPS trail — dot moves along roads, coordinates update live</p>
+
+        <div class="video-links">
+          <strong>🎬 Video References:</strong>
+          <a href="https://www.youtube.com/results?search_query=ESP32+NEO-6M+GPS+tracker+Firebase" target="_blank" rel="noopener">ESP32 GPS Firebase Tutorial</a>
+          <a href="https://www.youtube.com/results?search_query=NEO-6M+GPS+module+Arduino+tutorial" target="_blank" rel="noopener">NEO-6M Basic Setup</a>
+        </div>
+
+        <h2>What You'll Build</h2>
+        <p>A real-time GPS vehicle tracker using an ESP32 and a NEO-6M GPS module. The ESP32 parses NMEA sentences from the GPS receiver over hardware serial, extracts latitude, longitude, speed, and satellite count, then pushes the data to a Firebase Realtime Database every 5 seconds over Wi-Fi. A companion web page fetches the latest coordinates from Firebase and drops a marker on an embedded Google Maps iframe — updating the vehicle's position automatically without any page refresh.</p>
+
+        <h2>Components Required</h2>
+        <ul class="component-list">
+          <li><span>ESP32 Dev Board</span><span>×1</span></li>
+          <li><span>NEO-6M GPS Module (with antenna)</span><span>×1</span></li>
+          <li><span>Active GPS Antenna (if module is passive)</span><span>×1</span></li>
+          <li><span>1000 µF Capacitor (GPS power filter)</span><span>×1</span></li>
+          <li><span>3.3 V LDO Regulator (optional)</span><span>×1</span></li>
+          <li><span>Breadboard &amp; Jumper Wires</span><span>—</span></li>
+          <li><span>USB Power Bank (mobile power)</span><span>×1</span></li>
+        </ul>
+
+        <h2>How It Works</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h3>Parse NMEA Sentences</h3>
+            <p>NEO-6M outputs NMEA 0183 data at 9600 baud. <code>TinyGPS++</code> parses <code>$GPRMC</code> and <code>$GPGGA</code> sentences to extract lat/lng, speed, and fix quality.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h3>Connect to Firebase</h3>
+            <p>Using <code>Firebase_ESP_Client</code>, the ESP32 authenticates with an API key and writes a JSON payload: <code>{"lat": 3.14, "lng": 101.68, "spd": 42.5}</code> to the <code>/vehicle/latest</code> node.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h3>Build the Map Page</h3>
+            <p>A hosted HTML page uses the Firebase JS SDK to listen on the <code>/vehicle/latest</code> node via <code>onValue()</code>. When data changes, it calls <code>map.setCenter()</code> and updates the marker in under 1 second.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <h3>Geofence Alerts</h3>
+            <p>Define a circular geofence with a centre lat/lng and radius in metres. Use the <code>TinyGPS++</code> <code>distanceBetween()</code> method. When breached, trigger a push notification via Firebase Cloud Messaging.</p>
+          </div>
+        </div>
+
+        <h2>Real-World Applications</h2>
+        <div class="applications-grid">
+          <div class="app-card">🚗<br>Fleet Management</div>
+          <div class="app-card">🚲<br>Bicycle Theft Alert</div>
+          <div class="app-card">👴<br>Elder Care Tracker</div>
+          <div class="app-card">🐕<br>Pet GPS Collar</div>
+          <div class="app-card">📦<br>Asset Tracking</div>
+          <div class="app-card">🗺️<br>Route Logging</div>
+        </div>
+      </div>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card quick-facts">
+          <h3>Quick Facts</h3>
+          <dl>
+            <dt>Difficulty</dt><dd>🟡 Intermediate</dd>
+            <dt>Build Time</dt><dd>4–6 hours</dd>
+            <dt>Budget</dt><dd>$20 – $40</dd>
+            <dt>MCU</dt><dd>ESP32</dd>
+            <dt>Protocol</dt><dd>UART / HTTPS</dd>
+          </dl>
+        </div>
+        <div class="sidebar-card">
+          <h3>Skills You'll Learn</h3>
+          <ul>
+            <li>NMEA sentence parsing</li>
+            <li>Firebase Realtime Database</li>
+            <li>Google Maps JS API</li>
+            <li>Geofence distance maths</li>
+            <li>IoT data pipelines</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Libraries Needed</h3>
+          <ul>
+            <li><strong>TinyGPS++</strong> – NMEA parser</li>
+            <li><strong>Firebase_ESP_Client</strong> – Firebase</li>
+            <li><strong>WiFi.h</strong> – built-in ESP32</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Try Next</h3>
+          <ul>
+            <li><a href="wifi-weather-station.html">Wi-Fi Weather Station</a></li>
+            <li><a href="smart-irrigation-system.html">Smart Irrigation System</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="btn btn-secondary back-btn">← All Projects</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer-bottom">
+    <div class="container">
+      <p>© 2025 Studgine. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script>
+    // Waypoints on roads
+    const waypoints = [
+      {x:80, y:55}, {x:200, y:55}, {x:200, y:115}, {x:320, y:115},
+      {x:320, y:170}, {x:200, y:170}, {x:80, y:170}, {x:80, y:115}, {x:80, y:55}
+    ];
+    let wpIdx = 0;
+    const vehicle = document.getElementById('vehicle');
+    const pingRing = document.getElementById('pingRing');
+    const gpsInfo  = document.getElementById('gpsInfo');
+    const trails   = [];
+    const stage    = document.getElementById('gpsStage');
+
+    function moveTo(pt) {
+      vehicle.style.left = pt.x + 'px';
+      vehicle.style.top  = pt.y + 'px';
+      pingRing.style.left = pt.x + 'px';
+      pingRing.style.top  = pt.y + 'px';
+      // trail
+      const d = document.createElement('div');
+      d.className = 'trail-dot';
+      d.style.left = (pt.x + 5) + 'px';
+      d.style.top  = (pt.y + 5) + 'px';
+      stage.appendChild(d);
+      trails.push(d);
+      if (trails.length > 14) trails.shift().remove();
+      // info update
+      const lat = (3.1412 + pt.x * 0.00002).toFixed(4);
+      const lng = (101.6865 + pt.y * 0.00003).toFixed(4);
+      const spd = Math.round(30 + Math.random() * 20);
+      gpsInfo.innerHTML = `LAT: ${lat} N<br>LNG: ${lng} E<br>SPD: ${spd} km/h<br>SAT: ${6+Math.floor(Math.random()*3)}`;
+    }
+
+    setInterval(() => {
+      wpIdx = (wpIdx + 1) % waypoints.length;
+      moveTo(waypoints[wpIdx]);
+    }, 1600);
+  </script>
+</body>
+</html>

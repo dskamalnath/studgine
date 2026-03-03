@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-Time Data Logger with SD Card – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a real-time data logger with Arduino, DS3231 RTC, and SD card module. Log temperature, humidity, and voltage to CSV files with timestamps for offline analysis." />
+  <meta name="keywords" content="Arduino data logger SD card, DS3231 RTC temperature logger, CSV data logger Arduino, microSD card Arduino logging, real-time sensor data logger" />
+  <link rel="canonical" href="realtime-data-logger-sd.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000a05 0%,#001510 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .terminal-win{background:#0a0a0a;border:1px solid #224422;border-radius:6px;width:280px;padding:0;}
+    .term-bar{background:#1a2a1a;border-radius:5px 5px 0 0;padding:5px 10px;display:flex;align-items:center;gap:6px;font-size:10px;color:#60a060;}
+    .term-body{padding:8px 10px;font-family:'Courier New',monospace;font-size:10px;color:#44cc44;height:110px;overflow:hidden;display:flex;flex-direction:column;gap:1px;}
+    .log-row{display:flex;gap:6px;opacity:0;animation:fadeRow 0.3s forwards;}
+    @keyframes fadeRow{to{opacity:1;}}
+    .sd-icon{width:28px;height:36px;background:#304e30;border-radius:3px 3px 0 0;border:2px solid #488048;display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;}
+    .write-pulse{width:6px;height:6px;border-radius:50%;background:#44ff44;position:absolute;top:-3px;right:-3px;animation:blink 0.5s infinite;}
+    @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Real-Time Data Logger (SD Card)</h1>
+      <p>Capture timestamped sensor readings — temperature, humidity, voltage, and more — to a microSD card as a CSV file using Arduino and a DS3231 RTC. Import directly into Excel or Python for lab analysis and reports.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Real-Time Data Logger (SD Card)</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;align-items:center;gap:18px;">
+                  <div style="text-align:center;">
+                    <div class="sd-icon">💾<div class="write-pulse" id="writePulse"></div></div>
+                    <div style="font-family:monospace;font-size:9px;color:#60a060;margin-top:4px;" id="sdStatus">writing...</div>
+                  </div>
+                  <div class="terminal-win">
+                    <div class="term-bar">📄 DATA_LOG.CSV — <span id="rowCount">0</span> rows</div>
+                    <div class="term-body" id="termBody">
+                      <div style="color:#606060;">timestamp,temp,hum,vbat</div>
+                    </div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+SD+card+data+logger+DS3231+RTC+CSV" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Field engineers and researchers often need hours or days of sensor data recorded offline — no internet, no laptop, just a battery-powered logger that quietly saves readings to a card. This project produces exactly that: a self-contained logging unit that writes a new row to a CSV file on microSD every 10 seconds, with an accurate timestamp from a battery-backed DS3231 real-time clock.</p>
+              <p>The CSV format is universally importable — just open in Excel, Google Sheets, or Python pandas. The DS3231's ± 2 ppm accuracy means timestamps drift less than one minute per year. Configurable logging intervals (1 s to 60 min) via a hardware dial make the same logger suitable for rapid electrical measurements or week-long climate studies.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Central controller; Nano preferred for compact builds</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">microSD Card Module (SPI)</span><span class="comp-note"> — Use Class 10 card 2–16 GB; FAT32 formatted</span></div></li>
+                <li><span class="comp-icon">⏰</span><div><span class="comp-name">DS3231 RTC Module</span><span class="comp-note"> — I2C real-time clock; battery-backed so time survives power cycles</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT22 (Temp + Humidity)</span><span class="comp-note"> — ±0.5°C and ±2.5% RH accuracy; single-wire data pin</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">INA219 Current/Voltage Module</span><span class="comp-note"> — I2C power monitoring; measures supply voltage + current draw</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 LCD or 0.96″ OLED</span><span class="comp-note"> — Live readout of last logged values + SD write status</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>SD Card Initialisation</h4><p>Use the Arduino SD library with hardware SPI (CS pin 10 on Uno, pin 4 on Ethernet shield). Call <code>SD.begin(CS_PIN)</code> at startup. Check <code>SD.exists("DATA.CSV")</code> — if the file is new, write the header row first: <code>file.println("datetime,temp_c,hum_pct,vbat_v,ibat_ma");</code>. Open the file in APPEND mode (<code>FILE_WRITE</code>) to avoid overwriting previous sessions.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Accurate Timestamping with DS3231</h4><p>Initialize DS3231 with RTClib: <code>RTC.begin(); DateTime now = RTC.now();</code>. Format timestamp as ISO 8601 string: <code>now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second()</code> with zero-padding via sprintf. If RTC has lost power (first run), set time from compile timestamp: <code>RTC.adjust(DateTime(F(__DATE__), F(__TIME__)));</code></p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Multi-Sensor Reading</h4><p>Read DHT22 with <code>dht.readTemperature()</code> and <code>dht.readHumidity()</code>. Validate with <code>isnan()</code> check — DHT22 needs 2 s between reads. Read INA219 with <code>ina219.getBusVoltage_V()</code> and <code>ina219.getCurrent_mA()</code>. Read any analog sensor (light, soil moisture, etc.) via ADC: <code>analogRead(A0) * (5.0 / 1023.0)</code>. All in a single data-collection function called every logging interval.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Write CSV Row and Safe Close</h4><p>Build the CSV line with comma-separators and limited decimal places (2 d.p. for temperature, 1 for voltage). Always close the file after each write: <code>file.close();</code>. This is critical — if power is lost mid-session, an unclosed FAT32 file will be 0 bytes and all data lost. Use a LED write-indicator that blinks during SD access. Increment a row counter and display on LCD so the user can see logging is active.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;SD.h&gt;
+#include &lt;RTClib.h&gt;
+#include &lt;DHT.h&gt;
+#include &lt;Adafruit_INA219.h&gt;
+
+RTC_DS3231 rtc; DHT dht(7, DHT22); Adafruit_INA219 ina;
+File logFile;
+const int CS_PIN = 10;
+unsigned long lastLog = 0, LOG_INTERVAL = 10000;
+
+void setup() {
+  SD.begin(CS_PIN); rtc.begin(); dht.begin(); ina.begin();
+  if(!SD.exists("DATA.CSV")) {
+    logFile = SD.open("DATA.CSV", FILE_WRITE);
+    logFile.println("datetime,temp_c,hum_pct,vbus_v,cur_ma");
+    logFile.close();
+  }
+}
+
+void loop() {
+  if(millis() - lastLog >= LOG_INTERVAL) {
+    DateTime now = rtc.now();
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
+    float v = ina.getBusVoltage_V();
+    float c = ina.getCurrent_mA();
+    char ts[20];
+    sprintf(ts, "%04d-%02d-%02d %02d:%02d:%02d",
+      now.year(), now.month(), now.day(),
+      now.hour(), now.minute(), now.second());
+    logFile = SD.open("DATA.CSV", FILE_WRITE);
+    logFile.print(ts); logFile.print(",");
+    logFile.print(t,2); logFile.print(",");
+    logFile.print(h,1); logFile.print(",");
+    logFile.print(v,3); logFile.print(",");
+    logFile.println(c,1);
+    logFile.close();      // always close!
+    lastLog = millis();
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌡️ Lab Climate Monitoring</span>
+                <span class="app-tag">☀️ Solar Panel Output Log</span>
+                <span class="app-tag">🏭 Machine Vibration Log</span>
+                <span class="app-tag">🌱 Soil Moisture Study</span>
+                <span class="app-tag">📈 Excel Chart Import</span>
+                <span class="app-tag">🐍 Python pandas Analysis</span>
+                <span class="app-tag">🔋 Battery Discharge Curve</span>
+                <span class="app-tag">📶 Multi-channel 8-sensor</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $24</li>
+                <li><strong>Build Time:</strong> 3 – 5 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Nano</li>
+                <li><strong>Log Rate:</strong> 1 s – 60 min (configurable)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>SPI microSD file I/O</li>
+                <li>FAT32 CSV file management</li>
+                <li>DS3231 RTC timestamping</li>
+                <li>Multi-sensor data fusion</li>
+                <li>Power-safe file closing</li>
+                <li>Data import to Python/Excel</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">SD</span><span class="lib-desc"> — Arduino built-in FAT32 file system</span></li>
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — Adafruit; DS3231 timestamp reading</span></li>
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> — Adafruit DHT22 temperature/humidity</span></li>
+                <li><span class="lib-name">Adafruit INA219</span><span class="lib-desc"> — Voltage + current measurement</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="earthquake-detector.html">Earthquake Detector (SD Log)</a></li>
+                <li><a href="cloud-heart-rate-logger.html">Cloud Heart Rate Logger</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let rowCount = 0;
+    const termBody = document.getElementById('termBody');
+    function fmtNum(n, dec) { return n.toFixed(dec); }
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    function addRow() {
+      const now = new Date();
+      const ts = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+      const t = (22 + Math.random()*5).toFixed(2);
+      const h = (55 + Math.random()*15).toFixed(1);
+      const v = (4.8 + Math.random()*0.3).toFixed(3);
+      const c = (80 + Math.random()*30).toFixed(1);
+      const row = document.createElement('div');
+      row.className = 'log-row';
+      row.style.color = '#44cc44';
+      row.textContent = ts + ',' + t + ',' + h + ',' + v + ',' + c;
+      termBody.appendChild(row);
+      if(termBody.children.length > 9) termBody.removeChild(termBody.children[1]);
+      rowCount++;
+      document.getElementById('rowCount').textContent = rowCount;
+      document.getElementById('sdStatus').textContent = 'row ' + rowCount + ' ✓';
+      setTimeout(() => { document.getElementById('sdStatus').textContent = 'idle...'; }, 600);
+    }
+    setInterval(addRow, 1800);
+  </script>
+</body>
+</html>

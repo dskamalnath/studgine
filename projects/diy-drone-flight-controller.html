@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIY Drone Flight Controller – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a DIY quadcopter flight controller using Raspberry Pi, MPU-6050 IMU, ESCs, and BLDC motors with cascaded PID attitude control." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050510 0%,#0a0a20 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .drone-frame{position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center;}
+    .drone-arm{position:absolute;width:80px;height:4px;background:#2040a0;border-radius:2px;}
+    .drone-arm.h{transform:rotate(0deg);}
+    .drone-arm.v{transform:rotate(90deg);}
+    .drone-motor{position:absolute;width:18px;height:18px;border-radius:50%;border:2px solid #4060ff;background:#0a0a30;transition:box-shadow 0.1s;}
+    .drone-body{width:20px;height:20px;background:#1030a0;border-radius:4px;border:2px solid #4080ff;position:absolute;}
+    .fc-data{font-family:monospace;font-size:9px;color:#6090ff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>DIY Drone Flight Controller</h1>
+      <p>Design and program a quadcopter flight controller from scratch using a Raspberry Pi, MPU-6050 6-DOF IMU, four ESCs, and BLDC motors. Implement cascaded PID attitude stabilisation with RC input decoding.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">DIY Drone Flight Controller</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="drone-frame" id="droneFrame">
+                  <div class="drone-arm h"></div>
+                  <div class="drone-arm v"></div>
+                  <div class="drone-body"></div>
+                  <div class="drone-motor" id="m1" style="top:4px;left:4px;"></div>
+                  <div class="drone-motor" id="m2" style="top:4px;right:4px;"></div>
+                  <div class="drone-motor" id="m3" style="bottom:4px;left:4px;"></div>
+                  <div class="drone-motor" id="m4" style="bottom:4px;right:4px;"></div>
+                </div>
+                <div class="fc-data">
+                  <div>ROLL:  <span id="fcRoll">0.0°</span></div>
+                  <div>PITCH: <span id="fcPitch">0.0°</span></div>
+                  <div>YAW:   <span id="fcYaw">0.0°</span></div>
+                  <div>M1: <span id="fcM1">1000</span>µs</div>
+                  <div>M2: <span id="fcM2">1000</span>µs</div>
+                  <div>M3: <span id="fcM3">1000</span>µs</div>
+                  <div>M4: <span id="fcM4">1000</span>µs</div>
+                  <div style="margin-top:4px;color:#40ff80;">STATUS: <span id="fcStatus">ARMED</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch real builds:</span><a href="https://www.youtube.com/results?search_query=DIY+drone+flight+controller+raspberry+pi+MPU6050+ESC+PID" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Building your own flight controller is one of the deepest embedded-systems challenges: you need accurate sensor fusion at 500+ Hz, precise PWM generation for ESCs (1000–2000 µs pulses), cascaded PID loops for roll/pitch/yaw, and RC receiver decoding — all running concurrently with hard real-time deadlines.</p>
+              <p>This project uses a Raspberry Pi running a bare-metal Python loop (not Linux desktop) for deterministic timing, with pigpio for hardware-timed PWM. You'll learn why commercial flight controllers like Betaflight use STM32 microcontrollers — and understand every design decision they made.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi Zero 2W or Pi 4</span><span class="comp-note"> — Pi Zero 2W is lighter; Pi 4 has more CPU headroom; both use pigpio for PWM; disable Wi-Fi during flight</span></div></li>
+                <li><span class="comp-icon">📐</span><div><span class="comp-name">MPU-6050 IMU</span><span class="comp-note"> — 500 Hz sample rate for flight; enable DLPF to reduce vibration noise; mount with vibration-dampening foam</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">4× 30A BLHeli ESCs</span><span class="comp-note"> — BLHeli_32 supports DSHOT protocol; accepts 1000–2000 µs PWM signal; calibrate all ESCs identically</span></div></li>
+                <li><span class="comp-icon">🌀</span><div><span class="comp-name">4× 2205 2300KV BLDC Motors</span><span class="comp-note"> — 5" props; CCW/CW mixed for yaw reaction torque cancellation; X-frame layout</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">3S LiPo 1500mAh 60C</span><span class="comp-note"> — 11.1V; 5V BEC for Raspberry Pi; LiPo alarm buzzer for low-voltage cutoff protection</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">FlySky FS-i6 RC Transmitter + Receiver</span><span class="comp-note"> — 6-channel PPM/PWM output; decode via GPIO interrupts; arming switch on channel 5</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Attitude Estimation — Madgwick Filter</h4><p>Use the Madgwick AHRS algorithm (more accurate than complementary filter for drones). Feed 6-DOF IMU data at 500 Hz. Output: roll, pitch, yaw as quaternion. Convert to Euler angles for PID. Mount IMU aligned with drone body frame. Calibrate gyro bias on startup: average 500 readings at rest. Reject readings during motor vibrations using a digital low-pass filter (DLPF cutoff = 42 Hz on MPU-6050 register 0x1A).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Cascaded PID — Roll/Pitch/Yaw</h4><p>Three independent PIDs, one per axis. <strong>Roll inner</strong>: error = desired_roll − measured_roll → output = roll_correction. <strong>Pitch inner</strong>: same for pitch. <strong>Yaw</strong>: rate control only (target = 0°/s for hover). Motor mixing (X-frame): M1 = throttle − roll + pitch + yaw; M2 = throttle + roll + pitch − yaw; M3 = throttle + roll − pitch + yaw; M4 = throttle − roll − pitch − yaw. Clamp all motor outputs to 1100–1900 µs range.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>ESC PWM via pigpio</h4><p>ESCs expect 50 Hz PWM with 1000 µs (minimum throttle) to 2000 µs (full throttle) pulse width. Use <code>pi.set_servo_pulsewidth(pin, usec)</code>. Arm procedure: send 1000 µs on all 4 channels for 2 seconds at startup. Safety: arm/disarm switch on RC channel 5; if RC signal lost (&gt;100 ms no pulse) → immediately reduce all motors to 1000 µs. Never run motors indoors without props removed during development.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>RC Input Decoding</h4><p>PPM receiver: single GPIO pin with all channels multiplexed. Decode using pigpio callback: measure time between rising edges. Channel separation pulse &gt;3 ms. Individual channel pulse 1000–2000 µs. Alternatively use SBUS serial (100 kbps inverted UART). Map channels: ch1=roll, ch2=pitch, ch3=throttle, ch4=yaw, ch5=arming. Low-pass filter RC inputs to prevent stick jitter from feeding PID.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import pigpio, smbus2, time, math
+
+pi = pigpio.pi()
+bus = smbus2.SMBus(1)
+MPU = 0x68
+bus.write_byte_data(MPU, 0x6B, 0)   # wake MPU
+bus.write_byte_data(MPU, 0x1A, 0x03) # DLPF 42Hz
+
+MOTORS = [12, 16, 20, 21]  # GPIO pins for 4 ESCs
+for p in MOTORS: pi.set_servo_pulsewidth(p, 1000)  # arm
+
+Kp_r, Ki_r, Kd_r = 1.2, 0.01, 0.05
+int_r = int_p = 0; prev_r = prev_p = 0
+
+def read_mpu():
+    d = bus.read_i2c_block_data(MPU, 0x3B, 14)
+    def s(hi,lo): v=(d[hi]<<8|d[lo]); return v-65536 if v>32767 else v
+    ax,ay,az = s(0,1)/16384.0,s(2,3)/16384.0,s(4,5)/16384.0
+    gx,gy = s(8,9)/131.0,s(10,11)/131.0
+    return ax,ay,az,gx,gy
+
+roll=pitch=0; dt=0.002
+while True:
+    t0=time.time()
+    ax,ay,az,gx,gy = read_mpu()
+    a_roll = math.degrees(math.atan2(ay,az))
+    a_pitch = math.degrees(math.atan2(-ax,az))
+    roll = 0.98*(roll+gx*dt)+0.02*a_roll
+    pitch = 0.98*(pitch+gy*dt)+0.02*a_pitch
+
+    # Roll PID
+    er = 0 - roll
+    int_r += er*dt
+    roll_out = Kp_r*er + Ki_r*int_r + Kd_r*(er-prev_r)/dt
+    prev_r = er
+
+    thr = 1300  # base throttle µs
+    m =[thr-roll_out, thr+roll_out, thr+roll_out, thr-roll_out]
+    for i,p in enumerate(MOTORS):
+        pi.set_servo_pulsewidth(p, max(1100,min(1900,int(m[i]))))
+    time.sleep(max(0,dt-(time.time()-t0)))</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🛰️ GPS Hold Mode</span>
+                <span class="app-tag">📡 Telemetry MAVLink</span>
+                <span class="app-tag">🔢 Madgwick AHRS</span>
+                <span class="app-tag">📷 FPV Camera Feed</span>
+                <span class="app-tag">📊 Blackbox Logging</span>
+                <span class="app-tag">🤖 Autonomous Waypoints</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $100</li><li><strong>Build Time:</strong> 10 – 15 hours</li><li><strong>Platform:</strong> Raspberry Pi Zero 2W</li><li><strong>Control loop:</strong> 500 Hz attitude</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Madgwick/complementary AHRS</li><li>Cascaded PID attitude control</li><li>ESC PWM calibration</li><li>Motor mixing algorithms</li><li>PPM RC receiver decoding</li><li>Real-time loop scheduling</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pigpio</span><span class="lib-desc"> — Hardware-timed PWM for ESCs</span></li><li><span class="lib-name">smbus2</span><span class="lib-desc"> — I2C MPU-6050 communication</span></li><li><span class="lib-name">ahrs (pypi)</span><span class="lib-desc"> — Madgwick filter implementation</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let t=0;
+    const motors=['m1','m2','m3','m4'],mids=['fcM1','fcM2','fcM3','fcM4'];
+    setInterval(()=>{
+      t+=0.08;
+      const roll=(5*Math.sin(t)).toFixed(1);
+      const pitch=(3*Math.cos(t*0.7)).toFixed(1);
+      document.getElementById('fcRoll').textContent=roll+'°';
+      document.getElementById('fcPitch').textContent=pitch+'°';
+      document.getElementById('fcYaw').textContent=(2*Math.sin(t*0.3)).toFixed(1)+'°';
+      document.getElementById('droneFrame').style.transform=`rotate(${roll}deg)`;
+      const base=1500; const r=Number(roll)*2; const p=Number(pitch)*2;
+      const ms=[base-r+p, base+r+p, base+r-p, base-r-p];
+      motors.forEach((id,i)=>{
+        const spd=Math.max(1000,Math.min(1900,Math.round(ms[i])));
+        const intensity=(spd-1000)/900;
+        document.getElementById(id).style.boxShadow=`0 0 ${6+intensity*10}px #4060ff`;
+        document.getElementById(mids[i]).textContent=spd;
+      });
+    },100);
+  </script>
+</body>
+</html>

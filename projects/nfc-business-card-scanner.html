@@ -1,0 +1,273 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NFC Business Card Scanner – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an NFC business card scanner with PN532 module, Arduino, and OLED. Tap NFC cards to display contact details and log records to microSD." />
+  <meta name="keywords" content="NFC business card scanner Arduino PN532, PN532 NFC OLED Arduino, NDEF NFC vCard reader, NFC tag Arduino project, PN532 microSD contact logger" />
+  <link rel="canonical" href="nfc-business-card-scanner.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000d18 0%,#001525 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;overflow:hidden;}
+    .nfc-reader{width:80px;height:100px;background:#0a1520;border:2px solid #0060a0;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;}
+    .nfc-ring{width:30px;height:30px;border:3px solid #0080ff;border-radius:50%;animation:nfcPulse 1.5s ease-in-out infinite;}
+    @keyframes nfcPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.3;}}
+    .nfc-card-anim{width:60px;height:38px;background:linear-gradient(135deg,#1a2a3a,#2a3a4a);border:1px solid #406080;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:8px;color:#60a0d0;text-align:center;line-height:1.3;animation:cardTap 3s ease-in-out infinite;}
+    @keyframes cardTap{0%,100%{transform:translateY(0);opacity:0.6;}50%{transform:translateY(-20px);opacity:1;}}
+    .oled-disp{width:100px;background:#000;border:2px solid #003300;border-radius:6px;padding:6px;font-family:monospace;font-size:9px;color:#00cc00;line-height:1.4;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>NFC Business Card Scanner</h1>
+      <p>Tap an NFC card on a PN532 reader to display contact info on an OLED and log the record to SD card or send via Bluetooth. Program new NFC tags with contact vCard data.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">NFC Business Card Scanner</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="nfc-reader">
+                  <div class="nfc-ring"></div>
+                  <div style="font-family:monospace;font-size:7px;color:#4080a0;text-align:center;">PN532<br>NFC</div>
+                </div>
+                <div class="nfc-card-anim">
+                  👤<br>NFC<br>CARD
+                </div>
+                <div class="oled-disp">
+                  <div id="oledLine1">Name: Alex K.</div>
+                  <div id="oledLine2">Tel: +1 555 0100</div>
+                  <div id="oledLine3">alex@mail.com</div>
+                  <div id="oledLine4" style="color:#008800;">Saved to SD ✓</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=PN532+NFC+Arduino+OLED+business+card+scanner" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Near Field Communication (NFC) enables contactless data exchange at 13.56 MHz within a few centimetres. The PN532 is the most versatile NFC controller available in the hobbyist market — it handles ISO14443A/B, NTAG21x, Mifare Classic, and FeliCa standards that cover the vast majority of business cards and smart labels.</p>
+              <p>NDEF (NFC Data Exchange Format) is the standard way data is stored on tags. A vCard record encodes name, phone, email, and company fields in a compact binary-text format. This project parses incoming NDEF messages, extracts contact fields, renders them on an OLED screen, and optionally programs blank NFC tags with new contact data — making it a complete two-way NFC workstation.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📶</span><div><span class="comp-name">PN532 NFC Module</span><span class="comp-note"> — HSU/I2C/SPI selectable; up to 10 cm range; 3.3 V logic</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Software or hardware SPI to PN532; 5 V tolerant</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">0.96″ SSD1306 OLED</span><span class="comp-note"> — 128×64 I2C display for contact details</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">MicroSD + SPI Module</span><span class="comp-note"> — Logs contact name, UID, and timestamp as CSV rows</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">HC-05 Bluetooth (optional)</span><span class="comp-note"> — Stream vCard as serial text to phone contacts app</span></div></li>
+                <li><span class="comp-icon">📇</span><div><span class="comp-name">NTAG213 NFC Stickers / Cards</span><span class="comp-note"> — 144 bytes NDEF capacity; ISO14443A compliant</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>PN532 SPI Initialisation</h4><p>Set the PN532 module's DIP switches to SPI mode. Initialise with <code>nfc.begin()</code> and confirm the firmware version with <code>nfc.getFirmwareVersion()</code>. Set passive activation retries to 10 and start polling with <code>nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &amp;uidLength)</code>. The tag UID is a 4–7 byte identifier unique per chip.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>NDEF Record Parsing</h4><p>Use the Adafruit PN532 NDEF library. Read all NDEF records from the tag memory. A vCard NDEF record carries type "text/vcard" with payload: <code>BEGIN:VCARD\nVERSION:3.0\nFN:Alex Kim\nTEL:+1-555\nEMAIL:a@b.com\nEND:VCARD</code>. Parse newline-delimited fields with <code>strtok()</code> to extract name/phone/email into separate char arrays.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>OLED Display &amp; SD Logging</h4><p>Render contact details on the SSD1306 in 4 rows: Name (row 0), Phone (row 1), Email (row 2 — truncate to 21 chars), company (row 3). Log to SD as <code>CONTACTS.CSV</code> with columns: <code>timestamp, uid_hex, name, phone, email</code>. Detect duplicate UIDs by searching the last 50 lines of the CSV before writing again (prevents re-tap duplication).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>NFC Tag Writing Mode</h4><p>Hold a push button to enter WRITE mode. Via USB serial, send a JSON string <code>{"name":"Alex","tel":"555","email":"a@b.com"}</code>. The firmware formats it as vCard, encodes an NDEF message, and writes pages starting at page 4 on an NTAG213 tag. Each page is 4 bytes; NTAG213 has pages 4–39 available (136 bytes), enough for a compact vCard with 130-char contacts.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Wire.h&gt;
+#include &lt;Adafruit_PN532.h&gt;
+#include &lt;Adafruit_SSD1306.h&gt;
+#include &lt;SD.h&gt;
+
+#define PN532_SS 10
+Adafruit_PN532 nfc(PN532_SS);
+Adafruit_SSD1306 display(128, 64, &Wire);
+
+void setup() {
+  nfc.begin();
+  nfc.SAMConfig();
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  SD.begin(9); // SD CS on pin 9
+}
+
+void loop() {
+  uint8_t uid[7]; uint8_t uidLen;
+  if(nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLen)) {
+    String uidHex = "";
+    for(int i=0;i&lt;uidLen;i++) { if(uid[i]&lt;16) uidHex+="0"; uidHex+=String(uid[i],HEX); }
+    // Read NDEF message pages from NTAG213 (pages 4-39)
+    uint8_t page[4]; char vcard[180] = "";
+    for(int pg=4; pg&lt;=39; pg++) {
+      if(!nfc.ntag2xx_ReadPage(pg, page)) break;
+      for(int b=0;b&lt;4;b++) if(page[b]) strncat(vcard,(char*)&page[b],1);
+    }
+    // Parse and display
+    display.clearDisplay();
+    display.setTextSize(1); display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0,0); display.print("UID: "); display.println(uidHex);
+    // Log to SD
+    File f = SD.open("contacts.csv", FILE_WRITE);
+    if(f) { f.print(millis()); f.print(","); f.print(uidHex); f.print(","); f.println(vcard); f.close(); }
+    display.display(); delay(3000);
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📇 Smart Business Cards</span>
+                <span class="app-tag">🔐 Office Access Log</span>
+                <span class="app-tag">📲 Bluetooth vCard to Phone</span>
+                <span class="app-tag">🏷️ Asset Tag Scanner</span>
+                <span class="app-tag">🎫 Event Check-In System</span>
+                <span class="app-tag">📦 Inventory NFC Labels</span>
+                <span class="app-tag">✍️ NFC Tag Programmer</span>
+                <span class="app-tag">👤 Visitor Management Log</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $14 – $24</li>
+                <li><strong>Build Time:</strong> 3 – 5 hours</li>
+                <li><strong>Platform:</strong> Arduino</li>
+                <li><strong>NFC Standard:</strong> ISO14443A / NDEF</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>NFC / RFID communication (PN532)</li>
+                <li>NDEF message parsing</li>
+                <li>vCard format encoding/decoding</li>
+                <li>SSD1306 OLED multi-line layout</li>
+                <li>SD card CSV logging</li>
+                <li>Duplicate-record detection</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Adafruit PN532</span><span class="lib-desc"> — Full PN532 NFC driver + NDEF support</span></li>
+                <li><span class="lib-name">Adafruit SSD1306</span><span class="lib-desc"> — OLED display driver</span></li>
+                <li><span class="lib-name">SD (built-in)</span><span class="lib-desc"> — MicroSD file I/O</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="smart-locker-rfid.html">Smart Locker with RFID</a></li>
+                <li><a href="fingerprint-door-lock.html">Fingerprint Door Lock</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const contacts = [
+      {n:"Alex Kim", t:"+1 555 0100", e:"alex@mail.com"},
+      {n:"Priya S.", t:"+44 7700 900", e:"priya@co.uk"},
+      {n:"Carlos M.", t:"+49 151 0002", e:"carlos@de.net"},
+    ];
+    let ci = 0;
+    setInterval(()=>{
+      const c = contacts[ci % contacts.length];
+      document.getElementById('oledLine1').textContent = "Name: " + c.n;
+      document.getElementById('oledLine2').textContent = "Tel: " + c.t;
+      document.getElementById('oledLine3').textContent = c.e;
+      document.getElementById('oledLine4').textContent = "Saved to SD ✓";
+      ci++;
+    }, 2500);
+  </script>
+</body>
+</html>

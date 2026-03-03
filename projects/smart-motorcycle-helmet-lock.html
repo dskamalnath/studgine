@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Motorcycle Helmet Lock – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a smart motorcycle ignition lock that uses an MQ-3 breath alcohol sensor to disable the ignition if BAC is too high, with RFID emergency override." />
+  <meta name="keywords" content="smart motorcycle helmet lock Arduino, MQ-3 breath alcohol ignition lock, RFID override motorcycle safety Arduino, DUI ignition interlock motorcycle, alcohol sensor ignition relay Arduino" />
+  <link rel="canonical" href="smart-motorcycle-helmet-lock.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080010 0%,#100015 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .helmet-icon{font-size:38px;filter:drop-shadow(0 0 8px rgba(180,0,255,0.3));}
+    .breath-bar{width:200px;}
+    .breath-bg{height:14px;background:#1a001a;border-radius:7px;border:1px solid #400040;overflow:hidden;}
+    .breath-fill{height:100%;border-radius:7px;transition:width 0.4s,background 0.4s;}
+    .lock-status{font-family:monospace;font-size:12px;font-weight:700;padding:6px 16px;border-radius:5px;border:2px solid;}
+    .rfid-row{font-family:monospace;font-size:9px;color:#602080;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Smart Motorcycle Helmet Lock</h1>
+      <p>An MQ-3 gas sensor tests rider breath alcohol level; if BAC exceeds the legal limit the ignition relay stays disabled. An RFID override allows emergency sober starts logged for accountability.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Smart Motorcycle Helmet Lock</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="helmet-icon">🏍️</div>
+                <div style="font-family:monospace;font-size:9px;color:#804080;">BREATH TEST RESULT:</div>
+                <div class="breath-bar">
+                  <div style="display:flex;justify-content:space-between;font-family:monospace;font-size:9px;margin-bottom:3px;"><span id="helmetBac">0.00%</span><span style="color:#602060;">limit: 0.05%</span></div>
+                  <div class="breath-bg"><div class="breath-fill" id="helmetFill" style="width:0%;background:#00aa00;"></div></div>
+                </div>
+                <div class="lock-status" id="helmetLock" style="color:#00ff00;border-color:#00aa00;background:#001200;">🔓 IGNITION: ENABLED</div>
+                <div class="rfid-row" id="rfidMsg">RFID override: not triggered</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=MQ-3+alcohol+sensor+motorcycle+ignition+interlock+RFID+Arduino" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Two-wheeler fatalities involving alcohol are disproportionately high globally — motorcyclist reaction time impairment begins well below the legal BAC limit. This project embeds an MQ-3 alcohol sensor inside the helmet chin-bar vent or handlebar fairing, where the rider's outward breath naturally flows. The sensor reading gates a relay in series with the ignition wire.</p>
+              <p>The RFID override adds a crucial real-world reliability feature: in emergencies (sensor malfunction, medical need to move the vehicle), a registered RFID card unlocks the ignition and logs the override with a timestamp to a microSD for post-incident accountability. This combines Batch-6's alcohol interlock knowledge with Batch-1's RFID skills into a more sophisticated dual-authentication safety system.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🍷</span><div><span class="comp-name">MQ-3 Alcohol Sensor</span><span class="comp-note"> — Mounted in helmet breath channel or near handlebar; 60s warm-up required; 5 V heater</span></div></li>
+                <li><span class="comp-icon">🔑</span><div><span class="comp-name">RC522 RFID Module + Cards</span><span class="comp-note"> — SPI interface; reads registered card UID for emergency ignition override</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Nano</span><span class="comp-note"> — Compact size for handlebar mounting; ADC for MQ-3; SPI for RFID; EEPROM for calibration</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">12V Relay Module</span><span class="comp-note"> — Motorcycle battery is 12V; relay normally open; interrupts ignition coil signal wire</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">MicroSD SPI Module</span><span class="comp-note"> — Logs every override event: timestamp, duration, RFID UID — accountability trail</span></div></li>
+                <li><span class="comp-icon">📺</span><div><span class="comp-name">OLED 0.96″ or 7-Seg Display</span><span class="comp-note"> — Shows BAC level and lock state on handlebar dashboard</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Helmet Sensor Integration</h4><p>The MQ-3 sensor is mounted in a 3D-printed bracket clipped to the helmet chin guard vent — close to the rider's mouth exhalation path. A small 5 V USB buck converter (from the motorcycle's 12V accessory line) powers the sensor and Arduino. During warm-up (60 s after key-on), the relay remains open and the OLED displays "WARMING UP... Xs." The rider cannot start the engine during this phase — this is intentional and prevents ignition before the sensor is calibrated to operating temperature.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Breath Test Sequence</h4><p>After warm-up completes, the OLED prompts "BLOW 3 SECONDS." The rider blows into the vent — the firmware captures the peak ADC reading over a 3-second window. Three consecutive peak readings are averaged and converted to BAC% using the MQ-3 calibration curve (see alcohol-interlocked-ignition project for formula). If peak BAC &lt; 0.05%: relay closes, green LED, OLED shows "START PERMITTED — 10 MIN." If &gt;= 0.05%: relay stays open, red LED, buzzer 5 beeps, 20-minute lockout, OLED shows "LOCKED — BAC: X.XXX%".</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>RFID Emergency Override</h4><p>A registered RFID card (UID stored in EEPROM) can bypass the lock. Place the card near the RC522 at any time (including during lockout). Firmware reads the 4-byte UID and compares to the stored override UID. Match: relay closes for 30 minutes; OLED shows "OVERRIDE ACTIVE — LOGGED." Mismatch: buzzer double-beep, "INVALID CARD." Every override event is written to microSD: <code>override_log.csv</code> row with <code>millis(), uid_hex, bac_at_override</code>. This provides the accountability trail that makes the override morally defensible — it can't be used silently.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Auto-Relock While Riding</h4><p>Once permitted, the relay remains closed. The system reassesses every 30 minutes using a timer interrupt — if the engine is still running (detected via vibration sensor SW-420 or via the relay current sense), it samples the MQ-3 again in the background (passive sampling, no blow required). If a significantly elevated BAC is detected while riding (e.g., from ambient fumes incorrectly triggering the sensor), an audible warning is issued but the ignition is NOT cut mid-ride for safety — only locked on the next start attempt. This prevents sudden engine cut at highway speed.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;SPI.h&gt;
+#include &lt;MFRC522.h&gt;
+#include &lt;EEPROM.h&gt;
+#include &lt;SD.h&gt;
+
+const int MQ3 = A0, RELAY = 7, BUZZ = 6;
+const int RFID_SS = 10, RFID_RST = 9;
+MFRC522 rfid(RFID_SS, RFID_RST);
+
+byte storedUID[4]; float R0;
+enum State { WARMUP, TESTING, SAFE, LOCKED } state = WARMUP;
+unsigned long stateStart;
+
+bool checkRFID() {
+  if(!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) return false;
+  for(int i=0;i&lt;4;i++) if(rfid.uid.uidByte[i]!=storedUID[i]) return false;
+  return true;
+}
+
+float readBACPeak() {
+  long mx=0; unsigned long t=millis();
+  while(millis()-t&lt;3000) { long v=analogRead(MQ3); if(v>mx) mx=v; delay(10); }
+  float Rs=(5.0-(mx/1023.0*5.0))/(mx/1023.0*5.0)*10.0;
+  return 0.3934*pow(Rs/R0,-1.504)/2100.0;
+}
+
+void setup() {
+  SPI.begin(); rfid.PCD_Init();
+  pinMode(RELAY,OUTPUT); pinMode(BUZZ,OUTPUT);
+  EEPROM.get(0,R0); EEPROM.get(10,storedUID);
+  if(R0&lt;0.1) R0=9.8;
+  stateStart=millis();
+}
+
+void loop() {
+  if(state==WARMUP && millis()-stateStart>60000) state=TESTING;
+  if(state==TESTING) {
+    float bac=readBACPeak();
+    state = (bac&lt;0.05)?SAFE:LOCKED;
+    if(state==SAFE) digitalWrite(RELAY,HIGH);
+  }
+  if(state==LOCKED && checkRFID()) {
+    digitalWrite(RELAY,HIGH); state=SAFE;
+    // Log override to SD
+    File f=SD.open("override.csv",FILE_WRITE);
+    if(f){f.println(String(millis()));f.close();}
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏍️ Motorcycle Safety System</span>
+                <span class="app-tag">🔒 Dual-Auth Ignition Lock</span>
+                <span class="app-tag">📋 RFID Override Log SD</span>
+                <span class="app-tag">🚨 GSM SOS Alert on Lockout</span>
+                <span class="app-tag">📱 Bluetooth BAC Dashboard</span>
+                <span class="app-tag">🛻 Car Ignition Interlock</span>
+                <span class="app-tag">⏱️ 10-min Permit Timer</span>
+                <span class="app-tag">🌡️ Helmet Temp + GSensor</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $35</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Nano</li>
+                <li><strong>Override:</strong> RFID card (logged)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>MQ-3 BAC sensor calibration</li>
+                <li>RC522 RFID authentication</li>
+                <li>12V relay motorcycle wiring</li>
+                <li>SD card accountability logging</li>
+                <li>Emergency override safety design</li>
+                <li>Embedded safety FSM patterns</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">MFRC522</span><span class="lib-desc"> — Miguel Balboa; RC522 RFID reader driver</span></li>
+                <li><span class="lib-name">EEPROM (built-in)</span><span class="lib-desc"> — Store calibrated R₀ and override UID across reboots</span></li>
+                <li><span class="lib-name">SD (built-in)</span><span class="lib-desc"> — Override event CSV logging to microSD</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="alcohol-interlocked-ignition.html">Alcohol-Interlocked Ignition</a></li>
+                <li><a href="smart-locker-rfid.html">Smart Locker with RFID</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let t2=0;
+    setInterval(()=>{
+      t2++;
+      const bac=0.02+0.06*Math.abs(Math.sin(t2*0.04));
+      const pct=Math.min(100,bac/0.14*100);
+      document.getElementById('helmetBac').textContent=bac.toFixed(3)+'%';
+      document.getElementById('helmetFill').style.width=pct+'%';
+      const lk=document.getElementById('helmetLock');
+      const rf=document.getElementById('rfidMsg');
+      if(bac<0.05){
+        document.getElementById('helmetFill').style.background='#00aa00';
+        lk.textContent='🔓 IGNITION: ENABLED'; lk.style.color='#00ff00'; lk.style.borderColor='#00aa00'; lk.style.background='#001200';
+        rf.textContent='RFID override: not triggered'; rf.style.color='#602080';
+      } else {
+        document.getElementById('helmetFill').style.background='#cc2200';
+        lk.textContent='🔒 IGNITION: LOCKED — OVER LIMIT'; lk.style.color='#ff4040'; lk.style.borderColor='#aa0000'; lk.style.background='#200000';
+        rf.textContent='RFID override: available (tap card)'; rf.style.color='#c080ff';
+      }
+    }, 250);
+  </script>
+</body>
+</html>

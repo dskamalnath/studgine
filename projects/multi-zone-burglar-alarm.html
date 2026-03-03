@@ -1,0 +1,296 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Zone Burglar Alarm – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a professional multi-zone burglar alarm with PIR sensors, magnetic door contacts, entry delay, LCD keypad, and GSM SMS alert using Arduino." />
+  <meta name="keywords" content="multi zone burglar alarm Arduino, PIR alarm system, magnetic door sensor Arduino, entry delay burglar alarm, GSM SMS alarm" />
+  <link rel="canonical" href="multi-zone-burglar-alarm.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a0808 0%,#1c1212 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .floor-plan{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:220px;}
+    .zone-box{border:2px solid #333;border-radius:6px;padding:8px 6px;text-align:center;font-family:monospace;font-size:10px;transition:border-color 0.3s,background 0.3s;}
+    .zone-box.ok{border-color:#2a5a2a;background:#0a1a0a;color:#7dff40;}
+    .zone-box.alert{border-color:#ff4040;background:#2a0a0a;color:#ff4040;animation:blink-zone 0.5s step-end infinite;}
+    @keyframes blink-zone{0%,100%{opacity:1}50%{opacity:0.3}}
+    .alarm-panel{background:#111;border:2px solid #333;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:11px;color:#7de0ff;text-align:center;min-width:180px;}
+    .siren-icon{font-size:28px;display:none;}
+    .siren-icon.active{display:inline-block;animation:siren-spin 0.3s linear infinite;}
+    @keyframes siren-spin{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(180deg)}}
+    .keypad-row{display:flex;gap:4px;justify-content:center;margin-top:6px;}
+    .key-btn{width:22px;height:18px;background:#222;border:1px solid #444;border-radius:3px;color:#aaa;font-family:monospace;font-size:10px;cursor:pointer;}
+    .status-row{display:flex;gap:8px;align-items:center;justify-content:center;}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:#7dff40;}
+    .status-dot.red{background:#ff4040;animation:blink-zone 0.5s step-end infinite;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Multi-Zone Burglar Alarm</h1>
+      <p>A professional-grade home alarm system with 4 PIR zones, magnetic door contacts, LCD keypad panel, programmable entry delay, and optional GSM SMS alerts.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Multi-Zone Burglar Alarm</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="floor-plan">
+                  <div class="zone-box ok" id="z1">Zone 1<br>FRONT DOOR<br>✅ Clear</div>
+                  <div class="zone-box ok" id="z2">Zone 2<br>LIVING ROOM<br>✅ Clear</div>
+                  <div class="zone-box ok" id="z3">Zone 3<br>KITCHEN<br>✅ Clear</div>
+                  <div class="zone-box ok" id="z4">Zone 4<br>BACK DOOR<br>✅ Clear</div>
+                </div>
+                <div class="alarm-panel">
+                  <div class="status-row"><div class="status-dot" id="systemDot"></div><span id="systemStatus">ARMED — All Secure</span><span class="siren-icon" id="sirenIcon">🚨</span></div>
+                  <div class="keypad-row"><button class="key-btn">1</button><button class="key-btn">2</button><button class="key-btn">3</button><button class="key-btn">ARM</button></div>
+                  <div class="keypad-row"><button class="key-btn">4</button><button class="key-btn">5</button><button class="key-btn">6</button><button class="key-btn">DIS</button></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+multi+zone+burglar+alarm+PIR+LCD+keypad" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Real-world alarm systems use the concept of <em>zones</em> — independently monitored detector circuits with different behaviours. An entry zone (front door) triggers a countdown entry delay giving the homeowner time to disarm, while an instant zone (window) trips the siren immediately.</p>
+              <p>This project implements 4 zones using HC-SR501 PIR sensors and normally-closed magnetic door contacts wired in series per zone (professional standard). A 4×4 matrix keypad on a 20×4 LCD lets you arm/disarm with a PIN code, configure bypass, and review event history. A SIM800L GSM module adds SMS alerts so you're notified wherever you are.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Mega 2560</span><span class="comp-note"> — Needed for extra I/O pins (16+ zones possible)</span></div></li>
+                <li><span class="comp-icon">👁️</span><div><span class="comp-name">HC-SR501 PIR Sensor ×4</span><span class="comp-note"> — Passive infrared motion detectors per zone</span></div></li>
+                <li><span class="comp-icon">🚪</span><div><span class="comp-name">Magnetic Door/Window Contacts ×4</span><span class="comp-note"> — Normally-closed reed switches for entry points</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">20×4 I2C LCD</span><span class="comp-note"> — System status, zone states, entry countdown</span></div></li>
+                <li><span class="comp-icon">⌨️</span><div><span class="comp-name">4×4 Matrix Keypad</span><span class="comp-note"> — PIN entry for arm/disarm and configuration</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">Piezo Siren (12 V) + Relay</span><span class="comp-note"> — Alarm siren, relay-switched for buzzer isolation</span></div></li>
+                <li><span class="comp-icon">📱</span><div><span class="comp-name">SIM800L GSM Module (optional)</span><span class="comp-note"> — For SMS alerts on alarm trigger</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Zone Wiring (Normally-Closed Loop)</h4><p>Wire each zone as a normally-closed loop: pull-up resistor → door contact → PIR tamper output → Arduino pin. When the circuit is broken (door opens or wire cut), the pin goes HIGH → zone violated. This <em>fail-safe</em> design triggers the alarm if tampered with.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>System States: Armed / Disarmed / Entry Delay / Alarm</h4><p>Implement a finite state machine. In ARMED state, any zone violation triggers ENTRY_DELAY (30 s countdown displayed on LCD) for entry zones, or ALARM immediately for instant zones. Incorrect PIN or timeout → ALARM state (siren on, SMS sent).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Keypad PIN Authentication</h4><p>Use the Keypad library to read 4-digit PIN entries. Store the hash of the PIN in EEPROM (not plain text). On correct PIN in ALARM/ARMED state → disarm. Wrong PIN three times → lockout + "Tamper Alert" SMS. Separate engineer PIN for configuration mode.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>GSM SMS on Alarm</h4><p>When alarm triggers, use the SIM800L AT command set: <code>AT+CMGF=1</code> (text mode), then <code>AT+CMGS="+441234567890"</code> followed by the message text and Ctrl+Z to send. Include zone name, time, and "ALARM TRIGGERED" in the SMS body.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Keypad.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+#include &lt;SoftwareSerial.h&gt;
+
+// Zone pins (normally-closed → HIGH when violated)
+const int ZONE_PINS[4] = {2, 3, 4, 5};
+const bool ZONE_INSTANT[4] = {false, false, true, true};  // Z3,Z4 = instant
+const String ZONE_NAMES[4] = {"Front Door","Living Room","Kitchen","Back Door"};
+const int SIREN_PIN = 6;
+int entryDelay = 30;  // seconds
+String correctPin = "1234";
+
+enum AlarmState { DISARMED, ARMED, ENTRY_DELAY, ALARM };
+AlarmState state = DISARMED;
+
+void triggerAlarm(int zoneNum) {
+  state = ALARM;
+  digitalWrite(SIREN_PIN, HIGH);
+  sendSMS("!! ALARM: " + ZONE_NAMES[zoneNum] + " triggered!");
+  lcd.clear(); lcd.print("ALARM! Z" + String(zoneNum+1));
+}
+
+void checkZones() {
+  for (int z = 0; z &lt; 4; z++) {
+    if (digitalRead(ZONE_PINS[z]) == HIGH) {  // zone violated
+      if (ZONE_INSTANT[z] || state == ENTRY_DELAY) triggerAlarm(z);
+      else if (state == ARMED) { state = ENTRY_DELAY; startCountdown(z); }
+    }
+  }
+}
+
+void sendSMS(String msg) {
+  gsm.println("AT+CMGF=1");   delay(200);
+  gsm.print("AT+CMGS=\"+441234567890\"\r"); delay(200);
+  gsm.print(msg);
+  gsm.write(26);  // Ctrl+Z = send
+  delay(3000);
+}
+
+void loop() {
+  if (state == ARMED || state == ENTRY_DELAY) checkZones();
+  // ... keypad reading and PIN verification
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Home Security System</span>
+                <span class="app-tag">🏪 Shop / Retail Alarm</span>
+                <span class="app-tag">🚗 Garage Intrusion Alert</span>
+                <span class="app-tag">🌐 IoT Cloud Dashboard</span>
+                <span class="app-tag">📷 Camera Trigger on Alarm</span>
+                <span class="app-tag">🔑 RFID Disarm Card</span>
+                <span class="app-tag">🔔 Telegram Bot Alerts</span>
+                <span class="app-tag">🔦 Lights-On-Intrusion</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $20 – $40</li>
+                <li><strong>Build Time:</strong> 6 – 10 hours</li>
+                <li><strong>Platform:</strong> Arduino Mega</li>
+                <li><strong>Interface:</strong> LCD Keypad + GSM</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Finite state machine design</li>
+                <li>Normally-closed zone wiring</li>
+                <li>Matrix keypad scanning</li>
+                <li>PIN hashing + EEPROM storage</li>
+                <li>GSM AT command SMS</li>
+                <li>Entry delay timer logic</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Keypad</span><span class="lib-desc"> — Mark Stanley matrix keypad library</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — LCD panel driver</span></li>
+                <li><span class="lib-name">SoftwareSerial</span><span class="lib-desc"> — GSM SIM800L UART</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="smart-locker-rfid.html">Smart Locker (RFID)</a></li>
+                <li><a href="fingerprint-door-lock.html">Fingerprint Door Lock</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const zones = ['z1','z2','z3','z4'];
+    const zoneNames = ['FRONT DOOR','LIVING ROOM','KITCHEN','BACK DOOR'];
+    let alertIdx = -1, alertTimer = 0;
+    function simAlarm() {
+      // Clear previous
+      zones.forEach(z => {
+        let el = document.getElementById(z);
+        el.className = 'zone-box ok';
+        el.innerHTML = el.innerHTML.replace('🚨 ALERT','✅ Clear').replace('⚠️ ENTRY','✅ Clear');
+      });
+      document.getElementById('systemStatus').textContent = 'ARMED — All Secure';
+      document.getElementById('systemDot').className = 'status-dot';
+      document.getElementById('sirenIcon').className = 'siren-icon';
+      // Trigger a random zone
+      alertIdx = Math.floor(Math.random() * 4);
+      let el = document.getElementById(zones[alertIdx]);
+      el.className = 'zone-box alert';
+      el.innerHTML = 'Zone '+(alertIdx+1)+'<br>'+zoneNames[alertIdx]+'<br>🚨 ALERT';
+      document.getElementById('systemStatus').textContent = 'ALARM! Zone '+(alertIdx+1);
+      document.getElementById('systemDot').className = 'status-dot red';
+      document.getElementById('sirenIcon').className = 'siren-icon active';
+    }
+    setInterval(simAlarm, 4000);
+    simAlarm();
+  </script>
+</body>
+</html>

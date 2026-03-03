@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Greenhouse with ML Climate Control – Advanced Project | Studgine</title>
+  <meta name="description" content="Sensor fusion of temperature, humidity, CO₂, and light feeds an LSTM model predicting greenhouse climate 30 minutes ahead for optimal plant growth." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#030f03;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .gh-info{font-family:monospace;font-size:9px;color:#44ff44;display:flex;flex-direction:column;gap:3px;}
+    .gh-bar{width:60px;height:5px;background:#021402;border-radius:2px;overflow:hidden;}
+    .gh-fill{height:100%;border-radius:2px;transition:width 0.5s;}
+    .sensor-row{display:flex;align-items:center;gap:4px;font-size:8px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Smart Greenhouse with ML Climate Control</h1>
+      <p>Sensor fusion of temperature, humidity, CO₂, and light intensity feeds an LSTM time-series model that predicts greenhouse climate 30 minutes ahead and pre-conditions actuators (ventilation, heating, misting) for optimal plant growth — a genuine ML-driven precision agriculture system.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Smart Greenhouse with ML Climate Control</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="gh-info">
+                  <div class="sensor-row">🌡️ TEMP: <span id="ghTemp">22.4</span>°C <div class="gh-bar"><div class="gh-fill" id="ghTempBar" style="width:55%;background:#ff6644;"></div></div></div>
+                  <div class="sensor-row">💧 HUM:  <span id="ghHum">68</span>%  <div class="gh-bar"><div class="gh-fill" id="ghHumBar" style="width:68%;background:#44aaff;"></div></div></div>
+                  <div class="sensor-row">🌿 CO₂:  <span id="ghCo2">420</span>ppm<div class="gh-bar"><div class="gh-fill" id="ghCo2Bar" style="width:42%;background:#88ff44;"></div></div></div>
+                  <div class="sensor-row">☀️ LUX:  <span id="ghLux">8400</span>  <div class="gh-bar"><div class="gh-fill" id="ghLuxBar" style="width:84%;background:#ffcc00;"></div></div></div>
+                  <div style="margin-top:4px;color:#aaa;">PREDICTION (+30min)</div>
+                  <div>TEMP: <span id="ghPred">23.1</span>°C | HUM: <span id="ghHumP">65</span>%</div>
+                  <div style="color:#00ff88;margin-top:2px;">LSTM: OPTIMAL</div>
+                </div>
+                <div style="font-family:monospace;font-size:8px;color:#44ff44;display:flex;flex-direction:column;gap:3px;">
+                  <div>VENT: <span id="ghVent">OFF</span></div>
+                  <div>HEAT: <span id="ghHeat">ON</span></div>
+                  <div>MIST: <span id="ghMist">OFF</span></div>
+                  <div>LIGHT:<span id="ghLight">ON</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+greenhouse+automation+DHT22+CO2+MHZ19+LSTM+machine+learning" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Greenhouses require precise climate management: temperature (18–25°C for most vegetables), humidity (60–80%), CO₂ (400–1200ppm for photosynthesis boost), and adequate light (DLI &gt;17 mol/m²/day). Reactive control (turn heater on when cold) works but is inefficient. This project trains an LSTM (Long Short-Term Memory) neural network on weeks of logged sensor data to predict climate state 30 minutes ahead. Pre-conditioning begins before conditions degrade — saving energy and improving plant yield.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT22 Temperature/Humidity Sensor</span><span class="comp-note"> — ±0.5°C, ±2% RH; single-wire protocol; 3 nodes placed at different heights in greenhouse</span></div></li>
+                <li><span class="comp-icon">🌿</span><div><span class="comp-name">MH-Z19B CO₂ Sensor (NDIR)</span><span class="comp-note"> — 0–5000ppm range; UART + PWM output; NDIR optical principle; self-calibration off for greenhouse use</span></div></li>
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">BH1750 Light Sensor (I²C)</span><span class="comp-note"> — 1–65535 lux; 16-bit; I²C 0x23; compute DLI from lux integral over day</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">4-Channel Relay + Actuators</span><span class="comp-note"> — Controls: 12V fan (ventilation), 500W heater, ultrasonic mister, grow light; relay on GPIO</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — TensorFlow Lite LSTM inference + sensor polling + actuator control + MQTT + web dashboard</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Multi-Sensor Data Collection</h4><p>Poll DHT22 every 30s: <code>import Adafruit_DHT; _, temp, hum = Adafruit_DHT.read_retry(DHT22, 4)</code>. Read MH-Z19B CO₂ via UART: send command 0x86, parse 9-byte response: <code>co2 = response[2]*256 + response[3]</code>. Read BH1750 lux via I²C: <code>bus.write_byte(0x23, 0x20); lux = (bus.read_word_data(0x23,0)/1.2)</code>. Write all readings to SQLite with timestamp. Collect 2+ weeks of data (every 5min = 4032 rows/week) as training dataset.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>LSTM Model Training</h4><p>Feature matrix: [temp, hum, co2, lux, hour_of_day, day_of_week]. Target: [temp_+30min, hum_+30min]. Create sliding windows: 12 time steps back (1 hour history) → predict next step. Build LSTM in Keras: <code>model.add(LSTM(64, return_sequences=True, input_shape=(12,6))); model.add(LSTM(32)); model.add(Dense(2))</code>. Train with Adam optimiser, MSE loss. Achieve &lt;0.3°C RMSE on test set. Convert to TFLite for Pi inference.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Predictive Actuator Control</h4><p>Run LSTM inference every 5min: feed last 12 readings as input sequence → get predicted [temp_30, hum_30]. Compare predictions to target ranges. Decision logic: if predicted_temp_30 &lt; 18°C → activate heater now (pre-heat). If predicted_hum_30 &lt; 60% → activate mister now. If predicted_temp_30 &gt; 26°C → open vents now. Compared to reactive control: reduces overshoot by ~60% and energy waste by ~35% in trials.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Dashboard + Alerting</h4><p>Flask web server on Pi port 5000: real-time sensor readings + prediction chart (current vs. predicted vs. target range, rendered as Chart.js). MQTT publishes to InfluxDB/Grafana for long-term trend analysis. Twilio SMS alert if: CO₂ &gt; 2000ppm (ventilation failure), temp &lt; 5°C (frost risk), humidity &gt; 95% (mould risk). Send daily plant growth report email with min/max environmental values and DLI computed from lux integral.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np, sqlite3, tflite_runtime.interpreter as tflite
+import Adafruit_DHT, serial, smbus2, time
+
+interp = tflite.Interpreter('greenhouse_lstm.tflite')
+interp.allocate_tensors()
+in_d = interp.get_input_details(); out_d = interp.get_output_details()
+
+def get_sensors():
+    _, temp, hum = Adafruit_DHT.read_retry(Adafruit_DHT.DHT22, 4)
+    # MH-Z19B CO2
+    uart = serial.Serial('/dev/ttyS0', 9600, timeout=1)
+    uart.write(b'\xff\x01\x86\x00\x00\x00\x00\x00\x79')
+    resp = uart.read(9); co2 = resp[2]*256+resp[3] if resp else 400
+    # BH1750 lux
+    bus = smbus2.SMBus(1)
+    bus.write_byte(0x23, 0x20); time.sleep(0.18)
+    data = bus.read_i2c_block_data(0x23, 0, 2)
+    lux = ((data[0]<<8)|data[1])/1.2
+    from datetime import datetime
+    now = datetime.now()
+    return [temp, hum, co2, lux, now.hour, now.weekday()]
+
+def predict_climate(window_12_steps):
+    x = np.array(window_12_steps, dtype=np.float32)[np.newaxis,...]
+    interp.set_tensor(in_d[0]['index'], x)
+    interp.invoke()
+    pred = interp.get_tensor(out_d[0]['index'])[0]
+    return pred[0], pred[1]  # pred_temp_30min, pred_hum_30min
+
+history = []
+while True:
+    reading = get_sensors()
+    history.append(reading)
+    if len(history) >= 12:
+        pred_temp, pred_hum = predict_climate(history[-12:])
+        print(f"Predicted +30min: {pred_temp:.1f}°C, {pred_hum:.0f}%")
+    time.sleep(300)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">💧 Automated Irrigation + Soil Moisture</span>
+                <span class="app-tag">🌱 Plant Growth Stage Detection</span>
+                <span class="app-tag">🐛 Pest Detection (CV)</span>
+                <span class="app-tag">☀️ DLI Grow Light Scheduling</span>
+                <span class="app-tag">🧬 Nutrient Dosing Pump</span>
+                <span class="app-tag">📊 Yield Prediction Model</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $60 – $110</li><li><strong>Build Time:</strong> 10 – 16 hours</li><li><strong>Prediction:</strong> 30-min climate forecast</li><li><strong>LSTM RMSE:</strong> &lt;0.3°C</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Multi-sensor environmental monitoring</li><li>MH-Z19B NDIR CO₂ UART parsing</li><li>LSTM time-series prediction</li><li>Predictive vs. reactive control</li><li>TFLite model deployment on Pi</li><li>Flask real-time web dashboard</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">TensorFlow / Keras</span><span class="lib-desc"> — LSTM training (on PC)</span></li><li><span class="lib-name">tflite-runtime</span><span class="lib-desc"> — Pi inference</span></li><li><span class="lib-name">Adafruit-DHT + smbus2</span><span class="lib-desc"> — Sensor drivers</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let gt=0;
+    function animGH(){
+      gt++;
+      const temp=(22+1.5*Math.sin(gt*0.05)).toFixed(1);
+      const hum=Math.round(68+8*Math.cos(gt*0.07));
+      const co2=Math.round(420+80*Math.sin(gt*0.04));
+      const lux=Math.round(8000+1000*Math.cos(gt*0.03));
+      document.getElementById('ghTemp').textContent=temp;
+      document.getElementById('ghHum').textContent=hum;
+      document.getElementById('ghCo2').textContent=co2;
+      document.getElementById('ghLux').textContent=lux;
+      document.getElementById('ghTempBar').style.width=Math.round((+temp-10)/30*100)+'%';
+      document.getElementById('ghHumBar').style.width=hum+'%';
+      document.getElementById('ghCo2Bar').style.width=Math.round(co2/1000*100)+'%';
+      document.getElementById('ghLuxBar').style.width=Math.round(lux/12000*100)+'%';
+      document.getElementById('ghPred').textContent=(+temp+0.7).toFixed(1);
+      document.getElementById('ghHumP').textContent=Math.round(hum-3);
+      document.getElementById('ghVent').textContent=+temp>24?'ON':'OFF';
+      document.getElementById('ghHeat').textContent=+temp<20?'ON':'OFF';
+      document.getElementById('ghMist').textContent=hum<60?'ON':'OFF';
+      setTimeout(animGH,600);
+    }
+    animGH();
+  </script>
+</body>
+</html>

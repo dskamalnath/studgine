@@ -1,0 +1,216 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PIR Intruder Alarm – Studgine</title>
+  <meta name="description" content="Build a PIR-based intruder alarm with Arduino. Detect motion, trigger a buzzer, and learn interrupt-driven programming." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    /* ── PIR Alarm Animation ── */
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:32px; padding:24px; }
+    .pir-sensor { width:54px; height:70px; background:linear-gradient(135deg,#1e3a8a,#0ea5e9); border-radius:8px 8px 4px 4px; position:relative; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 16px rgba(14,165,233,.4); }
+    .pir-eye { width:22px; height:22px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+    .pir-pupil { width:10px; height:10px; background:#1e3a8a; border-radius:50%; animation:pir-look 3s ease-in-out infinite; }
+    @keyframes pir-look { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+    .pir-beam { position:absolute; top:50%; left:54px; width:0; height:0; border-top:30px solid transparent; border-bottom:30px solid transparent; border-left:80px solid rgba(239,68,68,.25); transform:translateY(-50%); animation:beam-pulse 2s ease-in-out infinite; }
+    @keyframes beam-pulse { 0%,100%{opacity:.3} 50%{opacity:.9; border-left-color:rgba(239,68,68,.5);} }
+    .alarm-box { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .alarm-light { width:36px; height:36px; border-radius:50%; background:#ef4444; box-shadow:0 0 0 rgba(239,68,68,.6); animation:alarm-flash 1s ease-in-out infinite; }
+    @keyframes alarm-flash { 0%,100%{box-shadow:0 0 4px rgba(239,68,68,.4); background:#ef4444;} 50%{box-shadow:0 0 24px 8px rgba(239,68,68,.8); background:#fca5a5;} }
+    .alarm-label { font-size:.7rem; color:var(--color-text-muted); text-align:center; }
+    .buzzer-waves { display:flex; gap:3px; align-items:flex-end; }
+    .buzzer-waves span { display:block; width:4px; background:#f59e0b; border-radius:2px; animation:wave 0.6s ease-in-out infinite; }
+    .buzzer-waves span:nth-child(1){height:8px; animation-delay:0s;}
+    .buzzer-waves span:nth-child(2){height:14px; animation-delay:.1s;}
+    .buzzer-waves span:nth-child(3){height:20px; animation-delay:.2s;}
+    .buzzer-waves span:nth-child(4){height:14px; animation-delay:.3s;}
+    .buzzer-waves span:nth-child(5){height:8px; animation-delay:.4s;}
+    @keyframes wave { 0%,100%{transform:scaleY(.5);opacity:.5} 50%{transform:scaleY(1);opacity:1} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html"    class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html"    class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>PIR Intruder Alarm</h1>
+      <p class="hero-sub">Detect motion with a passive infrared sensor and trigger a buzzer alarm — learn interrupt-driven programming and time-delay deactivation.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>PIR Intruder Alarm</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+
+        <!-- Animation -->
+        <div class="anim-stage">
+          <div class="pir-sensor" style="position:relative;">
+            <div class="pir-eye"><div class="pir-pupil"></div></div>
+            <div class="pir-beam"></div>
+          </div>
+          <div class="alarm-box">
+            <div class="alarm-light"></div>
+            <div class="buzzer-waves"><span></span><span></span><span></span><span></span><span></span></div>
+            <span class="alarm-label">ALARM<br>TRIGGERED</span>
+          </div>
+        </div>
+        <p class="anim-stage-label">PIR beam detection → buzzer alarm fires</p>
+
+        <!-- Video -->
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=PIR+intruder+alarm+Arduino" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <!-- Introduction -->
+        <h2>📖 Introduction</h2>
+        <p>A <strong>Passive Infrared (PIR) sensor</strong> detects the change in heat signature as a warm body moves through its field of view. Unlike active sensors that emit a signal, the PIR simply "listens" for IR radiation changes — making it cheap, power-efficient, and ideal for motion detection.</p>
+        <p>In this project you'll wire an HC-SR501 PIR module to an Arduino, sound a buzzer when motion is detected, and auto-disarm after a configurable timeout using <code>millis()</code>-based non-blocking timekeeping. You'll also explore sensitivity and time-delay trim-pot adjustments on the sensor itself.</p>
+
+        <!-- Components -->
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Main microcontroller</span></div></li>
+          <li><span class="comp-icon">👁️</span><div><span class="comp-name">HC-SR501 PIR Sensor</span><span class="comp-note">Motion detection module</span></div></li>
+          <li><span class="comp-icon">🔔</span><div><span class="comp-name">Active Buzzer (5 V)</span><span class="comp-note">Audible alarm output</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">Red LED + 220 Ω resistor</span><span class="comp-note">Visual alarm indicator</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype connections</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">USB cable / 9 V adapter</span><span class="comp-note">Power supply</span></div></li>
+        </ul>
+
+        <!-- How It Works -->
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>PIR output goes HIGH</strong> — When the HC-SR501 detects IR radiation change it pulls its OUT pin HIGH for the duration set by the onboard time-delay pot. Connect OUT to digital pin 2 on the Arduino, and set the pin as <code>INPUT</code>.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Read and react</strong> — In <code>loop()</code> poll <code>digitalRead(pirPin)</code>. When HIGH, record <code>alarmStart = millis()</code>, turn the LED on, and start the buzzer. Set a boolean <code>alarmActive = true</code>.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Auto-deactivation</strong> — Each loop iteration, if <code>alarmActive</code> is true and <code>millis() - alarmStart &gt; ALARM_DURATION</code> (e.g. 10 000 ms), turn off the buzzer and LED, reset the boolean. This keeps the alarm non-blocking so you can add other logic later.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Tune the sensor</strong> — The HC-SR501 has two trim pots: one for sensitivity (detection range 3–7 m) and one for hold time (0.5 s–200 s). Optionally add a second jumper to set retriggering mode so each new motion resets the hold timer.
+            </div>
+          </li>
+        </ol>
+
+        <!-- Applications -->
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🏠 Home security system</span>
+          <span class="app-tag">💡 Auto-on corridor light</span>
+          <span class="app-tag">📧 SMS alert via GSM module</span>
+          <span class="app-tag">📸 Camera trigger for wildlife</span>
+          <span class="app-tag">🔔 Smart doorbell assist</span>
+          <span class="app-tag">📊 Occupancy counter + LCD</span>
+        </div>
+      </article>
+
+      <!-- Sidebar -->
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $12</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 2 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Power</span><span>5 V USB</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">digitalRead()</span></li>
+            <li><span class="skill-tag">millis() timing</span></li>
+            <li><span class="skill-tag">Non-blocking logic</span></li>
+            <li><span class="skill-tag">PIR sensor tuning</span></li>
+            <li><span class="skill-tag">Buzzer control</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;">None — uses built-in Arduino functions only.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="motion-activated-night-light.html" class="skill-tag">Motion Night Light</a></li>
+            <li><a href="laser-security-alarm.html" class="skill-tag">Laser Security Alarm</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

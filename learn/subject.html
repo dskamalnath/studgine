@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO -->
+  <title id="pageTitle">Subject – Free Engineering Platform</title>
+  <meta name="description" content="Explore comprehensive engineering topics with free textbooks, video lectures, and practice questions." />
+  <meta name="keywords" content="free engineering education, computer science, tutorials" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/learn.css" />
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../budget-electronics.html" class="nav-link">Electronics</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="learn-page-hero">
+    <div class="container">
+      <span class="learn-eyebrow" id="heroBadge">Subject</span>
+      <h1 id="heroTitle">Loading...</h1>
+      <p id="heroDesc">Select a topic to access free textbooks, lectures, and practice questions.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top: 24px;">
+    <div class="container">
+      <nav class="learn-breadcrumb" aria-label="Breadcrumb">
+        <a href="../learn.html">Learning Platform</a>
+        <span class="sep">/</span>
+        <a href="#" id="breadDeptLink">Department</a>
+        <span class="sep">/</span>
+        <span class="current" id="breadSubj">Subject</span>
+      </nav>
+
+      <div class="learn-filter-bar">
+        <input type="text" id="topicFilter" class="learn-filter-input" placeholder="Filter topics..." aria-label="Filter topics" />
+        <span class="learn-results-count" id="resultCount">Showing all topics</span>
+      </div>
+
+      <div class="topic-grid" id="topicGrid">
+        <!-- Topic cards will be populated by JavaScript -->
+      </div>
+
+      <div class="learn-empty" id="noResultMsg" style="display: none;">
+        <div class="learn-empty-icon">🔍</div>
+        <h3>No topics found</h3>
+        <p>Try different keywords or <a href="#" id="backToDept">browse all subjects</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">★</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Learning</h4><ul>
+            <li><a href="../learn.html">Free Learning Platform</a></li>
+            <li><a href="dept.html?dept=cse">Computer Science</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Books</a></li>
+            <li><a href="../resources.html">Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Resource</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  
+  <script src="../js/main.js"></script>
+  <script src="../js/learn-data.js"></script>
+  <script>
+    let allTopics = [];
+    let currentDept, currentSubj;
+
+    function getParamsFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        deptId: params.get('dept'),
+        subjId: params.get('subj')
+      };
+    }
+
+    function loadSubject() {
+      const { deptId, subjId } = getParamsFromUrl();
+      const data = window.LEARN_DATA;
+      
+      if (!deptId || !subjId || !data) {
+        window.location.href = '../learn.html';
+        return;
+      }
+
+      const dept = data.departments.find(d => d.id === deptId);
+      if (!dept) {
+        window.location.href = '../learn.html';
+        return;
+      }
+
+      const subj = dept.subjects.find(s => s.id === subjId);
+      if (!subj) {
+        window.location.href = `dept.html?dept=${deptId}`;
+        return;
+      }
+
+      currentDept = dept;
+      currentSubj = subj;
+
+      // Update page content
+      document.getElementById('pageTitle').textContent = `${subj.name} – ${dept.name}`;
+      document.getElementById('heroBadge').textContent = `${subj.icon} ${dept.name}`;
+      document.getElementById('heroTitle').textContent = subj.name;
+      document.getElementById('heroDesc').textContent = subj.desc;
+      
+      // Breadcrumb
+      const breadDeptLink = document.getElementById('breadDeptLink');
+      breadDeptLink.textContent = dept.name;
+      breadDeptLink.href = `dept.html?dept=${deptId}`;
+      document.getElementById('breadSubj').textContent = subj.name;
+      document.getElementById('backToDept').href = `dept.html?dept=${deptId}`;
+
+      allTopics = subj.topics;
+      renderTopics(allTopics);
+    }
+
+    function renderTopics(topics) {
+      const grid = document.getElementById('topicGrid');
+      const empty = document.getElementById('noResultMsg');
+      const count = document.getElementById('resultCount');
+      const { deptId, subjId } = getParamsFromUrl();
+
+      if (topics.length === 0) {
+        grid.style.display = 'none';
+        empty.style.display = 'block';
+        count.textContent = 'No topics found';
+        return;
+      }
+
+      grid.style.display = 'grid';
+      empty.style.display = 'none';
+      count.textContent = topics.length === allTopics.length 
+        ? `Showing all ${topics.length} topics` 
+        : `Showing ${topics.length} of ${allTopics.length} topics`;
+
+      grid.innerHTML = topics.map((topic, idx) => `
+        <a href="topic.html?dept=${deptId}&subj=${subjId}&topic=${topic.id}" class="topic-card learn-fade-in" style="animation-delay: ${idx * 0.04}s;">
+          <div class="topic-card-num">${String(idx + 1).padStart(2, '0')}</div>
+          <div class="topic-card-title">${topic.name}</div>
+        </a>
+      `).join('');
+    }
+
+    function filterTopics() {
+      const query = document.getElementById('topicFilter').value.toLowerCase().trim();
+      if (!query) {
+        renderTopics(allTopics);
+        return;
+      }
+
+      const filtered = allTopics.filter(topic => 
+        topic.name.toLowerCase().includes(query) || 
+        topic.overview.toLowerCase().includes(query)
+      );
+      renderTopics(filtered);
+    }
+
+    // Event listeners
+    document.getElementById('topicFilter').addEventListener('input', filterTopics);
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', loadSubject);
+  </script>
+</body>
+</html>

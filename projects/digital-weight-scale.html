@@ -1,0 +1,294 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Weight Scale – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a precision digital weight scale using HX711 load cell amplifier and Arduino. Includes tare function, EEPROM calibration storage, and LCD display." />
+  <meta name="keywords" content="HX711 load cell Arduino, digital weight scale, tare function, EEPROM calibration, load cell amplifier" />
+  <link rel="canonical" href="digital-weight-scale.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a1a0a 0%,#1a2a10 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;position:relative;overflow:hidden;}
+    .scale-platform{width:160px;height:18px;background:#888;border-radius:4px;box-shadow:0 4px 0 #555;position:relative;}
+    .scale-base{width:120px;height:10px;background:#666;border-radius:3px;margin-top:2px;}
+    .scale-weight{width:60px;height:40px;background:#c8a200;border-radius:4px;position:absolute;top:-40px;left:50%;transform:translateX(-50%);border:2px solid #a08000;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:13px;color:#fff;font-weight:bold;transition:opacity 0.5s;}
+    .lcd-display{background:#1a3a1a;border:2px solid #2a5a2a;border-radius:6px;padding:10px 18px;font-family:monospace;font-size:22px;color:#7dff40;letter-spacing:2px;text-shadow:0 0 8px #7dff40;min-width:180px;text-align:center;}
+    .tare-btn{background:#1e90ff;color:#fff;border:none;border-radius:4px;padding:6px 16px;font-size:12px;font-family:monospace;cursor:pointer;margin-top:6px;}
+    .bar-fill{height:8px;border-radius:4px;background:#7dff40;box-shadow:0 0 6px #7dff40;transition:width 0.6s;}
+    .bar-bg{background:#1a2a1a;border-radius:4px;width:180px;height:8px;overflow:hidden;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Digital Weight Scale</h1>
+      <p>Build a high-precision digital scale using an HX711 24-bit load cell amplifier, a strain-gauge load cell, and an Arduino — complete with tare function and EEPROM calibration.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Digital Weight Scale</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                  <div class="scale-weight" id="weightBlock">500g</div>
+                  <div class="scale-platform"></div>
+                  <div class="scale-base"></div>
+                </div>
+                <div class="lcd-display" id="lcdWeight">0.00 g</div>
+                <div class="bar-bg"><div class="bar-fill" id="weightBar" style="width:0%"></div></div>
+                <button class="tare-btn" onclick="tareScale()">TARE / ZERO</button>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=HX711+load+cell+Arduino+digital+scale" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Strain-gauge load cells convert mechanical force into a tiny differential voltage — on the order of microvolts per gram. The HX711 IC amplifies this signal with a 24-bit ADC, giving your Arduino a stable, high-resolution reading over a simple two-wire interface (CLK + DOUT).</p>
+              <p>This project goes beyond a basic "read weight and print" tutorial: you'll implement a proper multi-point calibration routine and save the calibration factor to EEPROM so it survives power cycles. A tactile tare button subtracts container mass in real time, making the scale genuinely useful for chemistry, cooking, or postal applications.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Main controller</span></div></li>
+                <li><span class="comp-icon">⚖️</span><div><span class="comp-name">HX711 Load Cell Amplifier Module</span><span class="comp-note"> — 24-bit ADC, CLK + DOUT interface</span></div></li>
+                <li><span class="comp-icon">🔩</span><div><span class="comp-name">Strain-Gauge Load Cell (5 kg)</span><span class="comp-note"> — 4-wire Wheatstone bridge (Red/Black/Green/White)</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">16×2 LCD with I2C Adapter</span><span class="comp-note"> — Shows weight, tare, overload warnings</span></div></li>
+                <li><span class="comp-icon">🔘</span><div><span class="comp-name">Tactile Push Buttons ×2</span><span class="comp-note"> — Tare and calibration mode</span></div></li>
+                <li><span class="comp-icon">🔩</span><div><span class="comp-name">Platform Acrylic / Plywood Sheet</span><span class="comp-note"> — Mounted on load cell for weighing surface</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Mount the Load Cell</h4><p>Screw the load cell between a fixed base plate and a free platform plate. Both plates must be rigid. The cell bends slightly under load — this flex is what generates the voltage differential. Wire the four colour-coded leads (Red=E+, Black=E−, Green=A−, White=A+) to the HX711 board's E+/E−/A+/A− screw terminals.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Read Raw Counts</h4><p>Use the HX711 library's <code>get_units(10)</code> (average of 10 samples) to retrieve a stable raw value. Initially print these raw counts to Serial Monitor with no weight on the platform — this is your zero_factor.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Calibrate and Store Factor</h4><p>Place a known weight (e.g., 500 g). Divide the raw counts by 500 to get your calibration_factor. Call <code>scale.set_scale(calibration_factor)</code> and save this float to EEPROM using <code>EEPROM.put(addr, calibration_factor)</code>. On future boot, read it back with <code>EEPROM.get()</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Tare and Display</h4><p>When the tare button is pressed, call <code>scale.tare()</code> — this sets the zero reference to the current reading so containers are not counted. Display the signed weight on the LCD; show "OVERLOAD" if the reading exceeds 95 % of the cell's rated capacity.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;HX711.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+#include &lt;EEPROM.h&gt;
+
+#define DOUT_PIN 3
+#define CLK_PIN  2
+#define TARE_BTN 4
+#define CAL_BTN  5
+#define CAL_EEPROM_ADDR 0
+
+HX711 scale;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+float calibration_factor;
+
+void setup() {
+  pinMode(TARE_BTN, INPUT_PULLUP);
+  pinMode(CAL_BTN,  INPUT_PULLUP);
+  scale.begin(DOUT_PIN, CLK_PIN);
+  lcd.init(); lcd.backlight();
+  // Load saved calibration factor from EEPROM
+  EEPROM.get(CAL_EEPROM_ADDR, calibration_factor);
+  if (isnan(calibration_factor) || calibration_factor == 0)
+    calibration_factor = 2280.0;  // default starting value
+  scale.set_scale(calibration_factor);
+  scale.tare();
+  lcd.setCursor(0,0); lcd.print("Scale Ready");
+}
+
+void loop() {
+  if (!digitalRead(TARE_BTN)) {
+    scale.tare();
+    lcd.clear(); lcd.print("Tared OK");
+    delay(800);
+  }
+  if (!digitalRead(CAL_BTN)) runCalibration();
+
+  float weight = scale.get_units(10);  // avg 10 readings
+  lcd.setCursor(0,0);
+  if (weight > 4750) { lcd.print("  OVERLOAD!     "); }
+  else {
+    lcd.print("Wt: ");
+    lcd.print(weight, 1);
+    lcd.print(" g      ");
+  }
+  lcd.setCursor(0,1); lcd.print("Tare: BTN1     ");
+}
+
+void runCalibration() {
+  lcd.clear(); lcd.print("Place 500g...");
+  delay(5000);
+  // calibration_factor = raw_counts / known_weight
+  long raw = scale.get_value(20);
+  calibration_factor = raw / 500.0;
+  scale.set_scale(calibration_factor);
+  EEPROM.put(CAL_EEPROM_ADDR, calibration_factor);
+  lcd.clear(); lcd.print("CAL SAVED");
+  delay(800);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🍳 Kitchen Precision Scale</span>
+                <span class="app-tag">📦 Postal Parcel Weigher</span>
+                <span class="app-tag">🧪 Chemistry Lab Balance</span>
+                <span class="app-tag">🌾 Grain Hopper Monitor</span>
+                <span class="app-tag">📊 IoT Weight Logger</span>
+                <span class="app-tag">💊 Dispensing Machine Control</span>
+                <span class="app-tag">🏋️ Gym Force Plate</span>
+                <span class="app-tag">🔋 Battery Fill Level Gauge</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $10 – $20</li>
+                <li><strong>Build Time:</strong> 3 – 5 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Nano</li>
+                <li><strong>Interface:</strong> LCD + Buttons</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>HX711 24-bit ADC interface</li>
+                <li>Load cell strain gauge wiring</li>
+                <li>Multi-point calibration maths</li>
+                <li>EEPROM float persistence</li>
+                <li>Tare (zero-offset) logic</li>
+                <li>I2C LCD display output</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">HX711</span><span class="lib-desc"> — Bogdan Necula's bit-bang ADC library</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — I2C LCD driver</span></li>
+                <li><span class="lib-name">EEPROM</span><span class="lib-desc"> — Built-in Arduino library</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="smart-irrigation-system.html">Smart Irrigation System</a></li>
+                <li><a href="realtime-data-logger-sd.html">Realtime Data Logger (SD)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const weights = [0, 125.3, 342.7, 500.1, 1024.5, 2500.0, 0];
+    let wi = 0, tared = false, tare_offset = 0;
+    function showWeight() {
+      wi = (wi + 1) % weights.length;
+      let w = weights[wi] - tare_offset;
+      let pct = Math.min(100, (w / 5000) * 100);
+      document.getElementById('lcdWeight').textContent = w.toFixed(2) + ' g';
+      document.getElementById('weightBar').style.width = pct + '%';
+      document.getElementById('weightBlock').textContent = w > 0 ? w.toFixed(0)+'g' : '---';
+      document.getElementById('weightBlock').style.opacity = w > 0 ? '1' : '0';
+    }
+    function tareScale() {
+      tare_offset = weights[wi];
+      document.getElementById('lcdWeight').textContent = '0.00 g (TARED)';
+      document.getElementById('weightBar').style.width = '0%';
+    }
+    setInterval(showWeight, 1800);
+  </script>
+</body>
+</html>

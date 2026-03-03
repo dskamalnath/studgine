@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomous Last-Mile Delivery Robot – Advanced Project | Studgine</title>
+  <meta name="description" content="GPS waypoint navigation, YOLOv8n pedestrian detection, QR code delivery verification, and compartment servo unlock on a Raspberry Pi wheeled delivery robot." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000508;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .dr-info{font-family:monospace;font-size:9px;color:#44ccff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Autonomous Last-Mile Delivery Robot</h1>
+      <p>A wheeled delivery robot that navigates GPS waypoints, stops for pedestrians detected by YOLOv8n, scans QR codes with pyzbar to verify delivery address, opens a servo compartment to release the parcel, and publishes a delivery confirmation via MQTT. Runs entirely on Raspberry Pi 4 with a front-facing Pi Camera.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Autonomous Last-Mile Delivery Robot</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="drCanvas" width="140" height="110"></canvas>
+                <div class="dr-info">
+                  <div>GPS: U-blox NEO-M8N</div>
+                  <div>LAT: 51.5074 N</div>
+                  <div>LON: -0.1278 E</div>
+                  <div style="margin-top:3px;">NAVIGATION</div>
+                  <div>WP: <span id="drWP">2</span>/5</div>
+                  <div>DIST: <span id="drDist">34</span>m</div>
+                  <div>HEADING: <span id="drHead">218</span>°</div>
+                  <div style="margin-top:3px;">PERCEPTION</div>
+                  <div>YOLO: <span id="drYolo">CLEAR</span></div>
+                  <div>QR: <span id="drQR">PENDING</span></div>
+                  <div style="margin-top:3px;">STATE: <span id="drState" style="color:#44ccff;">NAVIGATING</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Raspberry+Pi+delivery+robot+GPS+YOLO+waypoint+navigation" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Last-mile delivery robots like Starship Technologies' units are becoming common on university campuses. This educational replica combines three advanced subsystems: (1) GPS waypoint navigation with haversine distance + bearing PD controller, reusing the lawnmower navigation stack. (2) Computer vision pedestrian detection — YOLOv8n runs at 4–6fps on Pi 4; if a "person" class is detected within 1.5m depth estimate, the robot stops. (3) QR code delivery verification — the recipient shows a QR code; pyzbar reads the delivery address; if it matches the order, the servo compartment opens. A complete autonomous logistics platform in one project.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📍</span><div><span class="comp-name">U-blox NEO-M8N GPS Module</span><span class="comp-note"> — 3.5m CEP accuracy; 10Hz update rate; UART → PySerial → pynmea2 parsing; onboard patch antenna; L80 or BN-880 alternatives</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Raspberry Pi Camera v2 (wide-angle)</span><span class="comp-note"> — 160° FOV lens mod preferred; YOLOv8n pedestrian detection; pyzbar QR scanning; both running on same frame pipeline</span></div></li>
+                <li><span class="comp-icon">🤖</span><div><span class="comp-name">Wheeled Chassis + L298N Motor Driver</span><span class="comp-note"> — 4WD platform or differential drive 2WD; 12V DC motors; L298N H-bridge; encoder feedback optional (odometry for short-range dead-reckoning)</span></div></li>
+                <li><span class="comp-icon">📦</span><div><span class="comp-name">Servo Compartment Lock</span><span class="comp-note"> — MG996R or DS3115 metal gear servo; 3D-printed hatch latch; SG90 alternative for lightweight build; pulls locking rod to open lid on delivery verify</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>GPS Waypoint Navigation</h4><p>Load delivery waypoints as (lat, lon) list from JSON. Parse GPS NMEA: <code>import serial, pynmea2; msg = pynmea2.parse(line); lat, lon = msg.latitude, msg.longitude</code>. Haversine distance to next waypoint: <code>d = 2*R*arcsin(sqrt(sin²(Δlat/2)+cos(lat1)*cos(lat2)*sin²(Δlon/2)))</code>. Bearing: <code>θ = atan2(sin(Δlon)*cos(lat2), cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(Δlon))</code>. Heading error (IMU compass vs bearing target) → PD motor command: <code>left_speed = base - Kp*err - Kd*derr; right_speed = base + Kp*err + Kd*derr</code>. Waypoint reached at distance &lt;1m → advance to next.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>YOLOv8n Pedestrian Detection</h4><p>Install: <code>pip install ultralytics</code>. Load nano model (6MB): <code>from ultralytics import YOLO; model = YOLO("yolov8n.pt")</code>. Run on every 3rd frame (balance fps vs latency): <code>results = model(frame, classes=[0], conf=0.5)</code>. Class 0 = "person". Estimate distance from bounding box height: detected person bounding box height h_px at known distance d_ref: <code>d_est = d_ref * h_ref_px / h_px</code>. If any person closer than 1.5m → pause motors, wait for clear path. Beep warning tone. Resume after 3 seconds of no detection.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>QR Code Delivery Verification</h4><p>On arrival at delivery waypoint: stop motors, activate "DELIVERY MODE". Announce via speaker: "Please show QR code". Continuously scan camera frame with pyzbar: <code>from pyzbar.pyzbar import decode; codes = decode(frame)</code>. Parse decoded data: <code>delivery_data = json.loads(codes[0].data.decode())</code>. Compare: <code>if delivery_data['order_id'] == current_order: verified = True</code>. On match: open compartment servo: <code>servo.ChangeDutyCycle(7.5)</code> (90° open). Wait 10s, close: <code>servo.ChangeDutyCycle(5.0)</code>. Log mismatch attempts (security).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>MQTT Delivery Confirmation</h4><p>On successful delivery: publish to broker: <code>import paho.mqtt.client as mqtt; client.publish("delivery/confirmed", json.dumps({"order_id": oid, "lat": lat, "lon": lon, "timestamp": time.time()}))</code>. Also publish telemetry every 5s: current position, battery voltage, speed, obstacle status, next waypoint. Receive return-to-base command: subscribe to "robot/command" topic. Process: "RETURN" → load depot GPS as final waypoint. "STOP" → emergency halt. Web dashboard: Grafana + InfluxDB with MQTT bridge shows live robot position on a map.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import serial, pynmea2, math, time
+from ultralytics import YOLO
+from pyzbar.pyzbar import decode
+from picamera2 import Picamera2
+import RPi.GPIO as GPIO, json
+
+# Setup
+model = YOLO("yolov8n.pt"); cam = Picamera2(); cam.start()
+gps_ser = serial.Serial('/dev/ttyAMA0', 9600)
+WAYPOINTS = [{"lat": 51.5074, "lon": -0.1278, "order_id": "DEL001"}]
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000
+    φ = math.radians(lat2-lat1); λ = math.radians(lon2-lon1)
+    a = math.sin(φ/2)**2 + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(λ/2)**2
+    return 2*R*math.asin(math.sqrt(a))
+
+wp_idx = 0
+while wp_idx < len(WAYPOINTS):
+    wp = WAYPOINTS[wp_idx]
+    # Parse GPS
+    line = gps_ser.readline().decode(errors='ignore')
+    if 'GPGGA' in line:
+        try:
+            msg = pynmea2.parse(line)
+            dist = haversine(msg.latitude, msg.longitude, wp['lat'], wp['lon'])
+            print(f"Distance to waypoint: {dist:.1f}m")
+            if dist < 1.0:
+                # At waypoint — verify QR
+                frame = cam.capture_array()
+                codes = decode(frame)
+                if codes and json.loads(codes[0].data)['order_id'] == wp['order_id']:
+                    GPIO.output(SERVO_PIN, GPIO.HIGH)  # Open compartment
+                    print(f"Delivered order {wp['order_id']} ✓")
+                    wp_idx += 1
+        except: pass
+    # Check pedestrians
+    frame = cam.capture_array()
+    results = model(frame, classes=[0], conf=0.5, verbose=False)
+    if results[0].boxes and len(results[0].boxes) > 0:
+        stop_motors(); time.sleep(2)
+    else:
+        navigate_to_waypoint(wp)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📱 Customer SMS Delivery Alert</span>
+                <span class="app-tag">🗺️ Path Planning (A* Grid Map)</span>
+                <span class="app-tag">🔒 Pin-Code Alternative to QR</span>
+                <span class="app-tag">🔋 Battery-Aware Routing</span>
+                <span class="app-tag">📸 Delivery Proof-of-Photo</span>
+                <span class="app-tag">🔄 Multi-Robot Fleet Control</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $95 – $180</li><li><strong>Build Time:</strong> 16 – 28 hours</li><li><strong>GPS Accuracy:</strong> 3.5m CEP</li><li><strong>YOLO speed:</strong> 4–6 fps on Pi 4</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>GPS haversine navigation</li><li>YOLOv8n pedestrian detection</li><li>QR code scanning (pyzbar)</li><li>Servo compartment actuation</li><li>MQTT telemetry publishing</li><li>State machine robot control</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">ultralytics (YOLOv8)</span><span class="lib-desc"> — Pedestrian detection</span></li><li><span class="lib-name">pyzbar</span><span class="lib-desc"> — QR code scanning</span></li><li><span class="lib-name">pynmea2</span><span class="lib-desc"> — NMEA GPS parsing</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const drC=document.getElementById('drCanvas');const drCtx=drC.getContext('2d');
+    let drPhase=0;
+    const waypoints=[[70,90],[100,70],[110,40],[80,25],[40,20]];
+    let drWP=0,drBotX=70,drBotY=90;
+    const drStates=['NAVIGATING','OBSTACLE STOP','QR VERIFY','DELIVERED'];
+    let drStateIdx=0,drStateT=0;
+    function drawDR(){
+      drCtx.fillStyle='rgba(0,5,8,0.35)';drCtx.fillRect(0,0,140,110);
+      // Waypoint path
+      drCtx.strokeStyle='rgba(100,180,255,0.3)';drCtx.lineWidth=1;drCtx.setLineDash([3,3]);drCtx.beginPath();
+      waypoints.forEach((wp,i)=>i===0?drCtx.moveTo(wp[0],wp[1]):drCtx.lineTo(wp[0],wp[1]));
+      drCtx.stroke();drCtx.setLineDash([]);
+      // Waypoints
+      waypoints.forEach((wp,i)=>{
+        drCtx.fillStyle=i<drWP?'#44ff88':i===drWP?'#ffff44':'rgba(100,150,200,0.5)';
+        drCtx.beginPath();drCtx.arc(wp[0],wp[1],4,0,Math.PI*2);drCtx.fill();
+      });
+      // Robot movement
+      const twp=waypoints[drWP];
+      const dx=twp[0]-drBotX,dy=twp[1]-drBotY;const d=Math.sqrt(dx*dx+dy*dy);
+      if(d>2){drBotX+=dx/d*0.5;drBotY+=dy/d*0.5;}else{drWP=(drWP+1)%waypoints.length;}
+      // Robot body
+      drCtx.fillStyle='#44ccff';drCtx.fillRect(drBotX-5,drBotY-5,10,10);
+      drCtx.fillStyle='rgba(100,200,255,0.4)';drCtx.beginPath();drCtx.arc(drBotX,drBotY,15,0,Math.PI*2);drCtx.fill();
+      // GPS path trace
+      drCtx.fillStyle='rgba(0,200,100,0.5)';drCtx.fillRect(drBotX,drBotY,1.5,1.5);
+      drPhase+=0.04;drStateT++;
+      if(drStateT>80){drStateT=0;drStateIdx=(drStateIdx+1)%drStates.length;}
+      document.getElementById('drWP').textContent=drWP+1;
+      document.getElementById('drDist').textContent=Math.round(Math.sqrt((twp[0]-drBotX)**2+(twp[1]-drBotY)**2)*0.5);
+      document.getElementById('drHead').textContent=Math.round((Math.atan2(twp[1]-drBotY,twp[0]-drBotX)*180/Math.PI+360)%360);
+      document.getElementById('drYolo').textContent=drStateIdx===1?'PERSON 1.2m':'CLEAR';
+      document.getElementById('drYolo').style.color=drStateIdx===1?'#ff4444':'#44ff88';
+      document.getElementById('drQR').textContent=drStateIdx===2?'SCANNING':'PENDING';
+      document.getElementById('drState').textContent=drStates[drStateIdx];
+      requestAnimationFrame(drawDR);
+    }
+    drawDR();
+  </script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-Time Object Detection (YOLO) – Advanced Project | Studgine</title>
+  <meta name="description" content="Run YOLOv8n real-time object detection on Raspberry Pi 5 or Google Coral USB accelerator. Detect and label objects in live video at 10+ FPS." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050810 0%,#080a18 100%);border-radius:12px;padding:20px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .yolo-frame{width:130px;height:100px;border:2px solid #203060;border-radius:6px;background:#060c18;position:relative;overflow:hidden;}
+    .yolo-box{position:absolute;border:2px solid #00ff80;border-radius:2px;font-size:6px;color:#00ff80;padding:1px 2px;transition:all 0.4s;}
+    .yolo-box.person{border-color:#ff4080;color:#ff4080;}
+    .yolo-box.car{border-color:#ffaa00;color:#ffaa00;}
+    .det-log{font-family:monospace;font-size:8px;color:#4080c0;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Real-Time Object Detection (YOLO)</h1>
+      <p>Deploy YOLOv8n on a Raspberry Pi 5 or Google Coral USB Accelerator to detect and label 80 COCO object classes in a live video stream at 10+ FPS — a gateway into edge computer vision deployment.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Real-Time Object Detection (YOLO)</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div class="yolo-frame" id="yoloFrame">
+                    <div class="yolo-box person" id="box1" style="left:10px;top:10px;width:35px;height:60px;">person 0.92</div>
+                    <div class="yolo-box car" id="box2" style="left:75px;top:40px;width:45px;height:30px;">car 0.88</div>
+                  </div>
+                  <div style="font-family:monospace;font-size:7px;color:#304060;">YOLO FRAME PREVIEW</div>
+                </div>
+                <div class="det-log">
+                  <div>MODEL: YOLOv8n</div>
+                  <div>FPS: <span id="detFps">12</span></div>
+                  <div>DETS: <span id="detCount">2</span></div>
+                  <div>INFER: <span id="detInfer">78ms</span></div>
+                  <div>DEVICE: <span id="detDevice">Pi 5</span></div>
+                  <div>INPUT: 320×320</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=YOLOv8+object+detection+raspberry+pi+5+real+time" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>YOLO (You Only Look Once) processes the entire image in a single neural network pass, making it extremely fast. The YOLOv8n (nano) variant has only 3.2M parameters — small enough to run meaningfully on Raspberry Pi 5 (with ARM NEON optimisations) or at full speed on a Google Coral USB Accelerator (4 TOPS of INT8 inference).</p>
+              <p>This project covers the complete edge deployment pipeline: download pretrained COCO weights → export to TFLite INT8 → benchmark on Pi → overlay bounding boxes on live camera feed → trigger GPIO outputs based on detections (e.g., buzzer when person detected).</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 5 (4GB) or Pi 4</span><span class="comp-note"> — Pi 5: ~12 FPS YOLOv8n at 320×320. Pi 4: ~4-6 FPS. Pi 5 has 2× CPU speed; use 64-bit OS for best performance</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">Google Coral USB Accelerator (optional)</span><span class="comp-note"> — 4 TOPS INT8 inference; bumps detection to 25+ FPS; requires Edge TPU TFLite model export</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Pi Camera v3 or USB Webcam</span><span class="comp-note"> — Capture at 640×480; resize to 320×320 for inference; full 1920×1080 only if Coral accelerator used</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Export YOLOv8n to TFLite</h4><p>On PC: <code>pip install ultralytics</code>. Export: <code>from ultralytics import YOLO; model = YOLO('yolov8n.pt'); model.export(format='tflite', int8=True, imgsz=320)</code>. This produces <code>yolov8n_int8.tflite</code> (~3MB). Copy to Pi. For Coral: export with <code>format='edgetpu'</code> (requires Google Edge TPU compiler installed).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>TFLite Inference on Pi</h4><p>Load model: <code>interpreter = tflite.Interpreter("yolov8n_int8.tflite", num_threads=4)</code>. Preprocess: resize to 320×320, normalise to [0,1], add batch dim. Run: <code>interpreter.set_tensor(in_idx, img); interpreter.invoke(); out = interpreter.get_tensor(out_idx)</code>. YOLOv8 output shape: (1, 84, 2100) — 84 = 4 box coords + 80 class scores, 2100 candidate boxes. Apply NMS (Non-Max Suppression) with confidence threshold 0.45, IoU threshold 0.5. Use <code>ultralytics.utils.ops.non_max_suppression()</code> or implement manually.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Draw Detections + Actions</h4><p>For each detection: <code>cv2.rectangle(frame, (x1,y1), (x2,y2), color, 2)</code> and <code>cv2.putText(frame, f"{class_name} {conf:.2f}", ...)</code>. Map class IDs to COCO names (80-class list). Trigger actions: loop through detections, if class_id==0 (person) and confidence&gt;0.7: <code>GPIO.output(buzzer_pin, HIGH)</code>. Calculate FPS: <code>fps = 1/(time.time()-t_prev)</code>. Display on HDMI with <code>cv2.imshow()</code> or stream via Flask MJPEG.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Performance Optimisation</h4><p>Skip frames: run inference every 2nd or 3rd frame; show previous boxes on skipped frames. Reduce input size: 256×256 instead of 320×320 gives 40% speedup with small accuracy loss. Multi-threading: capture thread + inference thread + display thread run independently via Queue. For Pi 5: compile OpenCV with NEON + VFPV3 flags for 30% speedup. Monitor CPU temperature: thermal throttling at 80°C; add heatsink/fan.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import cv2, numpy as np, time
+import tflite_runtime.interpreter as tflite
+
+COCO_NAMES = ["person","bicycle","car","motorcycle","airplane","bus","train"]  # ... 80 total
+CONF_THRESH = 0.45; IOU_THRESH = 0.5
+
+interpreter = tflite.Interpreter("yolov8n_int8.tflite", num_threads=4)
+interpreter.allocate_tensors()
+in_idx = interpreter.get_input_details()[0]['index']
+out_idx = interpreter.get_output_details()[0]['index']
+
+def preprocess(frame, size=320):
+    img = cv2.resize(frame, (size, size))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return (img.astype(np.float32)/255.0)[np.newaxis]
+
+def infer(frame):
+    img = preprocess(frame)
+    interpreter.set_tensor(in_idx, img)
+    interpreter.invoke()
+    return interpreter.get_tensor(out_idx)[0]  # shape (84, 2100)
+
+cap = cv2.VideoCapture(0); t0 = time.time()
+while True:
+    ret, frame = cap.read()
+    if not ret: break
+    output = infer(frame)
+    # output[0:4] = cx,cy,w,h (normalised); output[4:84] = class scores
+    scores = output[4:].max(axis=0); mask = scores > CONF_THRESH
+    boxes = output[:4, mask].T; class_ids = output[4:, mask].argmax(axis=0)
+    confs = scores[mask]
+    # Scale boxes to frame
+    h, w = frame.shape[:2]
+    for (cx,cy,bw,bh), cls, conf in zip(boxes, class_ids, confs):
+        x1,y1 = int((cx-bw/2)*w), int((cy-bh/2)*h)
+        x2,y2 = int((cx+bw/2)*w), int((cy+bh/2)*h)
+        cv2.rectangle(frame,(x1,y1),(x2,y2),(0,255,0),2)
+        cv2.putText(frame,f"{COCO_NAMES[cls]} {conf:.2f}",(x1,y1-5),cv2.FONT_HERSHEY_SIMPLEX,0.4,(0,255,0),1)
+    fps = 1/(time.time()-t0); t0=time.time()
+    cv2.putText(frame,f"FPS:{fps:.1f}",(5,20),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255,255,0),1)
+    cv2.imshow("YOLO",frame)
+    if cv2.waitKey(1)&0xFF==ord('q'): break</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🚶 Person Counter Security</span>
+                <span class="app-tag">🚗 Parking Space Monitor</span>
+                <span class="app-tag">📡 MJPEG Web Stream</span>
+                <span class="app-tag">⚡ Coral USB 25 FPS</span>
+                <span class="app-tag">🔔 Telegram Alert on Detection</span>
+                <span class="app-tag">🏷️ Custom Class Training</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $95</li><li><strong>Build Time:</strong> 4 – 7 hours</li><li><strong>Platform:</strong> Raspberry Pi 5</li><li><strong>Speed:</strong> 10–25 FPS @ 320px</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>YOLOv8 architecture overview</li><li>TFLite INT8 model export</li><li>NMS post-processing</li><li>Edge TPU Coral deployment</li><li>Multi-threaded video pipeline</li><li>GPIO triggered actions</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">ultralytics</span><span class="lib-desc"> — YOLOv8 training + TFLite export</span></li><li><span class="lib-name">tflite-runtime</span><span class="lib-desc"> — Lightweight inference on Pi</span></li><li><span class="lib-name">opencv-python</span><span class="lib-desc"> — Camera capture + box drawing</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const classes=[{label:'person 0.92',cls:'person',x:10,y:10,w:35,h:60},{label:'car 0.88',cls:'car',x:75,y:40,w:45,h:30},{label:'chair 0.76',cls:'',x:20,y:55,w:30,h:40},{label:'dog 0.81',cls:'',x:60,y:15,w:40,h:55}];
+    let t=0;
+    setInterval(()=>{
+      t++;
+      const n=1+(t%3);
+      document.getElementById('detCount').textContent=n;
+      document.getElementById('detFps').textContent=10+Math.floor(Math.random()*4);
+      document.getElementById('detInfer').textContent=(70+Math.floor(Math.random()*20))+'ms';
+      [document.getElementById('box1'),document.getElementById('box2')].forEach((b,i)=>{
+        const c=classes[(t+i)%classes.length];
+        b.textContent=c.label;
+        b.className='yolo-box '+(c.cls||'');
+        b.style.left=c.x+'px';b.style.top=c.y+'px';b.style.width=c.w+'px';b.style.height=c.h+'px';
+      });
+    },600);
+  </script>
+</body>
+</html>

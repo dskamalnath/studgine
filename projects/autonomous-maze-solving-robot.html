@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomous Maze-Solving Robot – Advanced Project | Studgine</title>
+  <meta name="description" content="Build an autonomous maze-solving robot using flood-fill algorithm, IR wall sensors, and Raspberry Pi with encoder-based odometry for reliable navigation." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050808 0%,#080d08 100%);border-radius:12px;padding:16px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .maze-grid{display:grid;grid-template-columns:repeat(7,20px);grid-template-rows:repeat(7,20px);gap:1px;}
+    .maze-cell{width:20px;height:20px;background:#0a1a0a;border:1px solid #0d230d;border-radius:2px;transition:background 0.2s;}
+    .maze-cell.wall{background:#0d2a0d;border-color:#143014;}
+    .maze-cell.path{background:#003300;}
+    .maze-cell.robot{background:#00ff80;border-radius:50%;}
+    .maze-cell.visited{background:#001a00;}
+    .maze-cell.goal{background:#ff8800;}
+    .maze-info{font-family:monospace;font-size:8px;color:#40a060;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Autonomous Maze-Solving Robot</h1>
+      <p>Build a robot that maps and solves a maze autonomously — using the flood-fill algorithm with IR wall sensors for maze discovery and encoder odometry for precise cell-to-cell movement on Raspberry Pi.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Autonomous Maze-Solving Robot</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div>
+                  <div style="font-family:monospace;font-size:7px;color:#204020;margin-bottom:4px;">MAZE MAP (7×7)</div>
+                  <div class="maze-grid" id="mazeGrid"></div>
+                </div>
+                <div class="maze-info">
+                  <div>POS: <span id="mazePos">(0,0)</span></div>
+                  <div>GOAL: (6,6)</div>
+                  <div>STEPS: <span id="mazeSteps">0</span></div>
+                  <div>WALLS: <span id="mazeWalls">L,F</span></div>
+                  <div>ALGO: FLOOD-FILL</div>
+                  <div>STATUS: <span id="mazeStatus" style="color:#00ff80;">SOLVING</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=maze+solving+robot+flood+fill+raspberry+pi+micromouse" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The micromouse / maze-solving robot is a classic robotics competition challenge. This implementation uses the flood-fill algorithm: think of the goal cell as a bowl of water — water (distances) flood outward, and the robot always moves to the neighbour with the smallest flood value. As the robot discovers walls, it updates the flood values and changes direction. This guarantees an optimal path once the whole maze is explored.</p>
+              <p>You'll learn cell-based maze representation (2D array of wall bitmasks), encoder odometry for accurate forward/turn movements, and PID-corrected straight-line driving. The split between exploration (first run) and speed run (second run taking the known optimal path) is a key algorithm design concept.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi Zero 2W</span><span class="comp-note"> — Small form factor fits maze robot; runs Python flood-fill + motor PID; pigpio for encoder interrupts</span></div></li>
+                <li><span class="comp-icon">👁️</span><div><span class="comp-name">3× IR Wall Sensors (GP2Y0A21)</span><span class="comp-note"> — Left wall / front wall / right wall detection; analog 10–80cm range; sample 5 times for noise rejection</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">2× N20 Motors with Encoders</span><span class="comp-note"> — Quadrature encoders; count clicks for distance and turn angle; essential for cell-accurate navigation</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">TB6612FNG Motor Driver</span><span class="comp-note"> — 1.2A continuous per channel; logic-level PWM; thermal protection for continuous maze running</span></div></li>
+                <li><span class="comp-icon">📐</span><div><span class="comp-name">MPU-6050 IMU (optional)</span><span class="comp-note"> — Gyro-assisted turns: verify 90° turn accuracy using Z-axis gyro, especially on slippery surfaces</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Maze Representation</h4><p>Represent a 16×16 maze (standard micromouse) as two arrays: <code>walls[16][16]</code> (bitmask: NESW = bits 3,2,1,0) and <code>flood[16][16]</code> (distance values). Initialise: outer boundary walls set, interior unknown. Flood-fill initialisation: set flood[goal] = 0, BFS outward: for each cell with value n, unblocked neighbours get n+1. All cells start with flood value based on Manhattan distance to goal (heuristic for first move).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Flood-Fill Update Algorithm</h4><p>Each time robot moves to a new cell and detects walls via IR sensors: update <code>walls[x][y]</code> bitmask. Check if current flood values are consistent with known walls: for each cell, if its flood value is not 1 + min(accessible neighbours), it's inconsistent. Rerun BFS from goal to recompute all flood values. Move direction: choose the accessible neighbour with the lowest flood value. If tied, prefer the direction that hasn't been visited.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Precise Cell Navigation with Odometry</h4><p>Each maze cell is 180mm × 180mm (standard). Forward: drive until encoder counts = cells × counts_per_180mm. PID straight-line correction: use encoder difference between left/right wheels to correct drift. Turn 90°: spin one wheel forward, one backward until encoder counts = turn_counts (calibrated empirically). Wall-following correction: if left wall detected at &lt;30mm during forward drive, gently steer right. Combine encoder odometry (primary) with gyro heading (secondary crosscheck).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Exploration to Speed Run</h4><p><strong>Exploration phase</strong>: robot explores maze using flood-fill, building complete wall map. Terminates when flood value at start position after reaching goal equals steps taken (optimal path confirmed). <strong>Speed run</strong>: use recorded optimal path; run at maximum speed the motors can sustain while still reliably executing turns. Speed run uses pre-compiled turn list: [F, F, R, F, L, L, F...]. No IR sensing needed during speed run (path is known); just encoder-based dead reckoning.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>from collections import deque
+
+SIZE = 16; GOAL = (7, 7)
+walls = [[0]*SIZE for _ in range(SIZE)]
+flood = [[999]*SIZE for _ in range(SIZE)]
+
+def flood_fill():
+    flood[GOAL[0]][GOAL[1]] = 0
+    q = deque([GOAL])
+    dirs = [(0,1),(0,-1),(1,0),(-1,0)]  # N,S,E,W
+    bits  = [1,    2,    4,    8]       # wall bits
+    while q:
+        x,y = q.popleft()
+        for (dx,dy),bit in zip(dirs,bits):
+            nx,ny = x+dx,y+dy
+            if 0<=nx<SIZE and 0<=ny<SIZE:
+                if not (walls[x][y] & bit):  # no wall in that direction
+                    if flood[nx][ny] > flood[x][y]+1:
+                        flood[nx][ny] = flood[x][y]+1
+                        q.append((nx,ny))
+
+def best_direction(x, y):
+    dirs = [(0,1),(0,-1),(1,0),(-1,0)]
+    bits  = [1,    2,    4,    8]
+    best = None; best_val = 999
+    for (dx,dy),bit in zip(dirs,bits):
+        nx,ny = x+dx,y+dy
+        if 0<=nx<SIZE and 0<=ny<SIZE:
+            if not (walls[x][y] & bit) and flood[nx][ny] < best_val:
+                best_val = flood[nx][ny]; best = (dx,dy)
+    return best
+
+flood_fill()  # initial fill before exploration starts</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏎️ Speed Run Optimisation</span>
+                <span class="app-tag">📡 Bluetooth Live Map View</span>
+                <span class="app-tag">🔢 Diagonal Movements</span>
+                <span class="app-tag">⚡ Deadlock Detection</span>
+                <span class="app-tag">🏆 Micromouse Competition</span>
+                <span class="app-tag">📊 Path Visualiser on Pi</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $95</li><li><strong>Build Time:</strong> 10 – 15 hours</li><li><strong>Platform:</strong> Raspberry Pi Zero 2W</li><li><strong>Algorithm:</strong> Flood-fill BFS</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Flood-fill BFS algorithm</li><li>Maze wall bitmask representation</li><li>Encoder odometry + PID</li><li>Cell-accurate motor navigation</li><li>Exploration vs speed-run strategy</li><li>Gyro-assisted turn correction</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pigpio</span><span class="lib-desc"> — Encoder interrupt + motor PWM</span></li><li><span class="lib-name">smbus2</span><span class="lib-desc"> — MPU-6050 gyro for turn correction</span></li><li><span class="lib-name">collections.deque</span><span class="lib-desc"> — BFS queue for flood-fill</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    // Build maze grid
+    const grid=document.getElementById('mazeGrid');
+    const cells=[];
+    for(let r=0;r<7;r++){for(let c=0;c<7;c++){const d=document.createElement('div');d.className='maze-cell';grid.appendChild(d);cells.push(d);}}
+    // Simple path
+    const path=[[0,0],[0,1],[0,2],[1,2],[2,2],[2,3],[2,4],[3,4],[4,4],[4,5],[4,6],[5,6],[6,6]];
+    const wallCells=[[1,0],[1,1],[2,0],[2,1],[3,0],[3,1],[3,2],[3,3],[4,0],[4,1],[4,2],[4,3],[5,0],[5,1],[5,2],[5,3],[5,4],[5,5],[6,0],[6,1],[6,2],[6,3],[6,4],[6,5]];
+    wallCells.forEach(([r,c])=>{cells[r*7+c].classList.add('wall');});
+    cells[6*7+6].classList.add('goal');
+    let pi=0,visited=new Set();
+    setInterval(()=>{
+      if(pi<path.length){
+        const [r,c]=path[pi];
+        visited.add(r*7+c);
+        cells.forEach((cl,i)=>{cl.classList.remove('robot');cl.classList.remove('path');if(visited.has(i)&&!cl.classList.contains('wall')&&!cl.classList.contains('goal'))cl.classList.add('path');});
+        if(!cells[r*7+c].classList.contains('goal'))cells[r*7+c].classList.add('robot');
+        document.getElementById('mazePos').textContent=`(${c},${r})`;
+        document.getElementById('mazeSteps').textContent=pi;
+        document.getElementById('mazeWalls').textContent=pi%3===0?'L,F':pi%3===1?'F':'R,F';
+        if(pi===path.length-1){document.getElementById('mazeStatus').textContent='SOLVED!';}
+        pi++;
+      } else {
+        pi=0;visited=new Set();cells.forEach(cl=>{cl.classList.remove('robot','path');});document.getElementById('mazeStatus').textContent='SOLVING';
+      }
+    },600);
+  </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tilt Angle Display – Studgine</title>
+  <meta name="description" content="Mount an MPU-6050 IMU and compute roll and pitch angles displayed on an OLED screen using Arduino and atan2 math." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:22px; padding:18px 16px; height:120px; }
+    .imu-chip { width:44px; height:44px; background:linear-gradient(135deg,#7c3aed,#5b21b6); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#c4b5fd; font-size:.6rem; font-weight:700; text-align:center; line-height:1.2; transform-origin:center; animation:imu-tilt 4s ease-in-out infinite; }
+    @keyframes imu-tilt { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(25deg)} 65%{transform:rotate(-20deg)} }
+    .oled-screen { width:80px; height:48px; background:#0f172a; border:2px solid #334155; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+    .oled-line { font-family:'Courier New',monospace; font-size:.55rem; color:#a5f3fc; }
+    .roll-val  { animation:roll-anim  4s ease-in-out infinite; }
+    .pitch-val { animation:pitch-anim 4s ease-in-out infinite; }
+    @keyframes roll-anim  { 0%,100%{--v:"R: 0.0°"} 30%{--v:"R: +25.2°"} 65%{--v:"R: -19.8°"} }
+    @keyframes pitch-anim { 0%,100%{--v:"P: 0.0°"} 30%{--v:"P: +12.1°"} 65%{--v:"P: -8.5°"} }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Tilt Angle Display</h1>
+      <p class="hero-sub">Mount an MPU-6050 IMU over I2C, compute roll and pitch angles from raw accelerometer data with <code>atan2</code>, and display them live on an OLED screen.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Tilt Angle Display</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="imu-chip">MPU<br>6050</div>
+          <div class="oled-screen">
+            <div class="oled-line" id="roll-line">Roll:  +0.0°</div>
+            <div class="oled-line" id="pitch-line">Pitch: +0.0°</div>
+            <div class="oled-line" style="color:#475569;">IMU Live</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">I2C accel data → atan2() → roll/pitch degrees → OLED</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+MPU6050+tilt+angle+OLED+display" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The <strong>MPU-6050</strong> is a 6-axis IMU (3-axis accelerometer + 3-axis gyroscope) that communicates over I2C. Its accelerometer measures the components of gravity along X, Y, Z axes. Using trigonometry — specifically <code>atan2(y, z)</code> for roll and <code>atan2(-x, sqrt(y²+z²))</code> for pitch — you convert raw g-values into human-readable degrees.</p>
+        <p>This project is the gateway to drone flight controllers, robotic arm stabilisation, gesture-controlled cars, and wearable health trackers. Mastering IMU data feeds directly into intermediate and advanced projects.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">📐</span><div><span class="comp-name">MPU-6050 Module</span><span class="comp-note">6-axis IMU over I2C</span></div></li>
+          <li><span class="comp-icon">🖥️</span><div><span class="comp-name">0.96″ SSD1306 OLED (I2C)</span><span class="comp-note">Angle display</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire the I2C bus</strong> — Both MPU-6050 (addr 0x68) and OLED (addr 0x3C) share the same SDA (A4) and SCL (A5) lines. Connect both VCCs to 3.3 V and GNDs to GND. MPU-6050's AD0 pin to GND selects address 0x68.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Read accelerometer</strong> — Use the MPU6050 library: <code>mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);</code>. Scale raw values: <code>float accelX = ax / 16384.0;</code> (for ±2 g range). Now accelX, Y, Z are in units of g (gravity).
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Compute roll and pitch</strong> — <code>float roll  = atan2(accelY, accelZ) * 180.0 / PI;</code><br><code>float pitch = atan2(-accelX, sqrt(accelY*accelY + accelZ*accelZ)) * 180.0 / PI;</code> — This gives ±90° pitch and ±180° roll relative to gravity.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Display on OLED</strong> — Clear the display each loop, then print: <code>display.print("Roll: "); display.println(roll,1);</code>. Use a complementary filter on the gyro data to smooth noisy readings: <code>angle = 0.98*(angle + gyro*dt) + 0.02*accelAngle;</code>
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🚁 Drone stabilisation</span>
+          <span class="app-tag">🤖 Robot arm levelling</span>
+          <span class="app-tag">🎮 Motion controller</span>
+          <span class="app-tag">⚖️ Digital spirit level</span>
+          <span class="app-tag">🚗 Car tilt alert</span>
+          <span class="app-tag">🏃 Step counter base</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$4 – $10</span></li>
+            <li class="fact-row"><span>Build Time</span><span>2 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Protocol</span><span>I2C</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">I2C multi-device bus</span></li>
+            <li><span class="skill-tag">IMU data reading</span></li>
+            <li><span class="skill-tag">atan2() trigonometry</span></li>
+            <li><span class="skill-tag">Complementary filter</span></li>
+            <li><span class="skill-tag">OLED display rendering</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Adafruit MPU6050</span></li>
+            <li><span class="skill-tag">Adafruit SSD1306</span></li>
+            <li><span class="skill-tag">Adafruit GFX</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="gesture-controlled-leds.html" class="skill-tag">Gesture-Controlled LEDs</a></li>
+            <li><a href="ultrasonic-distance-meter.html" class="skill-tag">Ultrasonic Distance Meter</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    // Animate OLED display values
+    const rollLine  = document.getElementById('roll-line');
+    const pitchLine = document.getElementById('pitch-line');
+    const angles = [
+      {r:0,   p:0},
+      {r:25,  p:12},
+      {r:25,  p:12},
+      {r:-20, p:-9},
+      {r:-20, p:-9},
+      {r:0,   p:0}
+    ];
+    let idx = 0;
+    function updateAngles(){
+      const a = angles[idx % angles.length];
+      rollLine.textContent  = 'Roll:  ' + (a.r >= 0 ? '+' : '') + a.r.toFixed(1) + '°';
+      pitchLine.textContent = 'Pitch: ' + (a.p >= 0 ? '+' : '') + a.p.toFixed(1) + '°';
+      idx++;
+    }
+    setInterval(updateAngles, 1400);
+  </script>
+</body>
+</html>

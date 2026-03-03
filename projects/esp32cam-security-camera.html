@@ -1,0 +1,327 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32-CAM Security Camera – Studgine</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage {
+      background: #0a0a0a;
+      border-radius: 12px;
+      height: 230px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+    /* Camera body */
+    .cam-body {
+      width: 80px; height: 58px;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 8px;
+      position: relative;
+      display: flex; align-items:center; justify-content:center;
+    }
+    .cam-lens {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #3a6ea5, #0d1b2a);
+      border: 3px solid #555;
+      box-shadow: 0 0 10px rgba(58,110,165,0.5);
+    }
+    .cam-led {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #e74c3c;
+      animation: blink 1.2s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .cam-wifi {
+      position: absolute;
+      bottom: 5px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.55rem;
+      color: #4a90d9;
+    }
+    /* Video frame preview */
+    .video-frame {
+      width: 130px; height: 95px;
+      background: #111;
+      border: 2px solid #2a9d8f;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    .video-scanline {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: rgba(42,157,143,0.4);
+      animation: scan 2s linear infinite;
+    }
+    @keyframes scan { 0%{top:0} 100%{top:100%} }
+    /* Scene silhouettes */
+    .scene-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #1a2a1a 0%, #0d150d 100%);
+    }
+    .figure {
+      position: absolute;
+      bottom: 10px;
+      font-size: 1.4rem;
+      transition: left 1.5s ease;
+    }
+    .motion-box {
+      position: absolute;
+      border: 1px dashed #e74c3c;
+      border-radius: 2px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .motion-box.active { opacity: 1; }
+    /* Status overlay */
+    .cam-status {
+      position: absolute;
+      top: 6px; left: 6px;
+      font-size: 0.48rem;
+      color: #2a9d8f;
+      font-family: monospace;
+      line-height: 1.6;
+    }
+    .fps-badge {
+      position: absolute;
+      bottom: 5px; right: 5px;
+      font-size: 0.48rem;
+      color: #fff;
+      background: rgba(0,0,0,0.6);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    /* Info panel */
+    .cam-info {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .info-row {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 5px;
+      padding: 4px 10px;
+      font-size: 0.6rem;
+      color: #ccc;
+      font-family: monospace;
+      min-width: 110px;
+    }
+    .info-row span { color: #4a90d9; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="navbar container">
+      <a href="../index.html" class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="16" fill="#FF6B35"/>
+          <path d="M8 22 L16 10 L24 22" stroke="white" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+          <circle cx="16" cy="10" r="2" fill="white"/>
+        </svg>
+        <span>Studgine</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html" class="active">Projects</a></li>
+        <li><a href="../resources.html">Resources</a></li>
+        <li><a href="../about.html">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟡 Intermediate Project</p>
+      <h1>ESP32-CAM Security Camera</h1>
+      <p>Stream live MJPEG video from the ESP32-CAM module over Wi-Fi and trigger motion-based snapshot emails. Covers camera init, web server, and notification APIs.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb">
+      <a href="../projects.html">← Back to Projects</a>
+      <span>/</span>
+      <span>ESP32-CAM Security Camera</span>
+    </nav>
+
+    <div class="detail-layout">
+      <div class="detail-main">
+
+        <div class="anim-stage" id="camStage">
+          <!-- Camera body -->
+          <div class="cam-body">
+            <div class="cam-lens"></div>
+            <div class="cam-led"></div>
+            <div class="cam-wifi">📶 Wi-Fi</div>
+          </div>
+          <!-- Video frame -->
+          <div class="video-frame">
+            <div class="scene-bg"></div>
+            <div class="video-scanline"></div>
+            <div class="figure" id="figA" style="left:20px">🚶</div>
+            <div class="motion-box" id="mbox" style="left:15px;top:5px;width:35px;height:60px;"></div>
+            <div class="cam-status">LIVE STREAM<br>192.168.1.42:80</div>
+            <div class="fps-badge" id="fpsBadge">10 fps</div>
+          </div>
+          <!-- Info panel -->
+          <div class="cam-info">
+            <div class="info-row">IP: <span>192.168.1.42</span></div>
+            <div class="info-row">Port: <span>80</span></div>
+            <div class="info-row">Res: <span>SVGA</span></div>
+            <div class="info-row" id="motionStatus">Motion: <span id="mStat">Idle</span></div>
+            <div class="info-row">Snap: <span id="snapCount">0</span> saved</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Simulated live stream with motion detection bounding box</p>
+
+        <div class="video-links">
+          <strong>🎬 Video References:</strong>
+          <a href="https://www.youtube.com/results?search_query=ESP32-CAM+MJPEG+stream+web+server" target="_blank" rel="noopener">ESP32-CAM Stream Setup</a>
+          <a href="https://www.youtube.com/results?search_query=ESP32-CAM+motion+detection+snapshot+email" target="_blank" rel="noopener">Motion Snapshot Email</a>
+        </div>
+
+        <h2>What You'll Build</h2>
+        <p>A Wi-Fi security camera using the $5 ESP32-CAM module. The built-in OV2640 camera is initialised via the <code>esp_camera</code> library with SVGA resolution (800×600). An AsyncWebServer serves an MJPEG stream endpoint at <code>/stream</code> — any browser on the same network can view the live feed. A simple frame-differencing algorithm in the ESP32 detects motion, saves a JPEG snapshot to the onboard microSD, and sends an email alert with the image attached using SMTP over TLS (<code>ESP_Mail_Client</code> library).</p>
+
+        <h2>Components Required</h2>
+        <ul class="component-list">
+          <li><span>ESP32-CAM Module (AI-Thinker)</span><span>×1</span></li>
+          <li><span>FTDI USB-to-UART Programmer</span><span>×1</span></li>
+          <li><span>MicroSD Card (≥8 GB, Class 10)</span><span>×1</span></li>
+          <li><span>PIR Sensor (optional trigger)</span><span>×1</span></li>
+          <li><span>5 V / 2 A Power Supply</span><span>×1</span></li>
+          <li><span>3D-Printed Camera Mount</span><span>×1</span></li>
+          <li><span>Jumper Wires</span><span>—</span></li>
+        </ul>
+
+        <h2>How It Works</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h3>Camera Initialisation</h3>
+            <p>Configure <code>camera_config_t</code> with XCLK, PCLK, VSYNC, HSYNC, D0–D7 pin mappings. Set <code>PIXFORMAT_JPEG</code> and <code>FRAMESIZE_SVGA</code>. Use <code>esp_camera_init()</code> — allow 500 ms warmup for auto-exposure.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h3>MJPEG Stream Server</h3>
+            <p>In the <code>/stream</code> handler, write HTTP multipart headers then loop: capture frame with <code>esp_camera_fb_get()</code>, write JPEG boundary, write frame buffer, call <code>esp_camera_fb_return()</code>. Achieves 10–15 fps on good Wi-Fi.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h3>Motion Detection</h3>
+            <p>Downsample every frame to 20×15 grayscale. Compute pixel-difference sum vs previous frame. If sum exceeds threshold, flag motion, save JPEG to SD with timestamp filename, and arm the email sender.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <h3>Email Alert with Snapshot</h3>
+            <p>Use <code>ESP_Mail_Client</code> to authenticate with Gmail SMTP (port 465, SSL). Attach the saved JPEG and send "Motion detected at [timestamp]" subject with a 60-second cooldown between alerts.</p>
+          </div>
+        </div>
+
+        <h2>Real-World Applications</h2>
+        <div class="applications-grid">
+          <div class="app-card">🔐<br>Home Security</div>
+          <div class="app-card">📦<br>Porch Monitor</div>
+          <div class="app-card">🐾<br>Pet Camera</div>
+          <div class="app-card">🏭<br>Factory Surveillance</div>
+          <div class="app-card">🚗<br>Parking Monitor</div>
+          <div class="app-card">🌿<br>Wildlife Trap Cam</div>
+        </div>
+      </div>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card quick-facts">
+          <h3>Quick Facts</h3>
+          <dl>
+            <dt>Difficulty</dt><dd>🟡 Intermediate</dd>
+            <dt>Build Time</dt><dd>4–6 hours</dd>
+            <dt>Budget</dt><dd>$12 – $25</dd>
+            <dt>MCU</dt><dd>ESP32-CAM</dd>
+            <dt>Protocol</dt><dd>HTTP / SMTP</dd>
+          </dl>
+        </div>
+        <div class="sidebar-card">
+          <h3>Skills You'll Learn</h3>
+          <ul>
+            <li>Camera peripheral init</li>
+            <li>MJPEG streaming</li>
+            <li>Frame-differencing motion</li>
+            <li>SMTP email with attachments</li>
+            <li>SD card file I/O</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Libraries Needed</h3>
+          <ul>
+            <li><strong>esp_camera</strong> – built-in Camera</li>
+            <li><strong>ESPAsyncWebServer</strong> – HTTP server</li>
+            <li><strong>ESP_Mail_Client</strong> – SMTP</li>
+            <li><strong>SD_MMC</strong> – SD card</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Try Next</h3>
+          <ul>
+            <li><a href="wifi-weather-station.html">Wi-Fi Weather Station</a></li>
+            <li><a href="gps-vehicle-tracker.html">GPS Vehicle Tracker</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="btn btn-secondary back-btn">← All Projects</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer-bottom">
+    <div class="container">
+      <p>© 2025 Studgine. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script>
+    let snaps = 0;
+    const fig = document.getElementById('figA');
+    const mbox = document.getElementById('mbox');
+    const mStat = document.getElementById('mStat');
+    const snapCount = document.getElementById('snapCount');
+    const fpsBadge = document.getElementById('fpsBadge');
+    const positions = [10, 30, 60, 80, 50, 25];
+    let pi = 0;
+    let motionTimeout;
+
+    function doMotion() {
+      const newLeft = positions[pi % positions.length] * 1.1;
+      fig.style.left = newLeft + 'px';
+      mbox.style.left = (newLeft - 5) + 'px';
+      mbox.classList.add('active');
+      mStat.textContent = 'DETECTED';
+      mStat.style.color = '#e74c3c';
+      snaps++;
+      snapCount.textContent = snaps;
+      fpsBadge.textContent = '12 fps';
+      clearTimeout(motionTimeout);
+      motionTimeout = setTimeout(() => {
+        mbox.classList.remove('active');
+        mStat.textContent = 'Idle';
+        mStat.style.color = '#4a90d9';
+        fpsBadge.textContent = '10 fps';
+      }, 2000);
+      pi++;
+    }
+    setInterval(doMotion, 4000);
+  </script>
+</body>
+</html>

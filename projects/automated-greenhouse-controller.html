@@ -1,0 +1,302 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Greenhouse Controller – Intermediate Project | Studgine</title>
+  <meta name="description" content="Monitor and automatically control greenhouse temperature, humidity, soil moisture, and light with ESP32. Step-by-step guide with $20–$45 budget." />
+  <meta name="keywords" content="automated greenhouse, ESP32 IoT, DHT22, soil moisture, relay control, smart greenhouse" />
+  <link rel="canonical" href="automated-greenhouse-controller.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a1f0a 0%,#0f3a1a 100%);border-radius:12px;padding:24px;min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+    .gh-frame{width:220px;height:130px;background:rgba(100,200,100,0.08);border:2px solid #3cb83c;border-radius:8px 8px 4px 4px;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;}
+    .gh-roof{position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:115px solid transparent;border-right:115px solid transparent;border-bottom:20px solid #3cb83c;}
+    .gh-plant{font-size:28px;}
+    .fan{font-size:22px;position:absolute;top:8px;right:8px;transition:transform 0.2s;}
+    .fan.spinning{animation:spin 0.3s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .light-bulb{position:absolute;top:4px;left:8px;font-size:20px;transition:filter 0.4s;}
+    .light-bulb.on{filter:drop-shadow(0 0 8px yellow);}
+    .gh-sensors{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+    .sensor-badge{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:6px 12px;font-family:monospace;font-size:12px;color:#7de0a0;min-width:110px;text-align:center;}
+    .bar-wrap{display:flex;align-items:center;gap:8px;width:100%;max-width:300px;}
+    .bar-label{font-family:monospace;font-size:11px;color:#aaa;width:60px;}
+    .bar-bg{flex:1;height:8px;background:#1a3a1a;border-radius:4px;overflow:hidden;}
+    .bar-fill{height:100%;border-radius:4px;transition:width 1s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Automated Greenhouse Controller</h1>
+      <p>Monitor temperature, humidity, soil moisture, and light — then automatically control fans, grow lights, and water pumps for optimal plant growth.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Automated Greenhouse Controller</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="gh-frame">
+                  <div class="gh-roof"></div>
+                  <span class="light-bulb" id="bulb">💡</span>
+                  <span class="fan" id="fan">🌀</span>
+                  <span class="gh-plant">🌿</span>
+                </div>
+                <div class="gh-sensors">
+                  <div class="sensor-badge" id="tempBadge">🌡️ Temp: 28°C</div>
+                  <div class="sensor-badge" id="humBadge">💧 Hum: 65%</div>
+                  <div class="sensor-badge" id="soilBadge">🌱 Soil: 42%</div>
+                  <div class="sensor-badge" id="lightBadge">☀️ Light: 380 lux</div>
+                </div>
+                <div style="width:100%;max-width:300px;display:flex;flex-direction:column;gap:6px;">
+                  <div class="bar-wrap"><span class="bar-label">Temp</span><div class="bar-bg"><div class="bar-fill" id="tempBar" style="width:56%;background:#ff7043;"></div></div></div>
+                  <div class="bar-wrap"><span class="bar-label">Humidity</span><div class="bar-bg"><div class="bar-fill" id="humBar" style="width:65%;background:#1e90ff;"></div></div></div>
+                  <div class="bar-wrap"><span class="bar-label">Soil</span><div class="bar-bg"><div class="bar-fill" id="soilBar" style="width:42%;background:#3cb83c;"></div></div></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP32+automated+greenhouse+DHT22+soil+moisture+relay+IoT" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The Automated Greenhouse Controller is a complete closed-loop IoT project. Four sensors continuously feed data to an ESP32, which makes autonomous decisions to maintain perfect growing conditions: fans spin when temperature exceeds limits, grow lights activate at dusk, and water pumps run when soil dries — all without human intervention.</p>
+              <p>You'll learn multi-sensor data fusion, relay logic safety design, rule-based automation, and IoT cloud monitoring. The skills directly map to industrial building-management and SCADA systems.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">ESP32 DevKit V1</span><span class="comp-note"> — Main MCU with Wi-Fi</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT22 Temperature / Humidity Sensor</span><span class="comp-note"> — ±0.5°C accuracy</span></div></li>
+                <li><span class="comp-icon">🌱</span><div><span class="comp-name">Capacitive Soil Moisture Sensor ×2</span><span class="comp-note"> — Analog output, corrosion-resistant</span></div></li>
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">BH1750 Light Sensor</span><span class="comp-note"> — I2C lux measurement</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">4-Channel Relay Module</span><span class="comp-note"> — Fan, grow light, pump, heater</span></div></li>
+                <li><span class="comp-icon">💨</span><div><span class="comp-name">12 V Fan + LED Grow Light Strip</span><span class="comp-note"> — Controlled via relays</span></div></li>
+                <li><span class="comp-icon">💧</span><div><span class="comp-name">5 V Mini Water Pump + Tubing</span><span class="comp-note"> — Drip irrigation</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">0.96″ OLED (optional)</span><span class="comp-note"> — Local status display</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Sensor Polling</h4><p>Poll the DHT22 every 2 s (non-blocking), soil sensors every 5 s, and BH1750 lux every 10 s. Store rolling averages (window = 5 readings) to avoid reacting to transient spikes.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Rule-Based Actuator Control</h4><p>Fan ON if temp &gt; 30°C; fan OFF if temp &lt; 26°C. Pump ON if soil &lt; 30% and moisture was stable for 60 s. Grow light ON if lux &lt; 200 and hour is between 6:00–22:00 from NTP clock.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Safety Guards</h4><p>Implement per-actuator maximum run times (pump max 60 s, fan max 10 min). Log actuator toggle events to SPIFFS with timestamps. Alert via Telegram if any sensor is stuck (unchanged for 5 min).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Cloud Dashboard</h4><p>Push all sensor values to ThingSpeak fields every 30 s using HTTPClient. Use ThingSpeak React and ThingTweet to send email alerts when temperature exceeds critical thresholds.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;DHT.h&gt;
+#include &lt;BH1750.h&gt;
+#include &lt;Wire.h&gt;
+#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+
+DHT dht(4, DHT22);
+BH1750 lightMeter;
+
+#define SOIL_PIN   A0
+#define RELAY_FAN  26
+#define RELAY_PUMP 27
+#define RELAY_LIGHT 14
+
+const float TEMP_HIGH  = 30.0;
+const float TEMP_LOW   = 26.0;
+const int   SOIL_DRY   = 30;   // % moisture threshold
+const float LUX_LOW    = 200.0;
+
+void loop() {
+  float temp   = dht.readTemperature();
+  float hum    = dht.readHumidity();
+  float lux    = lightMeter.readLightLevel();
+  int   soilPct = map(analogRead(SOIL_PIN), 2800, 1200, 0, 100);
+
+  // Fan control
+  if (temp &gt; TEMP_HIGH) digitalWrite(RELAY_FAN, LOW);   // ON
+  if (temp &lt; TEMP_LOW)  digitalWrite(RELAY_FAN, HIGH);  // OFF
+
+  // Pump control
+  static unsigned long pumpStart = 0;
+  if (soilPct &lt; SOIL_DRY &amp;&amp; digitalRead(RELAY_PUMP) == HIGH) {
+    digitalWrite(RELAY_PUMP, LOW);
+    pumpStart = millis();
+  }
+  if (millis() - pumpStart &gt; 60000) digitalWrite(RELAY_PUMP, HIGH); // safety off
+
+  // Grow light
+  if (lux &lt; LUX_LOW) digitalWrite(RELAY_LIGHT, LOW);
+  else                digitalWrite(RELAY_LIGHT, HIGH);
+
+  delay(2000);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌱 Hydroponics System</span>
+                <span class="app-tag">🍅 Tomato/Herb Farm</span>
+                <span class="app-tag">📊 Blynk Cloud Dashboard</span>
+                <span class="app-tag">🔔 Telegram Alerts</span>
+                <span class="app-tag">⏱️ NTP-based Lighting Schedule</span>
+                <span class="app-tag">🌡️ CO₂ Monitoring (MH-Z19)</span>
+                <span class="app-tag">💧 Drip vs Mist Irrigation</span>
+                <span class="app-tag">📱 Remote Override App</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $20 – $45</li>
+                <li><strong>Build Time:</strong> 5 – 8 hours</li>
+                <li><strong>Platform:</strong> ESP32 + ThingSpeak</li>
+                <li><strong>Actuators:</strong> Fan, Pump, Grow Light</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Multi-sensor data fusion</li>
+                <li>Rule-based closed-loop control</li>
+                <li>Relay safety timers</li>
+                <li>IoT dashboard with ThingSpeak</li>
+                <li>SPIFFS event logging</li>
+                <li>NTP time-of-day scheduling</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> — DHT11/22 reading</span></li>
+                <li><span class="lib-name">BH1750</span><span class="lib-desc"> — Lux measurement I2C</span></li>
+                <li><span class="lib-name">WiFi / HTTPClient</span><span class="lib-desc"> — Cloud push</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="smart-irrigation-system.html">Smart Irrigation System</a></li>
+                <li><a href="automated-grow-light-controller.html">Automated Grow Light Controller</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const states = [
+      {temp:28,hum:65,soil:42,lux:380},
+      {temp:31,hum:60,soil:38,lux:150},
+      {temp:33,hum:55,soil:28,lux:80},
+      {temp:30,hum:62,soil:45,lux:310},
+      {temp:27,hum:70,soil:60,lux:420}
+    ];
+    let si = 0;
+    function updateAnim() {
+      const s = states[si % states.length]; si++;
+      document.getElementById('tempBadge').textContent = '🌡️ Temp: ' + s.temp + '°C';
+      document.getElementById('humBadge').textContent  = '💧 Hum: ' + s.hum + '%';
+      document.getElementById('soilBadge').textContent = '🌱 Soil: ' + s.soil + '%';
+      document.getElementById('lightBadge').textContent= '☀️ Light: ' + s.lux + ' lux';
+      document.getElementById('tempBar').style.width = (s.temp/50*100) + '%';
+      document.getElementById('humBar').style.width  = s.hum + '%';
+      document.getElementById('soilBar').style.width = s.soil + '%';
+      const fan  = document.getElementById('fan');
+      const bulb = document.getElementById('bulb');
+      fan.className  = s.temp > 30 ? 'fan spinning' : 'fan';
+      bulb.className = s.lux < 200 ? 'light-bulb on' : 'light-bulb';
+    }
+    setInterval(updateAnim, 3000);
+  </script>
+</body>
+</html>

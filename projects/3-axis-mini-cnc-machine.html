@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3-Axis Mini CNC Machine – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a Cartesian CNC router with Arduino Mega + CNC Shield + NEMA-17 steppers and a 300W spindle. Mill PCBs, wood, and aluminium with real G-code toolpaths." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#111;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .cnc-svg{width:120px;height:100px;}
+    .cnc-info{font-family:monospace;font-size:9px;color:#ffcc00;display:flex;flex-direction:column;gap:3px;}
+    .progress-bar-outer{width:80px;height:6px;background:#333;border-radius:3px;overflow:hidden;}
+    .progress-bar-inner{height:100%;background:#ffcc00;border-radius:3px;transition:width 0.4s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                <div class="cnc-info">
+                  <div>X: <span id="cncXv">12.5</span>mm</div>
+                  <div>Y: <span id="cncYv">8.3</span>mm</div>
+                  <div>Z: <span id="cncZv">-0.5</span>mm</div>
+                  <div>F: <span id="cncFv">800</span>mm/min</div>
+                  <div>LINE: <span id="cncLine">0042</span></div>
+                  <div style="margin-top:4px;color:#aaa;">Progress</div>
+                  <div class="progress-bar-outer"><div class="progress-bar-inner" id="cncProgress" style="width:30%;"></div></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=arduino+CNC+shield+NEMA17+GRBL+mini+CNC+router+build" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Computer Numerical Control (CNC) machines are the workhorses of modern manufacturing. This mini CNC project teaches the full stack: mechanical design (linear rails + belt drive + lead screws), stepper motor control (microstepping with TMC2208 Spread Cycle silence), GRBL firmware, G-code generation in CAM software, and PC streaming via Universal-G-Code-Sender. The 300×200×60mm work envelope is suitable for PCB milling (0.2mm traces), wood carving, and thin aluminium engraving.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Mega 2560 + CNC V3 Shield</span><span class="comp-note"> — GRBL 1.1h firmware; 3× axis sockets; spindle/coolant/probe pins; limit switch inputs</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">3× TMC2208 Stepper Drivers</span><span class="comp-note"> — 2A RMS; up to 1/256 microstepping; UART mode for silent operation; no resonance ringing</span></div></li>
+                <li><span class="comp-icon">🔩</span><div><span class="comp-name">3× NEMA-17 Steppers (1.8°, 2A)</span><span class="comp-note"> — X/Y: belt drive GT2 20T + 8mm pre-loaded V-slot linear rails; Z: M5 lead screw 0.8mm pitch</span></div></li>
+                <li><span class="comp-icon">🌀</span><div><span class="comp-name">300W DC Spindle Motor + ER11 Collet</span><span class="comp-note"> — 12V 300W; 10,000 RPM; PWM speed control via CNC shield spindle output; ER11 for ⌀0.8–7mm end mills</span></div></li>
+                <li><span class="comp-icon">📏</span><div><span class="comp-name">Mechanical Frame + Rails</span><span class="comp-note"> — 2040 V-slot aluminium extrusion; polycarbonate bed; 3× endstop microswitches for homing</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>GRBL Firmware Configuration</h4><p>Flash GRBL 1.1h to Mega. Configure settings in <code>config.h</code>: <code>$100=80, $101=80, $102=400</code> (steps/mm for X, Y, Z with GT2 belt + 20T pulley + 1/16 microstepping). Set <code>$110, $111, $112</code> (max feed rate mm/min). Enable homing: <code>$22=1</code>. Set invert mask for axis directions: <code>$3=7</code>. Validate by jogging each axis manually from UGS (Universal G-Code Sender).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>CAM Toolpath Generation</h4><p>Design PCB in KiCad → export Gerber → import into FlatCAM. Configure: isolation routing, 0.2mm V-bit, 0.1mm depth of cut, 600mm/min feed rate, G-code export. For 3D carving: FreeCAD Path workbench or Fusion 360 CAM. Verify G-code in NCViewer before running. Key G-codes: <code>G0</code> (rapid move), <code>G1</code> (feed move), <code>G2/G3</code> (arc), <code>M3/M5</code> (spindle on/off).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Workpiece Probing + Z-Zero</h4><p>Use GRBL probing: connect alligator clip to PCB copper and bit to probe pin. Command: <code>G38.2 Z-5 F50</code> — Z axis descends until contact, GRBL records exact Z zero. Compensates for PCB warping with auto-levelling mesh using 16-point probe grid (via OpenPnP or ChiliPeppr). This dramatically improves depth consistency for 0.2mm trace isolation milling.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Streaming G-Code + Monitoring</h4><p>Universal G-Code Sender (UGS Platform) streams G-code line-by-line to GRBL via USB serial. Monitor real-time position, feed override (10–200%), spindle speed override, and emergency stop. For unattended operation, use <code>grbl-stream.py</code>: opens serial, waits for <code>ok</code> response before each line. Implement soft limits ($20=1) to prevent carriage crashes outside work volume.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import serial, time
+
+def grbl_stream(port, gcode_file):
+    s = serial.Serial(port, 115200, timeout=1)
+    time.sleep(2)  # GRBL init
+    s.write(b"\r\n\r\n")
+    time.sleep(2); s.flushInput()
+    
+    with open(gcode_file, 'r') as f:
+        lines = f.readlines()
+    
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line or line.startswith(';'):
+            continue
+        # Remove inline comments
+        line = line[:line.find(';')] if ';' in line else line
+        print(f"[{i:04d}] Sending: {line}")
+        s.write((line + '\n').encode())
+        # Wait for GRBL 'ok'
+        while True:
+            resp = s.readline().decode().strip()
+            if 'ok' in resp: break
+            if 'error' in resp:
+                print(f"GRBL Error: {resp}")
+                s.close(); return
+    
+    print("Job complete!")
+    s.close()
+
+# Example: Mill PCB isolation routes
+grbl_stream('/dev/ttyUSB0', 'pcb_isolation.gcode')</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🖊️ Laser Engraver Module</span>
+                <span class="app-tag">🖨️ 3D Printing Conversion</span>
+                <span class="app-tag">🔬 PCB Auto-Levelling Grid</span>
+                <span class="app-tag">📷 Tool Length Probe</span>
+                <span class="app-tag">🌐 Web Pendant Remote</span>
+                <span class="app-tag">🔩 4th Axis Rotary</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $80 – $150</li><li><strong>Build Time:</strong> 10 – 20 hours</li><li><strong>Work Volume:</strong> 300×200×60mm</li><li><strong>Resolution:</strong> 0.05mm (1/16 step)</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>GRBL firmware configuration</li><li>Stepper microstepping + driver tuning</li><li>CAM toolpath generation (FreeCAD/Fusion)</li><li>PCB milling + isolation routing</li><li>G-code streaming + probing</li><li>Mechanical linear motion design</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Tools</h3><ul class="libs-list"><li><span class="lib-name">GRBL 1.1h</span><span class="lib-desc"> — Firmware for Arduino Mega</span></li><li><span class="lib-name">UGS Platform</span><span class="lib-desc"> — G-code sender + pendant</span></li><li><span class="lib-name">FlatCAM</span><span class="lib-desc"> — PCB Gerber-to-G-code CAM</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let cx=20,cy=65,prog=0,line=42,dir=1;
+    function animCNC(){
+      cx+=dir*0.8; if(cx>90||cx<20)dir*=-1;
+      const el=document.getElementById('cncX');
+      if(el){el.setAttribute('x',cx);}
+      const sp=document.getElementById('cncSpindle');
+      if(sp){sp.setAttribute('x1',cx+10);sp.setAttribute('x2',cx+10);}
+      const tc=document.getElementById('cncTool');
+      if(tc){tc.setAttribute('cx',cx+10);}
+      prog=(prog+0.5)%100;
+      line++;
+      document.getElementById('cncXv').textContent=(cx*0.3).toFixed(1);
+      document.getElementById('cncYv').textContent=(cy*0.15).toFixed(1);
+      document.getElementById('cncLine').textContent=String(line).padStart(4,'0');
+      document.getElementById('cncProgress').style.width=prog+'%';
+      setTimeout(animCNC,80);
+    }
+    animCNC();
+  </script>
+</body>
+</html>

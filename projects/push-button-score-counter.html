@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Push-Button Score Counter – Studgine</title>
+  <meta name="description" content="A two-team scoreboard with increment, decrement, and reset buttons on an LCD. Learn multi-button debouncing and LCD integer display with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:10px; }
+    .score-board { background:#0f172a; border:2px solid #3b82f6; border-radius:8px; padding:8px 14px; text-align:center; min-width:130px; }
+    .score-teams { display:flex; gap:14px; justify-content:center; }
+    .team { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .team-label { font-size:.6rem; color:#94a3b8; font-weight:700; }
+    .team-score { font-family:'Courier New',monospace; font-size:1.6rem; font-weight:700; }
+    .team.a .team-score { color:#f87171; }
+    .team.b .team-score { color:#60a5fa; }
+    .score-divider { font-size:1.4rem; color:#475569; align-self:center; }
+    .score-buttons { display:flex; gap:6px; }
+    .sc-btn { padding:3px 8px; border-radius:4px; font-size:.65rem; font-weight:700; color:#fff; }
+    .sc-btn.a-plus { background:#dc2626; }
+    .sc-btn.b-plus { background:#1d4ed8; }
+    .sc-btn.rst { background:#4b5563; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Push-Button Score Counter</h1>
+      <p class="hero-sub">A two-team scoreboard with increment, decrement, and reset push-buttons displayed on a 16×2 LCD. Perfect for sports events and mastering multi-button debouncing.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Push-Button Score Counter</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="score-board">
+            <div class="score-teams">
+              <div class="team a"><span class="team-label">TEAM A</span><span class="team-score" id="sa">0</span></div>
+              <div class="score-divider">:</div>
+              <div class="team b"><span class="team-label">TEAM B</span><span class="team-score" id="sb">0</span></div>
+            </div>
+          </div>
+          <div class="score-buttons">
+            <div class="sc-btn a-plus" id="ap-btn">A+</div>
+            <div class="sc-btn b-plus" id="bp-btn">B+</div>
+            <div class="sc-btn rst" id="rst-btn">RST</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Debounced button press → integer increment → LCD refresh</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+scoreboard+LCD+push+button+score+counter" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>This project teaches the most fundamental interactive pattern in embedded systems: <strong>debounced button → state change → display update</strong>. Mechanical buttons "bounce" — a single press registers dozens of rapid on/off transitions in the first ~10 ms due to contact vibration. Without debouncing, your score would jump by 5–10 for each intended +1 press.</p>
+        <p>You'll implement both hardware debouncing (100 nF capacitor across the button) and software debouncing (millis() delay flag) to understand the difference and why both are sometimes used together in professional designs.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 LCD with I2C backpack</span><span class="comp-note">Scoreboard display</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">5× Push-buttons</span><span class="comp-note">A+, A–, B+, B–, Reset</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">5× 10 kΩ pull-down resistors</span><span class="comp-note">Button wiring</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire buttons and LCD</strong> — LCD SDA → A4, SCL → A5. Buttons: A+ → D4, A– → D5, B+ → D6, B– → D7, Reset → D8. Each button: one leg to 5 V, other leg to Arduino pin and via 10 kΩ to GND. Configure as <code>INPUT</code> (not INPUT_PULLUP) with external pull-downs.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Software debounce</strong> — For each button track: <code>bool lastState[5], lastDebounceTime[5];</code>. On each loop: if pin state ≠ lastState AND millis() - lastDebounceTime[i] &gt; 50: act on state change and update lastDebounceTime[i]. This 50 ms lockout window ignores bounce transitions.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Score logic</strong> — Increment/decrement <code>int scoreA, scoreB</code> clamped at 0 min and 99 max. <code>scoreA = constrain(scoreA + 1, 0, 99);</code>. Reset sets both to 0. Refresh LCD only when a score changes: <code>lcd.setCursor(0,0); lcd.print("A: "); lcd.print(scoreA); lcd.print("   B: "); lcd.print(scoreB);</code>
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Win detection</strong> — Define a winning score: <code>const int WIN_SCORE = 10;</code>. When a team reaches it, display "TEAM A WINS!" on row 2, flash LCD backlight 3 times with a 500 ms tone, then hold the display until Reset is pressed.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🎾 Tennis / badminton score</span>
+          <span class="app-tag">🏓 Table tennis counter</span>
+          <span class="app-tag">🎯 Dart game scorer</span>
+          <span class="app-tag">🎲 Multi-player board game tracker</span>
+          <span class="app-tag">🏋️ Gym rep counter</span>
+          <span class="app-tag">🎰 Points tally display</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$3 – $8</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1.5 – 2.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Display</span><span>I2C LCD</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Software debouncing</span></li>
+            <li><span class="skill-tag">Multi-button management</span></li>
+            <li><span class="skill-tag">constrain() clamping</span></li>
+            <li><span class="skill-tag">LCD integer display</span></li>
+            <li><span class="skill-tag">Win condition detection</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">LiquidCrystal_I2C</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="lcd-countdown-timer.html" class="skill-tag">LCD Countdown Timer</a></li>
+            <li><a href="digital-stopwatch.html" class="skill-tag">Digital Stopwatch</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    let sa=0, sb=0;
+    document.getElementById('ap-btn').addEventListener('click',()=>{sa=Math.min(99,sa+1);document.getElementById('sa').textContent=sa;});
+    document.getElementById('bp-btn').addEventListener('click',()=>{sb=Math.min(99,sb+1);document.getElementById('sb').textContent=sb;});
+    document.getElementById('rst-btn').addEventListener('click',()=>{sa=0;sb=0;document.getElementById('sa').textContent=0;document.getElementById('sb').textContent=0;});
+  </script>
+</body>
+</html>

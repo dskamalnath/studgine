@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Servo Exoskeleton Glove – Advanced Project | Studgine</title>
+  <meta name="description" content="5 flex sensors on one hand map to 5 MG996R servo fingers on a 3D-printed exoskeleton glove via Arduino Mega and PCA9685 PWM driver — mirror your hand in real-time." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#040800;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .sg-info{font-family:monospace;font-size:9px;color:#88ff44;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Servo Exoskeleton Glove</h1>
+      <p>Wear a flex-sensor glove on your right hand and a 3D-printed servo exoskeleton on your left hand. Five flex sensors read finger bend angles via Arduino Mega ADC. A PCA9685 16-channel PWM driver positions five MG996R servos accordingly — your exoskeleton hand mirrors every movement in real-time. Optional HC-05 Bluetooth wireless mode.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Servo Exoskeleton Glove</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="sgCanvas" width="140" height="100"></canvas>
+                <div class="sg-info">
+                  <div>FLEX SENSORS</div>
+                  <div>T: <span id="sgT">45</span>° (Thumb)</div>
+                  <div>I: <span id="sgI">72</span>° (Index)</div>
+                  <div>M: <span id="sgM">30</span>° (Middle)</div>
+                  <div>R: <span id="sgR">65</span>° (Ring)</div>
+                  <div>P: <span id="sgP">80</span>° (Pinky)</div>
+                  <div style="margin-top:3px;">SERVOS</div>
+                  <div>PCA9685 I²C</div>
+                  <div>CH 0–4 ACTIVE</div>
+                  <div>PWM 1000–2000μs</div>
+                  <div style="margin-top:3px;">MODE: <span id="sgMode">MIRROR</span></div>
+                  <div style="color:#88ff44;">BT: CONNECTED</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=flex+sensor+servo+exoskeleton+glove+Arduino+PCA9685" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Robotic exoskeleton hands have applications in rehabilitation medicine, hazardous environment manipulation, and prosthetics research. This beginner-to-advanced transition project builds both the sensing glove and the actuated exoskeleton, teaching the full sensor-to-actuator pipeline. Flex sensors are simple variable resistors that change resistance proportional to bend angle — combined with a fixed resistor voltage divider, they produce an analogue voltage readable by any ADC. The PCA9685 I²C PWM driver offloads PWM generation for all 5 servos from the Arduino, freeing the microcontroller for higher-level logic like gesture recognition.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">5× Flex Sensors (2.2" or 4.5")</span><span class="comp-note"> — Spectra Symbol FS-L-0095; 25kΩ flat, 125kΩ bent; 10kΩ pull-down resistor voltage divider per sensor; glued to knuckle joints of fabric glove</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">5× MG996R Metal Gear Servos</span><span class="comp-note"> — 9.4 kg·cm torque; 3D-printed finger linkage brackets; Bowden-cable or direct link to exo finger segments; powered 6V 3A rail (NOT Arduino 5V pin)</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">PCA9685 16-Channel PWM Driver</span><span class="comp-note"> — I²C address 0x40; 12-bit 4096-step PWM; 50Hz servo frequency: <code>pca.set_pwm_freq(50)</code>; controls all 5 servos with just 2 wires to Arduino</span></div></li>
+                <li><span class="comp-icon">💻</span><div><span class="comp-name">Arduino Mega + HC-05 BT Module</span><span class="comp-note"> — 5× ADC inputs (A0–A4); I²C to PCA9685; optional HC-05 UART BT for wireless operation; 6V 3A BEC or regulated supply for servos</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Flex Sensor Calibration</h4><p>Each sensor needs calibration: record ADC value straight (OPEN) and fully bent (CLOSED). Store in EEPROM: <code>int flex_min[5] = {340, 350, 330, 355, 345}; int flex_max[5] = {700, 720, 690, 710, 700}</code>. On startup: press calibration button, hold hand open for 3s (auto-record raw values), then close fist for 3s (record bent values). Map: <code>int angle = map(analogRead(A0), flex_min[0], flex_max[0], 0, 180); angle = constrain(angle, 0, 180)</code>. Recalibrate if environment temperature changes significantly (flex sensors are temperature-sensitive).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>PCA9685 PWM Setup</h4><p>Install: Arduino Adafruit_PWMServoDriver library. Init: <code>Adafruit_PWMServoDriver pca = Adafruit_PWMServoDriver(0x40); pca.begin(); pca.setPWMFreq(50);</code>. Calculate pulse for angle: <code>int pulse = map(angle, 0, 180, SERVO_MIN, SERVO_MAX)</code> where SERVO_MIN=150 (1.0ms) and SERVO_MAX=600 (2.0ms) in 4096-tick units at 50Hz. Set servo: <code>pca.setPWM(channel, 0, pulse)</code>. Each of 5 channels controls one finger. Smooth interpolation: move 5° per 20ms loop towards target to prevent servo jerks (lowpass filtering on angle command).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>3D Printed Exoskeleton Design</h4><p>Design in Fusion 360 or Tinkercad. Key parts: finger bracket links (proximal+distal phalanx), palm mounting plate, servo horn connection brackets. Print in PETG (flexible-tough) at 30% infill. Finger actuation: servo → wire tendon → fingertip pulls finger closed. Return spring (elastic band) opens the finger. Thumb: two DOF — abduction by one servo (channel 4), flexion by another. STL files: search Thingiverse "servo exoskeleton hand" for remixable base designs. Scale to hand measurements using finger circumference as reference.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Gesture Recognition Mode</h4><p>Log 5-dimensional flex readings across 8 gestures (fist, open, point, OK, peace, thumbs-up, gun, flat). 100 samples each. Train k-NN classifier on PC: <code>from sklearn.neighbors import KNeighborsClassifier; knn = KNeighborsClassifier(k=5); knn.fit(X, y)</code>. Export to Arduino as lookup table or small decision tree. On Arduino: every 200ms, classify current flex values, output gesture label via Serial and actuate corresponding pre-programmed servo position set. Enables "play back" gesture sequences for teleoperation.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+
+Adafruit_PWMServoDriver pca = Adafruit_PWMServoDriver(0x40);
+#define SERVO_MIN 150   // ~1ms at 50Hz
+#define SERVO_MAX 600   // ~2ms at 50Hz
+const int flex_pins[5]  = {A0, A1, A2, A3, A4};
+const int flex_min[5]   = {340, 350, 330, 355, 345};
+const int flex_max[5]   = {700, 720, 690, 710, 700};
+float servo_angles[5]   = {90,90,90,90,90};
+float target_angles[5]  = {90,90,90,90,90};
+
+void setServoAngle(uint8_t ch, float deg) {
+  int pulse = map((int)deg, 0, 180, SERVO_MIN, SERVO_MAX);
+  pca.setPWM(ch, 0, constrain(pulse, SERVO_MIN, SERVO_MAX));
+}
+
+void setup() { Wire.begin(); pca.begin(); pca.setPWMFreq(50); Serial.begin(9600); }
+
+void loop() {
+  for (int i = 0; i < 5; i++) {
+    int raw = analogRead(flex_pins[i]);
+    target_angles[i] = map(raw, flex_min[i], flex_max[i], 0, 180);
+    target_angles[i] = constrain(target_angles[i], 0, 180);
+    // Smooth interpolation
+    servo_angles[i] += (target_angles[i] - servo_angles[i]) * 0.15f;
+    setServoAngle(i, servo_angles[i]);
+    Serial.printf("F%d:%3d  ", i, (int)servo_angles[i]);
+  }
+  Serial.println(); delay(20);  // 50Hz
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🤲 Gesture Dataset Collection</span>
+                <span class="app-tag">🦾 Forearm EMG + Flex Fusion</span>
+                <span class="app-tag">🕹️ VR Controller Hand Tracking</span>
+                <span class="app-tag">🤖 Robot Arm Teleoperation</span>
+                <span class="app-tag">♿ Stroke Rehab Grip Trainer</span>
+                <span class="app-tag">💪 Force Feedback Glove</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $55 – $110</li><li><strong>Build Time:</strong> 12 – 20 hours</li><li><strong>Torque:</strong> 9.4 kg·cm / finger</li><li><strong>Resolution:</strong> 0.044° (12-bit)</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Flex sensor voltage dividers</li><li>PCA9685 I²C PWM control</li><li>Servo smooth interpolation</li><li>3D-printed linkage design</li><li>Multi-channel ADC sampling</li><li>Gesture k-NN classification</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">Adafruit_PWMServoDriver</span><span class="lib-desc"> — PCA9685 I²C PWM driver</span></li><li><span class="lib-name">Wire.h</span><span class="lib-desc"> — I²C communication bus</span></li><li><span class="lib-name">EEPROM.h</span><span class="lib-desc"> — Calibration persistence</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const sgC=document.getElementById('sgCanvas');const sgCtx=sgC.getContext('2d');
+    let sgPhase=0;
+    const fingers=['T','I','M','R','P'];
+    const ids=['sgT','sgI','sgM','sgR','sgP'];
+    function drawSG(){
+      sgCtx.fillStyle='rgba(4,8,0,0.4)';sgCtx.fillRect(0,0,140,100);
+      // Draw hand silhouette
+      const angles=fingers.map((_,i)=>90+60*Math.sin(sgPhase*0.3+i*0.8));
+      // Palm
+      sgCtx.fillStyle='rgba(0,80,20,0.5)';sgCtx.fillRect(55,45,40,35);
+      // Fingers
+      const fx=[57,66,76,86,96];
+      fingers.forEach((_,i)=>{
+        const ang=angles[i];const len=ang>60?10:18;
+        sgCtx.strokeStyle=`hsl(${100+i*15},80%,60%)`;sgCtx.lineWidth=4;
+        sgCtx.beginPath();sgCtx.moveTo(fx[i],45);
+        sgCtx.lineTo(fx[i]-len*0.2*(ang>90?-1:1),45-len);sgCtx.stroke();
+        document.getElementById(ids[i]).textContent=Math.round(ang);
+      });
+      // Flex sensor bars
+      fingers.forEach((_,i)=>{
+        const ang=angles[i];const barH=(ang/180)*30;
+        sgCtx.fillStyle=`hsl(${100+i*15},80%,40%)`;
+        sgCtx.fillRect(5+i*10,90-barH,8,barH);
+      });
+      sgCtx.fillStyle='#88ff44';sgCtx.font='6px monospace';sgCtx.fillText('FLEX',1,98);
+      sgPhase+=0.04;
+      requestAnimationFrame(drawSG);
+    }
+    drawSG();
+  </script>
+</body>
+</html>

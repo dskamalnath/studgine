@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BPM Metronome – Studgine</title>
+  <meta name="description" content="Adjust BPM with a rotary encoder, display on LCD, and click a buzzer on every beat. Learn encoder reading, integer arithmetic, and precise timing with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:16px; }
+    .metro-lcd { background:#0f172a; border:2px solid #a78bfa; border-radius:8px; padding:6px 14px; text-align:center; min-width:100px; }
+    .metro-lcd-label { font-size:.55rem; color:#7c3aed; letter-spacing:.08em; }
+    .metro-bpm { font-family:'Courier New',monospace; font-size:1.8rem; font-weight:700; color:#c4b5fd; }
+    .metro-bpm-sub { font-size:.6rem; color:#64748b; }
+    .metro-knob { width:36px; height:36px; border-radius:50%; background:radial-gradient(circle at 40% 35%, #6b7280, #374151); border:2px solid #4b5563; position:relative; cursor:pointer; }
+    .metro-knob-dot { width:4px; height:14px; background:#e2e8f0; border-radius:2px; position:absolute; left:50%; top:4px; transform:translateX(-50%); transform-origin:50% calc(14px); }
+    .metro-beat { width:26px; height:26px; border-radius:50%; background:#7c3aed; box-shadow:0 0 0 0 rgba(124,58,237,0); transition:box-shadow .08s; }
+    .metro-beat.flash { box-shadow:0 0 14px 6px rgba(167,139,250,.7); }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>BPM Metronome</h1>
+      <p class="hero-sub">Adjust BPM with a rotary encoder, display the value on an LCD, and click a buzzer on every beat. A musical tool that teaches encoder reading, integer arithmetic, and precise timing.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>BPM Metronome</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="metro-knob"><div class="metro-knob-dot" id="knob-dot"></div></div>
+          <div class="metro-lcd">
+            <div class="metro-lcd-label">BPM</div>
+            <div class="metro-bpm" id="metro-bpm">120</div>
+            <div class="metro-bpm-sub">♩ = <span id="beat-ms">500</span> ms</div>
+          </div>
+          <div class="metro-beat" id="metro-beat"></div>
+        </div>
+        <p class="anim-stage-label">Encoder turns → BPM adjusts → beat flashes on interval</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+BPM+metronome+rotary+encoder+LCD" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>A metronome counts out a steady musical beat, defined in Beats Per Minute (BPM). At 120 BPM the interval between beats is 500 ms; at 60 BPM it's 1000 ms (1 second). The relationship is simple: <strong>interval (ms) = 60,000 / BPM</strong>.</p>
+        <p>The rotary encoder is a key concept here — it's a digital input that generates two out-of-phase pulse trains (CLK and DT) whose relative order encodes direction of rotation. Reading it correctly with state tracking is a fundamental skill that applies to menus, volume knobs, and motor position feedback in virtually every embedded design.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">Rotary encoder (KY-040)</span><span class="comp-note">BPM adjustment input</span></div></li>
+          <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 LCD with I2C backpack</span><span class="comp-note">BPM display</span></div></li>
+          <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive buzzer</span><span class="comp-note">Beat click output</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Read the encoder</strong> — Wire CLK → D2, DT → D3, SW (push) → D4. Enable <code>INPUT_PULLUP</code> on all three. On each loop iteration, compare current CLK state to the last known state. If CLK changed from HIGH to LOW (falling edge) AND DT ≠ CLK, direction is clockwise (BPM++); if DT == CLK, counter-clockwise (BPM--). Clamp: <code>bpm = constrain(bpm, 30, 240);</code>
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Calculate beat interval</strong> — Whenever BPM changes: <code>unsigned long beatInterval = 60000UL / bpm;</code>. Using <code>unsigned long</code> prevents integer overflow for slow tempos. Update LCD: <code>lcd.setCursor(0,0); lcd.print("BPM: "); lcd.print(bpm); lcd.print("   ");</code> The trailing spaces clear leftover digits when BPM decreases.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Non-blocking beat tick</strong> — Avoid <code>delay()</code> so the encoder stays responsive. Instead: <code>if (millis() - lastBeat &gt;= beatInterval) { lastBeat = millis(); tone(BUZZ, 1000, 30); }</code>. This fires a 30 ms, 1 kHz click glued to its own timed check, leaving the rest of loop free to read the encoder every iteration.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Tap-tempo with the encoder button</strong> — When SW is pressed, record <code>millis()</code>. On the second press, compute <code>bpm = 60000 / (now - lastTap);</code> and clamp. This lets the user tap in the desired tempo live, a feature found in professional drum machines and DJ equipment.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🎵 Practice metronome for musicians</span>
+          <span class="app-tag">🥁 Drum machine timing reference</span>
+          <span class="app-tag">🏃 Running cadence pacer</span>
+          <span class="app-tag">🎛️ Synth/sequencer clock signal</span>
+          <span class="app-tag">💆 Breathing exercise timer</span>
+          <span class="app-tag">📡 MIDI clock generator</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$4 – $10</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1.5 – 2.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Input</span><span>KY-040 encoder</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Rotary encoder reading</span></li>
+            <li><span class="skill-tag">Non-blocking millis() timing</span></li>
+            <li><span class="skill-tag">BPM ↔ interval maths</span></li>
+            <li><span class="skill-tag">Tap-tempo detection</span></li>
+            <li><span class="skill-tag">LCD integer refresh</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">LiquidCrystal_I2C</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="electronic-doorbell.html" class="skill-tag">Electronic Doorbell</a></li>
+            <li><a href="lcd-countdown-timer.html" class="skill-tag">LCD Countdown Timer</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    let bpm = 120;
+    const bpmEl = document.getElementById('metro-bpm');
+    const msEl = document.getElementById('beat-ms');
+    const beat = document.getElementById('metro-beat');
+    const dot = document.getElementById('knob-dot');
+    let angle = 0, beatTimer;
+    function startBeat() {
+      clearInterval(beatTimer);
+      const interval = Math.round(60000 / bpm);
+      msEl.textContent = interval;
+      beatTimer = setInterval(() => {
+        beat.classList.add('flash');
+        setTimeout(() => beat.classList.remove('flash'), 100);
+      }, interval);
+    }
+    startBeat();
+    // Simulate encoder turns
+    setInterval(() => {
+      const dir = Math.random() > .5 ? 1 : -1;
+      bpm = Math.min(200, Math.max(40, bpm + dir * 5));
+      bpmEl.textContent = bpm;
+      angle += dir * 45;
+      dot.style.transform = `translateX(-50%) rotate(${angle}deg)`;
+      startBeat();
+    }, 3000);
+  </script>
+</body>
+</html>

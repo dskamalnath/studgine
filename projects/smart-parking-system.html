@@ -1,0 +1,281 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Parking System – Intermediate Project | Studgine</title>
+  <meta name="description" content="Detect occupied/vacant parking bays with ultrasonic sensors and display availability on LCD with a servo-operated entry barrier. $15–$30 budget." />
+  <meta name="keywords" content="smart parking Arduino, ultrasonic sensor parking, servo barrier, LCD display, parking slot counter" />
+  <link rel="canonical" href="smart-parking-system.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a0a0a 0%,#1a1a2a 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+    .parking-lot{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:260px;}
+    .bay{height:48px;border-radius:6px;border:2px solid #555;display:flex;align-items:center;justify-content:center;font-size:22px;transition:background 0.4s,border-color 0.4s;}
+    .bay.free{background:#1a3a1a;border-color:#3cb83c;}
+    .bay.occupied{background:#3a1a1a;border-color:#e05252;}
+    .barrier-wrap{display:flex;align-items:center;gap:10px;}
+    .barrier-pole{width:8px;height:50px;background:#e05252;border-radius:4px;}
+    .barrier-arm{width:70px;height:8px;background:#f5c300;border-radius:4px;transform-origin:left center;transition:transform 0.8s ease;}
+    .barrier-arm.open{transform:rotate(-90deg);}
+    .lcd-panel{background:#1a2a1a;border:2px solid #3cb83c;border-radius:6px;padding:8px 16px;font-family:monospace;font-size:14px;color:#7de0a0;text-align:center;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Smart Parking System</h1>
+      <p>Ultrasonic sensors detect occupied/vacant bays and display availability on an LCD board with a servo-operated entry barrier and slot logic.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Smart Parking System</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="parking-lot" id="parkLot"></div>
+                <div class="barrier-wrap">
+                  <div class="barrier-pole"></div>
+                  <div class="barrier-arm" id="barrierArm"></div>
+                </div>
+                <div class="lcd-panel" id="lcdPanel">Free Slots: 4 / 8</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+smart+parking+system+ultrasonic+servo+LCD" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The Smart Parking System mimics how modern malls and airports manage parking. Each bay gets an HC-SR04 ultrasonic sensor mounted at the ceiling. When a car is present (&lt;30 cm), the bay LED turns red on the entrance display; when empty, it stays green. The Arduino counts free slots and shows the total on an LCD panel at the entrance.</p>
+              <p>A servo-operated barrier only raises if free slots &gt; 0, preventing entry when the lot is full. You'll learn multi-sensor polling, state machine design, servo control, and I2C LCD — skills central to SCADA panels and smart building systems.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno / Mega</span><span class="comp-note"> — Mega recommended for 8+ sensors</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">HC-SR04 Ultrasonic Sensors ×8</span><span class="comp-note"> — One per parking bay</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 I2C LCD Module</span><span class="comp-note"> — Entrance slot count display</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">SG90 Servo Motor</span><span class="comp-note"> — Entry barrier arm (0°–90°)</span></div></li>
+                <li><span class="comp-icon">🔴</span><div><span class="comp-name">Red + Green LEDs ×8</span><span class="comp-note"> — Per-bay visual indicator</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">Resistors 330Ω + Breadboard</span><span class="comp-note"> — LED current limiting</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Poll Each Bay Sensor</h4><p>Trigger each HC-SR04 with a 10 µs pulse, then measure echo duration. Distance = <code>duration / 58</code> cm. If distance &lt; 30 cm, mark bay as occupied. Use a 3-reading debounce buffer (majority vote) to prevent false triggers from vibration.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Update LED Display</h4><p>A shift register (74HC595) drives the 8 red/green LED pairs from 3 Arduino pins. Build a bitmask from the occupancy array and shift it out each loop iteration. This saves 13 Arduino GPIO pins.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Count Free Slots &amp; Update LCD</h4><p>Sum the occupancy array to get occupied count. Free = TOTAL_BAYS − occupied. Print to the I2C LCD every second: <code>"Free: 5/8 Slots"</code>. Colour-code the LCD backlight (green if &gt;2 free, amber if 1, red if 0).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Barrier Servo Logic</h4><p>When an IR sensor at the entrance detects a waiting car AND freeSlots &gt; 0, rotate servo to 90° (open). A second IR sensor at the exit triggers servo close after the car passes. If lot is full, barrier stays at 0° and LCD shows "FULL".</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;LiquidCrystal_I2C.h&gt;
+#include &lt;Servo.h&gt;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+Servo barrier;
+
+#define TOTAL_BAYS  8
+#define CAR_DIST    30   // cm threshold for car detected
+
+int trigPins[8] = {2, 4, 6, 8, 10, 12, A0, A2};
+int echoPins[8] = {3, 5, 7, 9, 11, 13, A1, A3};
+bool occupied[8];
+int freeSlots;
+
+long getDistance(int trig, int echo) {
+  digitalWrite(trig, HIGH); delayMicroseconds(10); digitalWrite(trig, LOW);
+  return pulseIn(echo, HIGH) / 58;
+}
+
+void loop() {
+  freeSlots = 0;
+  for (int i = 0; i &lt; TOTAL_BAYS; i++) {
+    occupied[i] = (getDistance(trigPins[i], echoPins[i]) &lt; CAR_DIST);
+    if (!occupied[i]) freeSlots++;
+    digitalWrite(greenLED[i], !occupied[i]);
+    digitalWrite(redLED[i],    occupied[i]);
+  }
+  lcd.setCursor(0,0); lcd.print("Free: ");
+  lcd.print(freeSlots); lcd.print("/"); lcd.print(TOTAL_BAYS);
+  lcd.setCursor(0,1); lcd.print(freeSlots == 0 ? "LOT IS FULL     " : "  Welcome!      ");
+
+  // Barrier: open if free and car waiting at entrance
+  if (freeSlots &gt; 0 &amp;&amp; digitalRead(IR_ENTRY) == LOW)
+    barrier.write(90);  // raise
+  if (digitalRead(IR_EXIT) == LOW)
+    barrier.write(0);   // lower after car exits
+  delay(500);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏫 College Campus Parking</span>
+                <span class="app-tag">🏪 Shopping Mall Lots</span>
+                <span class="app-tag">📱 Web/Blynk Dashboard</span>
+                <span class="app-tag">💳 RFID Permit Entry</span>
+                <span class="app-tag">📊 Occupancy Analytics</span>
+                <span class="app-tag">🔔 Telegram FULL Alert</span>
+                <span class="app-tag">🚗 EV Charging Bay Flag</span>
+                <span class="app-tag">🗺️ Floor-Plan LED Map</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $15 – $30</li>
+                <li><strong>Build Time:</strong> 5 – 7 hours</li>
+                <li><strong>Platform:</strong> Arduino Mega</li>
+                <li><strong>Display:</strong> 16×2 I2C LCD</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Multi-sensor HC-SR04 polling</li>
+                <li>Shift register LED control</li>
+                <li>Servo barrier logic</li>
+                <li>I2C LCD display output</li>
+                <li>State machine design</li>
+                <li>Debounce majority vote</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — I2C LCD control</span></li>
+                <li><span class="lib-name">Servo (built-in)</span><span class="lib-desc"> — Barrier arm control</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="parking-sensor-beeper.html">Parking Sensor Beeper</a></li>
+                <li><a href="ultrasonic-distance-meter.html">Ultrasonic Distance Meter</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    // Build parking lot
+    const lot = document.getElementById('parkLot');
+    const states = [false,false,true,false,true,true,false,false];
+    const cars = ['🚗','🚙','🚕','🚌','🚗','🚙','🚕','🚗'];
+    for (let i = 0; i < 8; i++) {
+      const bay = document.createElement('div');
+      bay.className = 'bay ' + (states[i] ? 'occupied' : 'free');
+      bay.textContent = states[i] ? cars[i] : '  ';
+      bay.id = 'bay'+i; lot.appendChild(bay);
+    }
+    let occ = states.slice();
+    function updateFree() {
+      return occ.filter(x => !x).length;
+    }
+    document.getElementById('lcdPanel').textContent = 'Free Slots: ' + updateFree() + ' / 8';
+
+    setInterval(() => {
+      const idx = Math.floor(Math.random() * 8);
+      occ[idx] = !occ[idx];
+      const bay = document.getElementById('bay'+idx);
+      bay.className = 'bay ' + (occ[idx] ? 'occupied' : 'free');
+      bay.textContent = occ[idx] ? cars[idx] : '  ';
+      const free = updateFree();
+      document.getElementById('lcdPanel').textContent = free > 0 ? 'Free Slots: '+free+' / 8' : 'LOT IS FULL';
+      document.getElementById('barrierArm').className = free > 0 ? 'barrier-arm open' : 'barrier-arm';
+    }, 2500);
+  </script>
+</body>
+</html>

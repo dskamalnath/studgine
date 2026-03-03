@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bluetooth LED Dimmer – Studgine</title>
+  <meta name="description" content="Send brightness values from a phone serial app over HC-05 Bluetooth to dim an LED strip. Intro to wireless serial communication and PWM control with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:22px; padding:20px 16px; height:120px; }
+    .phone { width:32px; height:52px; background:linear-gradient(160deg,#1e293b,#0f172a); border-radius:8px; border:2px solid #334155; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+    .phone-screen { width:22px; height:30px; background:#1d4ed8; border-radius:3px; display:flex; align-items:center; justify-content:center; }
+    .bt-icon { color:#60a5fa; font-size:.65rem; font-weight:700; }
+    .bt-waves { display:flex; flex-direction:column; gap:3px; justify-content:center; align-items:center; }
+    .bt-wave { height:2px; background:#3b82f6; border-radius:2px; animation:bt-pulse 1.5s ease-in-out infinite; }
+    .bt-wave:nth-child(1){width:8px;animation-delay:0s}
+    .bt-wave:nth-child(2){width:14px;animation-delay:.15s}
+    .bt-wave:nth-child(3){width:20px;animation-delay:.3s}
+    @keyframes bt-pulse{0%,100%{opacity:.15}50%{opacity:1}}
+    .led-strip { display:flex; gap:4px; align-items:center; }
+    .strip-seg { width:14px; height:28px; border-radius:3px; animation:dim-cycle 3s ease-in-out infinite; }
+    .strip-seg:nth-child(1){animation-delay:0s}
+    .strip-seg:nth-child(2){animation-delay:.1s}
+    .strip-seg:nth-child(3){animation-delay:.2s}
+    .strip-seg:nth-child(4){animation-delay:.3s}
+    .strip-seg:nth-child(5){animation-delay:.4s}
+    @keyframes dim-cycle{0%,100%{background:#fef3c7;box-shadow:0 0 4px rgba(251,191,36,.3)}50%{background:#fbbf24;box-shadow:0 0 12px rgba(251,191,36,.9)}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Bluetooth LED Dimmer</h1>
+      <p class="hero-sub">Send brightness values from a free phone serial app over HC-05 Bluetooth to smoothly dim an LED — your first wireless Arduino control project.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Bluetooth LED Dimmer</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="phone"><div class="phone-screen"><span class="bt-icon">BT</span></div></div>
+          <div class="bt-waves"><div class="bt-wave"></div><div class="bt-wave"></div><div class="bt-wave"></div></div>
+          <div class="led-strip">
+            <div class="strip-seg"></div><div class="strip-seg"></div><div class="strip-seg"></div><div class="strip-seg"></div><div class="strip-seg"></div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Phone → HC-05 UART → Arduino SoftwareSerial → analogWrite() PWM</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+HC-05+Bluetooth+LED+dimmer+PWM" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The <strong>HC-05 Bluetooth module</strong> acts as a wireless UART bridge — it transmits whatever your phone sends, byte-by-byte, over a serial connection to the Arduino. Using <code>SoftwareSerial</code> on pins 10/11 frees the hardware serial port for debugging, while the received byte value (0–255) feeds directly into <code>analogWrite()</code> as a brightness level.</p>
+        <p>This project teaches the most fundamental wireless pattern in IoT: <em>send a value, receive a value, do something proportional</em>. Once you understand it, ESP8266 Wi-Fi, LoRa, and ZigBee all follow the same principle with different transport layers.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">📡</span><div><span class="comp-name">HC-05 Bluetooth Module</span><span class="comp-note">Wireless UART bridge</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">LED (or LED strip via N-MOSFET)</span><span class="comp-note">Light output</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">220 Ω resistor (for single LED)</span><span class="comp-note">Current limiting</span></div></li>
+          <li><span class="comp-icon">📱</span><div><span class="comp-name">Phone + "Serial Bluetooth Terminal" app</span><span class="comp-note">Free on Android/iOS</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire the HC-05</strong> — HC-05 VCC → 5 V (module reg), GND → GND, TXD → D10 (Arduino RX), RXD → D11 via a voltage divider (10 kΩ + 20 kΩ) to step 5 V TX down to 3.3 V for the module. LED anode via 220 Ω → D9 (~), cathode → GND.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Set up SoftwareSerial</strong> — <code>#include &lt;SoftwareSerial.h&gt;</code>. Declare <code>SoftwareSerial bt(10, 11);</code> (RX, TX). In <code>setup()</code>: <code>bt.begin(9600);</code> — HC-05 default baud rate. The hardware <code>Serial.begin(9600);</code> remains available for debug prints.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Receive and act</strong> — In <code>loop()</code>: <code>if (bt.available()) &#123; int bright = bt.read(); analogWrite(9, bright); bt.print("Brightness: "); bt.println(bright); &#125;</code>. The phone app sends a single byte (0–255); the Arduino echoes the value back for confirmation.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Pair and test</strong> — Power on HC-05 (LED flashes every 2 s = waiting to pair). On phone: pair to "HC-05" with pin "1234" or "0000". In the Serial Bluetooth Terminal app, type a number 0–255 and hit send. The LED changes brightness instantly. Create quick-send buttons in the app for 0, 64, 128, 192, 255.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">💡 Wireless lamp dimmer</span>
+          <span class="app-tag">🎮 Phone-controlled robot</span>
+          <span class="app-tag">🌈 RGB LED phone controller</span>
+          <span class="app-tag">🔊 Wireless audio volume</span>
+          <span class="app-tag">🏠 Smart home prototype</span>
+          <span class="app-tag">📡 Bluetooth sensor logger</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$7 – $15</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1.5 – 2.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Wireless</span><span>HC-05 BT</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">SoftwareSerial</span></li>
+            <li><span class="skill-tag">Bluetooth UART pairing</span></li>
+            <li><span class="skill-tag">Byte receiving protocol</span></li>
+            <li><span class="skill-tag">analogWrite() PWM</span></li>
+            <li><span class="skill-tag">Wireless IoT pattern</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">SoftwareSerial (built-in)</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="rgb-color-mixer.html" class="skill-tag">RGB Color Mixer</a></li>
+            <li><a href="fan-speed-pwm-controller.html" class="skill-tag">Fan Speed PWM</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

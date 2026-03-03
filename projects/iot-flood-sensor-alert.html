@@ -1,0 +1,309 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IoT Flood Sensor Alert – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an IoT flood sensor alert with ESP8266. Detect rising water levels using float switches or ultrasonic sensor, send Telegram or IFTTT alerts, and log to cloud." />
+  <meta name="keywords" content="IoT flood sensor alert ESP8266, water level alert Arduino, flood detection IoT, ESP8266 Telegram water level, ultrasonic flood detector" />
+  <link rel="canonical" href="iot-flood-sensor-alert.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000810 0%,#001028 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .tank-wrap{position:relative;width:90px;height:120px;border:3px solid #2a5a8a;border-radius:6px 6px 4px 4px;overflow:hidden;}
+    .water-fill{position:absolute;bottom:0;left:0;width:100%;background:rgba(28,100,200,0.7);transition:height 1s ease;border-radius:0 0 2px 2px;}
+    .tank-scale{position:absolute;right:-28px;top:0;height:100%;display:flex;flex-direction:column;justify-content:space-between;font-family:monospace;font-size:9px;color:#4080a0;}
+    .float-sw{position:absolute;right:4px;width:10px;height:10px;border-radius:50%;border:2px solid #fff;transition:background 0.3s;}
+    .alert-box{background:#0a0a1a;border:2px solid;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:12px;text-align:center;min-width:180px;transition:border-color 0.5s,color 0.5s;}
+    .level-bar{width:200px;height:12px;background:#0a2a0a;border-radius:6px;overflow:hidden;}
+    .level-fill{height:100%;border-radius:6px;transition:width 1s,background 0.5s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>IoT Flood Sensor Alert</h1>
+      <p>Monitor a sump pit, basement, or outdoor channel with float switches and an HC-SR04 ultrasonic sensor. ESP8266 fires Telegram/IFTTT alerts on rising water and logs levels to ThingSpeak.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">IoT Flood Sensor Alert</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;align-items:flex-end;gap:20px;">
+                  <div style="position:relative;">
+                    <div class="tank-wrap" id="tankWrap">
+                      <div class="water-fill" id="waterFill" style="height:20%"></div>
+                      <div class="float-sw" id="sw1" style="bottom:30%;background:transparent;"></div>
+                      <div class="float-sw" id="sw2" style="bottom:60%;background:transparent;"></div>
+                      <div class="float-sw" id="sw3" style="bottom:82%;background:transparent;"></div>
+                    </div>
+                    <div class="tank-scale"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div class="alert-box" id="alertBox" style="border-color:#3a3a6a;color:#6060a0;">LEVEL NORMAL</div>
+                    <div>
+                      <div style="font-family:monospace;font-size:10px;color:#4060a0;margin-bottom:3px;">Water Level</div>
+                      <div class="level-bar"><div class="level-fill" id="levelFill" style="width:20%;background:#1e8ac8"></div></div>
+                      <div style="font-family:monospace;font-size:11px;color:#60a0cc;margin-top:2px;" id="levelLabel">12 cm from sensor</div>
+                    </div>
+                    <div style="font-family:monospace;font-size:10px;color:#405080;" id="notifStatus">📲 Telegram: standby</div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP8266+IoT+flood+water+level+sensor+Telegram+alert" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Flooding causes billions of dollars of damage annually — and the frustrating part is that most of it happens slowly enough that an early warning could make all the difference. An IoT flood monitor provides exactly that: a low-cost, always-on sentinel that pushes a phone alert the moment water starts rising.</p>
+              <p>This project uses three approaches in concert: float switches (simple, reliable NO/NC contacts) at multiple heights for coarse threshold alerts; an HC-SR04 ultrasonic sensor for continuous distance measurement (± 3 mm resolution); and an ESP8266 for connectivity. Water-level data is logged to ThingSpeak every 5 minutes for trend analysis, and Telegram notifications fire on threshold crossings with an escalating message tone (warning > alert > critical).</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">ESP8266 NodeMCU</span><span class="comp-note"> — Wi-Fi client for Telegram + ThingSpeak cloud logging</span></div></li>
+                <li><span class="comp-icon">📏</span><div><span class="comp-name">HC-SR04 Ultrasonic Sensor</span><span class="comp-note"> — Measures water surface distance; mount above channel/pit</span></div></li>
+                <li><span class="comp-icon">🔵</span><div><span class="comp-name">3× Float Switches (NO type)</span><span class="comp-note"> — Low / medium / high level thresholds on vertical cable</span></div></li>
+                <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive Buzzer + Red/Yellow/Green LEDs</span><span class="comp-note"> — Local audible + visual alert independent of Wi-Fi</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">Li-Po 2000 mAh + TP4056 + Solar Panel</span><span class="comp-note"> — Outdoor solar-powered for remote deployment</span></div></li>
+                <li><span class="comp-icon">📦</span><div><span class="comp-name">IP65 Waterproof Enclosure</span><span class="comp-note"> — Protects electronics near water; cable glands for sensors</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Ultrasonic Distance Measurement</h4><p>Trigger HC-SR04 with a 10 µs pulse on TRIG pin. Measure ECHO pulse duration with <code>pulseIn(ECHO_PIN, HIGH, 30000)</code>. Distance (cm) = <code>duration × 0.0343 / 2</code>. Subtract from tank height to get water depth. Average 5 readings every 2 s to eliminate false readings from turbulence. Temperature compensation (optional): <code>speed = 331 + 0.6 × temp_celsius</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Float Switch Threshold Logic</h4><p>Pull float switch pins HIGH via 10 kΩ pull-up resistors. When water lifts the float: pin reads LOW. Three levels: WARN (SW1 at 30 cm depth), ALERT (SW2 at 60 cm), CRITICAL (SW3 at 90 cm). Float switches provide reliable backup if ultrasonic sensor fails (e.g., from wave interference). Implement software debounce: require stable LOW for 500 ms before triggering.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Send Tiered Telegram Alerts</h4><p>Maintain <code>lastAlertLevel</code> state. Only send a new alert when the level increases (not on every sampling loop). Format message with severity emoji, depth reading, timestamp, and location name. Use <code>WiFiClientSecure + HTTPS GET</code> to api.telegram.org/bot endpoint. Add alert cooldown of 15 minutes per level to prevent spam flooding.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>ThingSpeak Cloud Logging</h4><p>Every 5 minutes, POST to <code>api.thingspeak.com/update</code> with API key and field values: <code>field1=depth_cm&field2=sw1&field3=sw2&field4=sw3</code>. ThingSpeak auto-charts the data — set up alert analysis with ThingHTTP+React to get secondary email alerts. Use <code>client.stop()</code> after each HTTP POST to free heap — ESP8266 has only 80 KB RAM.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;ESP8266WiFi.h&gt;
+#include &lt;WiFiClientSecure.h&gt;
+
+#define TRIG_PIN D6
+#define ECHO_PIN D7
+#define SW1 D1   // low level
+#define SW2 D2   // medium level
+#define SW3 D3   // high level (critical)
+#define TANK_HEIGHT_CM 100
+
+float measureDepth() {
+  digitalWrite(TRIG_PIN, LOW); delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH); delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  long dur = pulseIn(ECHO_PIN, HIGH, 30000);
+  float dist = dur * 0.0343 / 2.0;
+  return TANK_HEIGHT_CM - dist;  // water depth
+}
+
+void sendTelegram(String msg) {
+  WiFiClientSecure client; client.setInsecure();
+  if (client.connect("api.telegram.org", 443)) {
+    String url = "/botTOKEN/sendMessage?chat_id=CHATID&text=" + msg;
+    client.print("GET " + url + " HTTP/1.1\r\nHost: api.telegram.org\r\nConnection: close\r\n\r\n");
+    delay(300); client.stop();
+  }
+}
+
+int lastAlertLevel = 0;
+void loop() {
+  float depth = measureDepth();
+  int alert = 0;
+  if(!digitalRead(SW3)) alert = 3;
+  else if(!digitalRead(SW2)) alert = 2;
+  else if(!digitalRead(SW1)) alert = 1;
+
+  if(alert > lastAlertLevel) {
+    String emojis[] = {"","⚠️ WARN","🔴 ALERT","🚨 CRITICAL"};
+    sendTelegram(emojis[alert] + "+Flood+Level:+" + String(depth,1) + "cm");
+    lastAlertLevel = alert;
+  }
+  if(alert == 0) lastAlertLevel = 0;
+  delay(2000);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Basement Sump Monitor</span>
+                <span class="app-tag">🏞️ River Level Alert</span>
+                <span class="app-tag">🌧️ Stormwater Drain Watch</span>
+                <span class="app-tag">🏭 Industrial Tank Level</span>
+                <span class="app-tag">🌾 Rice Paddy Water Control</span>
+                <span class="app-tag">💧 Rainwater Harvesting</span>
+                <span class="app-tag">📊 ThingSpeak Dashboard</span>
+                <span class="app-tag">🔌 Pump Auto-Shutoff Relay</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $22</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> ESP8266 NodeMCU</li>
+                <li><strong>Alert Latency:</strong> &lt; 5 s from trigger</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>HC-SR04 ultrasonic ranging</li>
+                <li>Float switch debouncing</li>
+                <li>HTTPS Telegram Bot API</li>
+                <li>ThingSpeak data logging</li>
+                <li>Solar + Li-Po outdoor power</li>
+                <li>IP65 enclosure design</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">ESP8266WiFi</span><span class="lib-desc"> — Wi-Fi connection to router</span></li>
+                <li><span class="lib-name">WiFiClientSecure</span><span class="lib-desc"> — HTTPS for Telegram + ThingSpeak</span></li>
+                <li><span class="lib-name">ThingSpeak</span><span class="lib-desc"> — Cloud data publishing library</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="power-failure-alert-iot.html">Power Failure Alert (IoT)</a></li>
+                <li><a href="tank-level-wifi-monitor.html">Tank Level Wi-Fi Monitor</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let fillPct = 10, rising = true;
+    function updateFlood() {
+      if(rising) fillPct += 1.5; else fillPct -= 2;
+      if(fillPct >= 95) rising = false;
+      if(fillPct <= 8) { rising = true; document.getElementById('notifStatus').textContent = '📲 Telegram: standby'; }
+      fillPct = Math.max(5, Math.min(98, fillPct));
+      document.getElementById('waterFill').style.height = fillPct + '%';
+      document.getElementById('levelFill').style.width = fillPct + '%';
+      const distFromSensor = (100 - fillPct * 0.95).toFixed(0);
+      document.getElementById('levelLabel').textContent = distFromSensor + ' cm from sensor';
+
+      const sw1on = fillPct > 30, sw2on = fillPct > 60, sw3on = fillPct > 82;
+      document.getElementById('sw1').style.background = sw1on ? '#ffff00' : 'transparent';
+      document.getElementById('sw2').style.background = sw2on ? '#ff8800' : 'transparent';
+      document.getElementById('sw3').style.background = sw3on ? '#ff0000' : 'transparent';
+
+      const alertBox = document.getElementById('alertBox');
+      const levelFill = document.getElementById('levelFill');
+      if(fillPct > 82) {
+        alertBox.textContent = '🚨 CRITICAL FLOOD'; alertBox.style.borderColor='#ff0000'; alertBox.style.color='#ff6060';
+        levelFill.style.background='#ff2020';
+        if(fillPct === 83) document.getElementById('notifStatus').textContent = '📲 Telegram: 🚨 CRITICAL sent';
+      } else if(fillPct > 60) {
+        alertBox.textContent = '🔴 HIGH WATER'; alertBox.style.borderColor='#ff8800'; alertBox.style.color='#ffaa40';
+        levelFill.style.background='#ff8800';
+        if(fillPct === 61) document.getElementById('notifStatus').textContent = '📲 Telegram: ⚠️ ALERT sent';
+      } else if(fillPct > 30) {
+        alertBox.textContent = '⚠️ LEVEL WARNING'; alertBox.style.borderColor='#ffcc00'; alertBox.style.color='#ffdd60';
+        levelFill.style.background='#d4a800';
+      } else {
+        alertBox.textContent = '✅ LEVEL NORMAL'; alertBox.style.borderColor='#3a3a6a'; alertBox.style.color='#60a0c0';
+        levelFill.style.background='#1e8ac8';
+      }
+    }
+    setInterval(updateFlood, 500);
+  </script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECG Monitor (AD8232) – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a real ECG monitor using AD8232 front-end amplifier and Arduino. Visualise heart waveforms with 3 electrode lead configuration and stream to Serial Plotter." />
+  <meta name="keywords" content="ECG monitor Arduino AD8232, AD8232 ECG Arduino project, electrocardiogram Arduino 3 lead, AD8232 heart monitor waveform, ECG Serial Plotter Arduino" />
+  <link rel="canonical" href="ecg-monitor-ad8232.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000810 0%,#001020 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;overflow:hidden;}
+    .ecg-strip{width:280px;height:90px;background:#001200;border:1px solid #003300;border-radius:6px;overflow:hidden;position:relative;}
+    #ecgCanvas{display:block;}
+    .lead-row{display:flex;gap:10px;font-family:monospace;font-size:9px;}
+    .lead-chip{padding:3px 8px;border-radius:4px;border:1px solid #205020;color:#60e060;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>ECG Monitor (AD8232)</h1>
+      <p>Visualise a real ECG waveform from 3 body-surface electrodes using an AD8232 front-end and Arduino ADC. Stream the waveform live to the Serial Plotter or a web oscilloscope page via WebSocket.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">ECG Monitor (AD8232)</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="font-family:monospace;font-size:10px;color:#406040;">Live ECG Waveform (Lead I)</div>
+                <div class="ecg-strip"><canvas id="ecgCanvas" width="280" height="90"></canvas></div>
+                <div class="lead-row">
+                  <div class="lead-chip">RA (+)</div>
+                  <div class="lead-chip">LA (−)</div>
+                  <div class="lead-chip">RL (ref)</div>
+                  <div style="font-family:monospace;font-size:9px;color:#406040;margin-left:4px;">500 Hz sample</div>
+                </div>
+                <div style="font-family:monospace;font-size:9px;color:#204040;" id="ecgStatus">Leads OK — streaming to Serial</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=AD8232+ECG+monitor+Arduino+electrodes+waveform" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>An electrocardiogram (ECG) measures the electrical potential difference between body-surface electrodes as the heart's sinoatrial node fires a depolarisation wave through the myocardium. The characteristic PQRST waveform — small P wave (atrial depolarisation), tall QRS complex (ventricular depolarisation), and T wave (ventricular repolarisation) — carries enormous diagnostic information.</p>
+              <p>The AD8232 is a dedicated cardiac monitoring front-end IC from Analog Devices. It combines an instrumentation amplifier, bandpass filter (0.5 Hz – 40 Hz), right-leg drive circuit, and leads-off detection — all in one 4×4 mm package. It amplifies the typical 1 mV ECG signal to the 0–3.3 V input range of a microcontroller ADC, enabling a complete single-lead ECG analyser with just two components.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">❤️</span><div><span class="comp-name">AD8232 ECG Sensor Module</span><span class="comp-note"> — 3.5 mm jack or pin headers; OUTPUT → Arduino A0; LO+/LO− → digital pins for leads-off detect</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — ADC at 10-bit; use TimerOne at 500 Hz for accurate sampling; USB serial to PC</span></div></li>
+                <li><span class="comp-icon">🩹</span><div><span class="comp-name">Disposable ECG Electrodes (×10)</span><span class="comp-note"> — Ag/AgCl gel electrodes; 3-lead standard (RA right wrist, LA left wrist, RL right ankle/leg)</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">9V Battery (isolated)</span><span class="comp-note"> — CRITICAL: never use USB power while electrodes are on body; use battery or isolation transformer</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">PC Running Processing / Python</span><span class="comp-note"> — Real-time graph with PySerial + matplotlib or Arduino Serial Plotter (built-in)</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>AD8232 Signal Chain</h4><p>The AD8232 instrumentation amplifier measures the differential voltage between the RA (+IN) and LA (−IN) electrodes with CMRR &gt;80 dB, rejecting common-mode 50/60 Hz mains interference. The right-leg drive (RLD) circuit feeds back a processed common-mode signal through the RL electrode, further cancelling interference. The internal bandpass filter removes baseline wander (&lt;0.5 Hz due to breathing movement) and high-frequency muscle artefacts (&gt;40 Hz). Output pin voltage = 1.65 V (midpoint) ± ECG amplitude, suitable for 3.3 V ADC. The Arduino maps 0–1023 ADC values to a signed millivolts value for plotting.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>500 Hz Timer-Interrupt Sampling</h4><p>Use <code>TimerOne</code> library to fire an ISR every 2 ms (500 Hz). In the ISR: check LO+ and LO− pins — if either is HIGH, the corresponding electrode is detached; send a "LEADS OFF" marker instead of ADC data. Otherwise, read <code>analogRead(A0)</code> and store in a circular sample buffer. In the main loop, send buffered samples over Serial at 115200 baud as ASCII integers. Each line is one sample: <code>516\n</code>. The Serial Plotter reads this automatically and scrolls the waveform in real time.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Python / Processing Visualisation</h4><p>For a richer display, write a Python script using <code>pyserial</code> + <code>matplotlib.animation</code>. Open serial port at 115200 baud, read integer lines, append to a deque of 500 samples (1 second of data), redraw with <code>FuncAnimation</code> every 20 ms. Add a threshold line at 700 ADC (R-peak detection) and compute BPM from R-peak intervals using <code>scipy.signal.find_peaks</code>. Alternatively, use Processing 3.x with the Serial library for a compact graphical sketch.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Safety Considerations (Critical)</h4><p><strong>1. Electrical isolation:</strong> Power the Arduino ONLY from a battery (9V) when electrodes are attached to the body — never USB while wired to mains-powered PC. If needed, use a USB isolator (e.g. ADUM3160). <strong>2. Electrode placement:</strong> Clean skin with alcohol swab, ensure gel contact. <strong>3. Scope of use:</strong> This is an educational prototype only — not a medical device. Do not use for clinical diagnosis. Do not apply to the chest near the heart (limb Lead I only for safety). Add a 1 MΩ resistor in series with each electrode lead as a current-limiting safety measure.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;TimerOne.h&gt;
+
+const int ECG_OUT = A0;
+const int LO_PLUS = 10, LO_MINUS = 11;
+volatile bool newSample = false;
+volatile int ecgValue;
+
+void sampleISR() {
+  if(digitalRead(LO_PLUS)==HIGH || digitalRead(LO_MINUS)==HIGH) {
+    ecgValue = -1; // leads-off marker
+  } else {
+    ecgValue = analogRead(ECG_OUT);
+  }
+  newSample = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LO_PLUS, INPUT); pinMode(LO_MINUS, INPUT);
+  Timer1.initialize(2000); // 2ms = 500 Hz
+  Timer1.attachInterrupt(sampleISR);
+}
+
+void loop() {
+  if(newSample) {
+    newSample = false;
+    if(ecgValue == -1) Serial.println("!"); // leads off
+    else Serial.println(ecgValue);
+  }
+}
+
+// Python visualiser (separate script running on PC):
+// import serial, matplotlib.pyplot as plt, matplotlib.animation as animation
+// from collections import deque
+// ser = serial.Serial('COM3', 115200)
+// buf = deque([512]*500, maxlen=500)
+// def update(frame):
+//   while ser.in_waiting: buf.append(int(ser.readline()))
+//   line.set_ydata(list(buf))
+// ani = animation.FuncAnimation(fig, update, interval=20)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🫀 Single-Lead ECG Waveform</span>
+                <span class="app-tag">💗 Real-time BPM Detection</span>
+                <span class="app-tag">📊 Python Matplotlib Plot</span>
+                <span class="app-tag">🖥️ Web Oscilloscope (WebSocket)</span>
+                <span class="app-tag">🔬 Arrhythmia Detection Algo</span>
+                <span class="app-tag">💾 SD Card ECG Recording</span>
+                <span class="app-tag">📱 Bluetooth ECG Streamer</span>
+                <span class="app-tag">🔔 Abnormal HR Alert Buzzer</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $22</li>
+                <li><strong>Build Time:</strong> 3 – 5 hours</li>
+                <li><strong>Platform:</strong> Arduino + PC</li>
+                <li><strong>Sample Rate:</strong> 500 Hz</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Bioelectrical signal amplification</li>
+                <li>AD8232 analog front-end IC</li>
+                <li>Timer interrupt 500 Hz sampling</li>
+                <li>Leads-off detection circuit</li>
+                <li>Real-time Serial Plotter</li>
+                <li>Python matplotlib animation</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">TimerOne</span><span class="lib-desc"> — Precise 500 Hz ADC sampling via hardware timer ISR</span></li>
+                <li><span class="lib-name">pyserial (Python)</span><span class="lib-desc"> — Read USB serial data on PC for waveform display</span></li>
+                <li><span class="lib-name">matplotlib (Python)</span><span class="lib-desc"> — Animated real-time ECG graph on PC</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="cloud-heart-rate-logger.html">Cloud Heart Rate Logger</a></li>
+                <li><a href="wrist-spo2-heart-rate-band.html">Wrist SpO₂ Heart Rate Band</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const canvas = document.getElementById('ecgCanvas');
+    const ctx = canvas.getContext('2d');
+    const W=280, H=90;
+    const pts = new Array(W).fill(45);
+    let t=0;
+
+    function ecgShape(x) {
+      const phase = x % 1.0;
+      if(phase < 0.05) return 45 - 10*Math.sin(phase/0.05*Math.PI); // P wave
+      if(phase < 0.08) return 45;
+      if(phase < 0.10) return 45 + 8; // Q
+      if(phase < 0.13) return 45 - 55; // R peak
+      if(phase < 0.16) return 45 + 6; // S
+      if(phase < 0.40) return 45;
+      if(phase < 0.55) return 45 - 18*Math.sin((phase-0.40)/0.15*Math.PI); // T
+      return 45;
+    }
+
+    setInterval(()=>{
+      t += 0.025;
+      pts.shift();
+      pts.push(ecgShape(t) + (Math.random()-0.5)*1.5);
+      ctx.fillStyle='#001200'; ctx.fillRect(0,0,W,H);
+      // grid lines
+      ctx.strokeStyle='#002a00'; ctx.lineWidth=0.5;
+      for(let x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+      for(let y=0;y<H;y+=18){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+      // ECG trace
+      ctx.strokeStyle='#00ff60'; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      pts.forEach((p,i)=> i===0?ctx.moveTo(i,p):ctx.lineTo(i,p));
+      ctx.stroke();
+    }, 20);
+
+    setInterval(()=>{
+      const ok = Math.random() > 0.05;
+      document.getElementById('ecgStatus').textContent = ok ? 'Leads OK — streaming to Serial' : '⚠️ Lead disconnect detected';
+      document.getElementById('ecgStatus').style.color = ok ? '#204040' : '#804000';
+    }, 3000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lie Detector (GSR Sensor) – Studgine</title>
+  <meta name="description" content="Measure galvanic skin response (GSR) with two finger electrodes to detect stress. Light up indicator LEDs based on skin conductance with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:14px; }
+    .finger { width:22px; height:50px; border-radius:10px; background:linear-gradient(180deg,#fbbf24,#f59e0b); border:1.5px solid #d97706; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:4px; }
+    .electrode { width:14px; height:10px; background:#6b7280; border-radius:3px; }
+    .gsr-arrow { font-size:.8rem; color:#94a3b8; }
+    .gsr-box { background:#1e293b; border:2px solid #334155; border-radius:8px; padding:6px 10px; text-align:center; }
+    .gsr-label { font-size:.55rem; color:#64748b; }
+    .gsr-val { font-family:'Courier New',monospace; font-size:1.3rem; font-weight:700; color:#e2e8f0; }
+    .led-row { display:flex; flex-direction:column; gap:5px; }
+    .gsr-led { width:16px; height:16px; border-radius:50%; border:1.5px solid #1e293b; opacity:.25; }
+    .gsr-led.g { background:#22c55e; border-color:#16a34a; }
+    .gsr-led.y { background:#eab308; border-color:#ca8a04; }
+    .gsr-led.r { background:#ef4444; border-color:#dc2626; }
+    .gsr-led.on { opacity:1; box-shadow:0 0 6px currentColor; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Lie Detector (GSR Sensor)</h1>
+      <p class="hero-sub">Measure galvanic skin response with two finger electrodes to detect stress or arousal and light indicator LEDs. A fascinating biomedical sensing project with immediate feedback.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Lie Detector (GSR Sensor)</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="finger"><div class="electrode"></div></div>
+          <span class="gsr-arrow">→</span>
+          <div class="gsr-box">
+            <div class="gsr-label">CONDUCTANCE</div>
+            <div class="gsr-val" id="gsr-val">---</div>
+            <div class="gsr-label" id="gsr-status">Calibrating…</div>
+          </div>
+          <span class="gsr-arrow">→</span>
+          <div class="led-row">
+            <div class="gsr-led g" id="led-g"></div>
+            <div class="gsr-led y" id="led-y"></div>
+            <div class="gsr-led r" id="led-r"></div>
+          </div>
+          <div class="finger"><div class="electrode"></div></div>
+        </div>
+        <p class="anim-stage-label">Simulated GSR reading → LED stress level indicator</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+galvanic+skin+response+lie+detector+GSR" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p><strong>Galvanic Skin Response (GSR)</strong>, also called electrodermal activity (EDA), is the variation in the electrical conductance of skin caused by sweat gland activity. When you're stressed, nervous, or emotionally aroused, your sympathetic nervous system triggers more sweat secretion, which increases conductance by lowering the resistance between two skin contact points.</p>
+        <p>Commercial polygraphs measure GSR among other signals. Our simplified version measures the resistance between two fingertips via a voltage divider, converts it to a 10-bit ADC value, calibrates to your baseline, and categorises the relative change into calm, elevated, or stressed states.</p>
+        <p><strong>Important disclaimer:</strong> This project is for educational exploration only. No Arduino-based device can accurately detect deception, and the results should never be treated as factual indicators of honesty.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">10 kΩ resistor</span><span class="comp-note">Voltage divider with skin resistance</span></div></li>
+          <li><span class="comp-icon">🖇️</span><div><span class="comp-name">2× Metal finger electrodes</span><span class="comp-note">Copper tape, spoon handles, or bare wire coils</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">3× LEDs (green, yellow, red)</span><span class="comp-note">Stress indicators</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">3× 220 Ω resistors</span><span class="comp-note">LED current limiting</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Build the voltage divider</strong> — Connect 5 V through a 10 kΩ resistor to one electrode and to Arduino A0. The second electrode connects to GND. The two finger contacts form a resistance bridge: <code>V_out = 5V × R_skin / (10kΩ + R_skin)</code>. Skin resistance ranges roughly 10 kΩ (stressed) to 500 kΩ (relaxed), producing a voltage swing of ~0.1–2.5 V.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Calibrate baseline</strong> — On startup, average 50 <code>analogRead(A0)</code> samples over 10 seconds while the subject breathes calmly:
+              <code>for(int i=0;i&lt;50;i++){baseline+=analogRead(A0);delay(200);} baseline/=50;</code>
+              Store this as the neutral reference. Apply a running average: <code>filtered = filtered * 0.9 + analogRead(A0) * 0.1;</code> to smooth out 60 Hz mains noise.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Calculate stress delta</strong> — Compute deviation from baseline: <code>int delta = filtered - baseline;</code>. A higher ADC value means lower skin resistance (more conductance = more stress). Use thresholds: delta &lt; 15 → green LED (calm); 15–50 → yellow LED (mild arousal); &gt; 50 → red LED (stressed). These thresholds are calibration-dependent — print <code>delta</code> to Serial Monitor to tune for your skin type.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Display and extend</strong> — Print raw and delta values to Serial Plotter (<code>Serial.println(delta);</code>) — you'll see real-time waveforms as you relax and tense. Add an OLED to display a live bar graph, or a buzzer that increases in frequency proportionally to delta. Try adding a "reset calibration" button for multiple test subjects.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🧘 Stress / biofeedback monitor</span>
+          <span class="app-tag">🎮 Emotional game controller</span>
+          <span class="app-tag">🧪 Physiology science project</span>
+          <span class="app-tag">🎓 Classroom EDA demonstration</span>
+          <span class="app-tag">🎭 Interactive art installation</span>
+          <span class="app-tag">💆 Relaxation training device</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$4 – $10</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 2 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Sensing</span><span>Galvanic skin resp.</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Voltage divider circuits</span></li>
+            <li><span class="skill-tag">Analog signal filtering</span></li>
+            <li><span class="skill-tag">Baseline calibration</span></li>
+            <li><span class="skill-tag">Serial Plotter visualisation</span></li>
+            <li><span class="skill-tag">Bioelectrical sensing basics</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">No libraries needed</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="heartbeat-pulse-sensor.html" class="skill-tag">Heartbeat Pulse Sensor</a></li>
+            <li><a href="soil-moisture-indicator.html" class="skill-tag">Soil Moisture Indicator</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const levels = [
+      {val:380, status:'Calibrating…', g:false, y:false, r:false},
+      {val:395, status:'Calm', g:true, y:false, r:false},
+      {val:393, status:'Calm', g:true, y:false, r:false},
+      {val:410, status:'Mild Arousal', g:false, y:true, r:false},
+      {val:430, status:'Elevated', g:false, y:true, r:false},
+      {val:452, status:'Stressed!', g:false, y:false, r:true},
+      {val:445, status:'Stressed!', g:false, y:false, r:true},
+      {val:420, status:'Mild Arousal', g:false, y:true, r:false},
+      {val:400, status:'Calm', g:true, y:false, r:false},
+    ];
+    let idx = 0;
+    const valEl = document.getElementById('gsr-val');
+    const statusEl = document.getElementById('gsr-status');
+    const ledG = document.getElementById('led-g');
+    const ledY = document.getElementById('led-y');
+    const ledR = document.getElementById('led-r');
+    function updateGSR() {
+      const s = levels[idx % levels.length];
+      valEl.textContent = s.val;
+      statusEl.textContent = s.status;
+      ledG.classList.toggle('on', s.g);
+      ledY.classList.toggle('on', s.y);
+      ledR.classList.toggle('on', s.r);
+      idx++;
+    }
+    updateGSR();
+    setInterval(updateGSR, 2000);
+  </script>
+</body>
+</html>

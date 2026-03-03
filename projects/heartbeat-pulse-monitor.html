@@ -1,0 +1,242 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heartbeat Pulse Monitor – Beginner Project | Studgine</title>
+  <meta name="description" content="Use a KY-039 or MAX30100 finger sensor to measure heart rate and show BPM on an LCD. Introduces biomedical sensing, peak detection, and averaging algorithms." />
+  <meta name="keywords" content="Arduino heartbeat pulse monitor, KY-039 heart rate sensor, MAX30100 BPM LCD, beginner Arduino project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="heartbeat-pulse-monitor.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-pulse-wrap   { display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .anim-heart        { font-size:3rem; display:inline-block; animation: heart-beat 0.86s ease-in-out infinite; }
+    @keyframes heart-beat { 0%,100%{transform:scale(1)} 14%{transform:scale(1.3)} 28%{transform:scale(1)} 42%{transform:scale(1.15)} 56%{transform:scale(1)} }
+    .anim-ecg-wrap     { width:180px; height:50px; overflow:hidden; position:relative; }
+    .anim-ecg-svg      { position:absolute; left:0; top:0; animation: ecg-scroll 2s linear infinite; }
+    @keyframes ecg-scroll { 0%{left:0} 100%{left:-180px} }
+    .anim-bpm-display  { font-family:monospace; font-size:1.4rem; color:#ff4081; letter-spacing:2px; }
+    .anim-bpm-label    { font-family:monospace; font-size:.78rem; color:#aaa; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                  </div>
+                  <div class="anim-bpm-display" id="bpm-val">72 BPM</div>
+                  <div class="anim-bpm-label">Live Heart Rate</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+heartbeat+pulse+sensor+KY-039+BPM+LCD+tutorial" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>A photoplethysmography (PPG) sensor like the KY-039 shines an infrared LED through your fingertip while a phototransistor on the opposite side measures how much light passes through. With each heartbeat, the blood vessels in your fingertip expand slightly, scattering more IR light and causing a tiny dip in the sensor's output value — this is the pulse signal your Arduino needs to detect and time.</p>
+              <p>The signal is very small and noisy, so processing it requires an important algorithm trio: a running average to filter DC drift, a peak-detection routine to identify each heartbeat, and a rolling average of inter-beat intervals to compute stable BPM. Mastering these three techniques unlocks a huge category of signal processing projects — from ECG simulation to step counters and vibration monitors.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🎛️</span>
+                  <div><span class="comp-name">Arduino Uno R3</span><span class="comp-note"> — Main microcontroller</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">❤️</span>
+                  <div><span class="comp-name">KY-039 Heartbeat Sensor Module</span><span class="comp-note"> — IR LED + phototransistor finger sensor</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🖥️</span>
+                  <div><span class="comp-name">16×2 LCD Display (I²C)</span><span class="comp-note"> — Displays live BPM and pulse status</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">💡</span>
+                  <div><span class="comp-name">Red LED + 220 Ω Resistor</span><span class="comp-note"> — Flashes on each detected heartbeat</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🔋</span>
+                  <div><span class="comp-name">5 V USB Power</span><span class="comp-note"> — Arduino via USB or external 5V supply</span></div>
+                </li>
+                <li>
+                  <span class="comp-icon" aria-hidden="true">🔌</span>
+                  <div><span class="comp-name">Breadboard + Jumper Wires</span><span class="comp-note"> — Prototyping connections</span></div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">1</div>
+                  <div class="step-content">
+                    <h4>Sample the Sensor Signal</h4>
+                    <p>Connect the KY-039 signal pin to A0. In a tight loop, call <code>analogRead(A0)</code> every 10 ms (100 Hz) and store the last 20 readings in a circular buffer. This gives you a smooth waveform to analyse.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">2</div>
+                  <div class="step-content">
+                    <h4>Apply a Running Average Filter</h4>
+                    <p>Subtract the running average from each new reading to remove slow DC drift from ambient light and finger position changes. The resulting signal oscillates around zero with peaks on each heartbeat.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">3</div>
+                  <div class="step-content">
+                    <h4>Detect Peaks and Compute BPM</h4>
+                    <p>When the filtered value crosses a positive threshold, record the timestamp with <code>millis()</code> and flash the LED. Store the last 5 inter-beat intervals in an array. Average them and compute: <code>BPM = 60000 / avgInterval</code>.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number" aria-hidden="true">4</div>
+                  <div class="step-content">
+                    <h4>Display and Validate</h4>
+                    <p>Print the BPM to the LCD. Add a validity check: only display if BPM is between 40 and 200, otherwise show "Place Finger". Update the display every 2 seconds to avoid rapid flickering between readings.</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <p>Signal processing skills from this project open up advanced possibilities:</p>
+              <div class="applications-grid">
+                <span class="app-tag">🏃 Exercise Intensity Monitor</span>
+                <span class="app-tag">😴 Sleep Apnoea Alert System</span>
+                <span class="app-tag">📊 BPM Data Logger to SD Card</span>
+                <span class="app-tag">📱 Bluetooth BPM to Smartphone</span>
+                <span class="app-tag">🩺 SpO₂ Monitor (MAX30100)</span>
+                <span class="app-tag">🎵 Music BPM Sync Lighting</span>
+              </div>
+            </div>
+
+            <a href="../projects.html" class="back-btn" aria-label="Back to all projects">← Back to Projects</a>
+
+          </div><!-- /.detail-main -->
+
+          <aside class="detail-sidebar" aria-label="Project details">
+
+            <div class="sidebar-card">
+              <h3>Quick Facts</h3>
+              <div class="quick-facts">
+                <div class="fact-row"><span class="fact-label">Difficulty</span><span class="fact-value"><span class="badge badge-green">Beginner</span></span></div>
+                <div class="fact-row"><span class="fact-label">Budget</span><span class="fact-value">$6 – $15 USD</span></div>
+                <div class="fact-row"><span class="fact-label">Time</span><span class="fact-value">2 – 3 hours</span></div>
+                <div class="fact-row"><span class="fact-label">Platform</span><span class="fact-value">Arduino Uno</span></div>
+                <div class="fact-row"><span class="fact-label">Language</span><span class="fact-value">C++ (Arduino)</span></div>
+              </div>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Skills You'll Learn</h3>
+              <div class="skills-list">
+                <span class="skill-tag">Peak Detection</span>
+                <span class="skill-tag">Running Average</span>
+                <span class="skill-tag">BPM Calculation</span>
+                <span class="skill-tag">Biomedical Sensing</span>
+                <span class="skill-tag">Signal Filtering</span>
+                <span class="skill-tag">I²C LCD Display</span>
+              </div>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Libraries Needed</h3>
+              <div class="skills-list">
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">LiquidCrystal_I2C</span>
+                <span class="skill-tag" style="background:#d1fae5;color:#065f46;">MAX30100lib (if using MAX30100)</span>
+              </div>
+              <p style="font-size:0.75rem;color:var(--color-text-muted);margin-top:0.75rem;line-height:1.6;">
+                Install via Arduino IDE → Sketch → Include Library → Manage Libraries.
+              </p>
+            </div>
+
+            <div class="sidebar-card">
+              <h3>Try Next</h3>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                <a href="digital-temperature-monitor.html" class="btn btn-ghost btn-sm" style="justify-content:flex-start;border:1px solid var(--color-border);">🌡️ Digital Temperature Monitor</a>
+                <a href="ultrasonic-distance-meter.html" class="btn btn-ghost btn-sm" style="justify-content:flex-start;border:1px solid var(--color-border);">📡 Ultrasonic Distance Meter</a>
+              </div>
+            </div>
+
+          </aside>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo-wrap"><svg width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="fG1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#2563EB"/><stop offset="1" stop-color="#06B6D4"/></linearGradient><linearGradient id="fG2" x1="4" y1="4" x2="36" y2="36" gradientUnits="userSpaceOnUse"><stop stop-color="#60A5FA"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><path d="M20 2L34.5 11V29L20 38L5.5 29V11Z" fill="url(#fG1)"/><path d="M20 6L31 12.5V26.5L20 33L9 26.5V12.5Z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/><path d="M24.5 14.5C24.5 14.5 22.5 11.5 19 11.5C15.5 11.5 13 13.8 13 16.5C13 19.2 15.5 20.2 20 21.2C24.5 22.2 27 23.2 27 26C27 28.8 24.5 30.8 20.5 30.8C16.5 30.8 14.5 28.5 14.5 28.5" stroke="white" stroke-width="2.7" stroke-linecap="round" fill="none"/><circle cx="28.5" cy="12" r="2.5" fill="url(#fG2)"/></svg><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="obstacle-avoidance-robot.html">Obstacle Robot</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+  <script>
+    var bpms = [68, 70, 72, 74, 71, 69, 73, 75, 72, 70];
+    var bi = 0;
+    setInterval(function(){
+      var el = document.getElementById('bpm-val');
+      if(el) el.textContent = bpms[bi++ % bpms.length] + ' BPM';
+    }, 900);
+  </script>
+</body>
+</html>

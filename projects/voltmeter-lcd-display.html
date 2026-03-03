@@ -1,0 +1,90 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voltmeter with LCD Display – Beginner Project | Studgine</title>
+  <meta name="description" content="Read a voltage from 0–25 V using a resistor voltage divider and display the result on a 16×2 LCD. Teaches analog reference, voltage dividers, and floating-point formatting." />
+  <meta name="keywords" content="Arduino voltmeter LCD, voltage divider meter, Arduino measure voltage, beginner Arduino project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="voltmeter-lcd-display.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-volt-wrap   { display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .anim-meter-face  { width:140px; height:100px; background:#1a1a2e; border-radius:10px 10px 4px 4px; border:3px solid #2563eb; position:relative; overflow:hidden; }
+    .anim-meter-arc   { position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); width:120px; height:60px; border:3px solid #334; border-radius:60px 60px 0 0; border-bottom:none; }
+    .anim-meter-needle{ position:absolute; bottom:0; left:50%; width:2px; height:52px; background:#ff4444; border-radius:2px; transform-origin:bottom center; animation: needle-swing 3s ease-in-out infinite alternate; transform:translateX(-50%) rotate(-45deg); }
+    @keyframes needle-swing { 0%{transform:translateX(-50%) rotate(-65deg)} 100%{transform:translateX(-50%) rotate(65deg)} }
+    .anim-meter-label { position:absolute; top:6px; left:50%; transform:translateX(-50%); font-family:monospace; font-size:.65rem; color:#60a5fa; white-space:nowrap; }
+    .anim-meter-zero  { position:absolute; bottom:4px; left:14px; font-size:.55rem; color:#aaa; font-family:monospace; }
+    .anim-meter-max   { position:absolute; bottom:4px; right:10px; font-size:.55rem; color:#aaa; font-family:monospace; }
+    .anim-lcd-box     { width:160px; background:#1a3d1a; border:2px solid #0a3; border-radius:6px; padding:6px 10px; font-family:monospace; }
+    .anim-lcd-row     { color:#0f0; font-size:.82rem; letter-spacing:1px; }
+    .anim-lcd-sub     { color:#0a3; font-size:.72rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine"><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="obstacle-avoidance-robot.html">Obstacle Robot</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+  <script>
+    var volts = [3.20, 5.01, 7.85, 11.40, 12.60, 14.22, 9.75, 6.30, 4.98, 12.47];
+    var vi = 0;
+    setInterval(function(){
+      var el = document.getElementById('volt-val');
+      if(el) el.textContent = volts[vi++ % volts.length].toFixed(2);
+    }, 800);
+  </script>
+</body>
+</html>

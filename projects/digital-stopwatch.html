@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Stopwatch – Studgine</title>
+  <meta name="description" content="Start, Stop, and Reset a millisecond stopwatch on a 4-digit 7-segment display using three push-buttons and Arduino millis()." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 16px; height:120px; }
+    .sw-display { font-family:'Courier New',monospace; font-size:2.2rem; font-weight:700; color:#34d399; background:#0f172a; padding:8px 20px; border-radius:10px; letter-spacing:.12em; border:2px solid #065f46; box-shadow:0 0 18px rgba(52,211,153,.3); }
+    .sw-buttons { display:flex; gap:12px; margin-top:10px; }
+    .sw-btn { padding:3px 12px; border-radius:4px; font-size:.7rem; font-weight:700; border:none; cursor:default; }
+    .sw-btn.start { background:#16a34a; color:#fff; }
+    .sw-btn.stop  { background:#dc2626; color:#fff; }
+    .sw-btn.reset { background:#4b5563; color:#fff; }
+    #sw-time { animation:tick-count 60s linear infinite; }
+    @keyframes tick-count { from{} to{} }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Digital Stopwatch</h1>
+      <p class="hero-sub">Three push-buttons start, stop, and reset a millisecond-accurate stopwatch displayed on a 4-digit 7-segment display using Arduino's <code>millis()</code>.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Digital Stopwatch</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="sw-display"><span id="sw-time">00:00</span></div>
+          <div class="sw-buttons">
+            <div class="sw-btn start">START</div>
+            <div class="sw-btn stop">STOP</div>
+            <div class="sw-btn reset">RESET</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">millis() timing → MM:SS on 4-digit TM1637 display</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+digital+stopwatch+TM1637+7+segment" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The Arduino <code>millis()</code> function returns the number of milliseconds since the board last reset — it never blocks your code. By recording a <em>start timestamp</em> when the Start button is pressed and computing <code>elapsed = millis() - startTime</code>, you get a non-blocking timer that keeps running while everything else works simultaneously.</p>
+        <p>The <strong>TM1637 4-digit LED display module</strong> reduces wiring to just two wires (CLK + DIO). Its Arduino library handles segment encoding, so you simply call <code>display.showNumberDecEx()</code> to show minutes and seconds with a blinking colon.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🔢</span><div><span class="comp-name">TM1637 4-Digit 7-Segment Module</span><span class="comp-note">Time display</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">3× Push-Button (momentary SPST)</span><span class="comp-note">Start / Stop / Reset</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">3× 10 kΩ pull-down resistors</span><span class="comp-note">Button de-bounce</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Connect the display</strong> — TM1637 CLK → D2, DIO → D3, VCC → 5 V, GND → GND. Buttons to D4 (Start), D5 (Stop), D6 (Reset) with pull-down resistors. Enable <code>INPUT_PULLUP</code> in code if you wire buttons to GND instead.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>State machine</strong> — Track <code>enum State { IDLE, RUNNING, STOPPED };</code>. On Start press: record <code>startTime = millis();</code> and set state to RUNNING. On Stop: record <code>elapsedSnapshot</code> and set STOPPED. On Reset: clear all variables and return to IDLE.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Calculate MM:SS</strong> — <code>unsigned long elapsed = millis() - startTime;</code>. Then: <code>int secs = (elapsed/1000)%60; int mins = (elapsed/60000)%60;</code>. Pack into display: <code>int displayVal = mins*100 + secs;</code> and call <code>display.showNumberDecEx(displayVal, 0x40, true);</code> to show colon.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Debounce buttons</strong> — Check button state only every 50 ms using a <code>lastDebounce</code> millis() check. Or use a simple flag: read the button, only act when state changes from HIGH to LOW (on release). This prevents multiple triggers from a single press.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🏃 Sports lap timer</span>
+          <span class="app-tag">⏱️ Cooking countdown</span>
+          <span class="app-tag">🎮 Reaction time game</span>
+          <span class="app-tag">🏭 Machine cycle timer</span>
+          <span class="app-tag">🔔 Alarm countdown</span>
+          <span class="app-tag">📊 Data logging timestamps</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$4 – $10</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1.5 – 2.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Display</span><span>TM1637</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">millis() timing</span></li>
+            <li><span class="skill-tag">State machine design</span></li>
+            <li><span class="skill-tag">Button debouncing</span></li>
+            <li><span class="skill-tag">7-segment display</span></li>
+            <li><span class="skill-tag">Integer formatting</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">TM1637Display by avishorp</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="reaction-timer-game.html" class="skill-tag">Reaction Timer Game</a></li>
+            <li><a href="4-digit-event-counter.html" class="skill-tag">4-Digit Event Counter</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    // Animated stopwatch preview
+    let sw = 0, running = true;
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function tick(){
+      if(running) sw++;
+      const m = Math.floor(sw/60), s = sw%60;
+      document.getElementById('sw-time').textContent = pad(m)+':'+pad(s);
+    }
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Satellite Attitude Control Sim – Advanced Project | Studgine</title>
+  <meta name="description" content="Simulate a CubeSat ADCS using a Raspberry Pi with magnetometer/gyroscope, running a quaternion-based PD control loop with 3-axis reaction wheel output." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000008;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .sat-info{font-family:monospace;font-size:9px;color:#aaaaff;display:flex;flex-direction:column;gap:3px;}
+    .rw-bar{width:60px;height:5px;background:#00001a;border-radius:2px;overflow:hidden;}
+    .rw-fill{height:100%;border-radius:2px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Satellite Attitude Control Sim</h1>
+      <p>A complete Attitude Determination and Control System (ADCS) demonstration using a Raspberry Pi with LSM9DS1 magnetometer/gyroscope, running a full quaternion-based PD controller that commands three reaction wheel motors to maintain a target orientation — the exact same algorithm used in real CubeSat missions.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Satellite Attitude Control Sim</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="satCanvas" width="130" height="100"></canvas>
+                <div class="sat-info">
+                  <div>QUATERNION</div>
+                  <div>q0: <span id="satQ0">0.999</span></div>
+                  <div>q1: <span id="satQ1">0.012</span></div>
+                  <div>q2: <span id="satQ2">-0.008</span></div>
+                  <div>q3: <span id="satQ3">0.003</span></div>
+                  <div style="margin-top:3px;">REACTION WHEELS</div>
+                  <div>Ωx:<div class="rw-bar"><div class="rw-fill" id="rwX" style="width:30%;background:#ff8844;"></div></div></div>
+                  <div>Ωy:<div class="rw-bar"><div class="rw-fill" id="rwY" style="width:55%;background:#44aaff;"></div></div></div>
+                  <div>Ωz:<div class="rw-bar"><div class="rw-fill" id="rwZ" style="width:20%;background:#44ff88;"></div></div></div>
+                  <div style="color:#00ff88;margin-top:2px;">LOCKED ✓</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=CubeSat+ADCS+attitude+control+quaternion+reaction+wheel+simulation" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>CubeSat attitude control is one of the most mathematically demanding aspects of small satellite engineering. Euler angles suffer from gimbal lock — quaternions provide stable 3D orientation representation without singularities. This project implements a hardware ADCS testbed: LSM9DS1 9-DOF IMU measures orientation; a Mahony/Madgwick filter fuses accel+gyro+mag to estimate quaternion attitude; a quaternion error PD controller computes required torques; three BLDC motor reaction wheels (one per axis) execute those torques. The physical platform can rotate freely on a gimbal mount.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧲</span><div><span class="comp-name">LSM9DS1 9-DOF IMU</span><span class="comp-note"> — Accel+Gyro+Magnetometer; I²C/SPI; 100Hz; Mahony filter for quaternion estimation; SparkFun or Adafruit breakout</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">3× BLDC Motors + ESCs (Reaction Wheels)</span><span class="comp-note"> — 2204 2300KV motors; 3cm aluminium flywheel discs; 20A SimonK ESCs; one per X/Y/Z axis; bidirectional via BLHeli</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4</span><span class="comp-note"> — Runs Mahony filter + quaternion PD controller at 200Hz; pwm via pigpio for ESC control; matplotlib 3D visualiser</span></div></li>
+                <li><span class="comp-icon">🔩</span><div><span class="comp-name">3-Axis Air Bearing / Gimbal Mount</span><span class="comp-note"> — 3D-printed orthogonal frames on bearings; allows free rotation in all 3 axes; replicate zero-gravity orientation freedom</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Mahony Attitude Estimator</h4><p>Fuse accelerometer (gravity reference), gyroscope (rate integration), and magnetometer (yaw reference) to estimate quaternion orientation. Mahony complementary filter: <code>vErr = cross(aEst, aNorm) + cross(mEst, mNorm); integralFB += Ki*vErr*dt; gyr += Kp*vErr + integralFB; q += 0.5*q⊗[0,gyr]*dt; q = q/|q|</code>. Kp=2.0, Ki=0.005. Output: quaternion [q0,q1,q2,q3] representing current body orientation relative to Earth frame.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Quaternion Error + PD Controller</h4><p>Target quaternion q_target (e.g., nadir-pointing). Error quaternion: <code>q_err = q_target ⊗ q_current*</code> (conjugate). Extract error axis-angle: <code>theta = 2*arccos(q_err[0]); axis = q_err[1:]/sin(theta/2)</code>. PD control torques: <code>τ = -Kp*(theta*axis) - Kd*(omega)</code>. Where omega is angular rate from gyro. Convert torques to reaction wheel speed commands: <code>Ω_new = Ω_old + τ/(J_wheel)*dt</code>. J_wheel: wheel moment of inertia (~5×10⁻⁵ kg·m²).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>ESC Reaction Wheel Control</h4><p>pigpio PWM for bidirectional ESC control: neutral = 1500μs pulse, full forward = 2000μs, full reverse = 1000μs. BLHeli ESCs in bidirectional mode. Map torque command to ESC pulse: <code>pulse = 1500 + int(torque * 500 / MAX_TORQUE)</code>. Update at 50Hz (ESC refresh rate). Wheel speed feedback: optional Hall-effect sensor RPM counter. Saturation limits: max ±6000 RPM per wheel; desaturation algorithm fires magnetorquers when wheels near saturation (or use torque rods in simplified version).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>3D Visualisation + Telemetry</h4><p>matplotlib 3D body frame animation: draw CubeSat cube oriented by current quaternion. Real-time plots: quaternion components vs time, angular rate, wheel speeds, pointing error (degrees). Data logged at 200Hz to NumPy binary file for post-session analysis. Disturbance injection: simulate solar pressure torque = 0.001 N·m step at t=10s; observe controller response and settling time. Calculate settling time and steady-state pointing error for project report.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np
+
+def quat_multiply(q1, q2):
+    """Hamilton quaternion product q1 ⊗ q2."""
+    w1,x1,y1,z1 = q1; w2,x2,y2,z2 = q2
+    return np.array([
+        w1*w2-x1*x2-y1*y2-z1*z2,
+        w1*x2+x1*w2+y1*z2-z1*y2,
+        w1*y2-x1*z2+y1*w2+z1*x2,
+        w1*z2+x1*y2-y1*x2+z1*w2])
+
+def quat_error(q_target, q_current):
+    return quat_multiply(q_target, np.array([q_current[0],-q_current[1],-q_current[2],-q_current[3]]))
+
+Kp_att, Kd_att = 0.5, 0.1
+J_wheel = 5e-5  # kg·m²
+
+q_target = np.array([1.,0.,0.,0.])  # identity (nadir)
+q_current = np.array([0.98,0.1,0.05,0.0]);  # initial perturbation
+q_current /= np.linalg.norm(q_current)
+omega = np.zeros(3)       # body angular rate rad/s
+wheel_omega = np.zeros(3) # reaction wheel speeds rad/s
+dt = 0.005  # 200 Hz
+
+for step in range(2000):
+    q_err = quat_error(q_target, q_current)
+    angle  = 2*np.arccos(np.clip(q_err[0],-1,1))
+    if abs(angle) > 1e-6:
+        axis = q_err[1:] / (np.sin(angle/2)+1e-9)
+    else:
+        axis = np.zeros(3)
+    torque = -Kp_att*(angle*axis) - Kd_att*omega
+    wheel_omega += (torque / J_wheel) * dt
+    omega_dot = -torque  # reaction to body
+    omega += omega_dot * dt
+    q_dot = 0.5*quat_multiply(q_current,[0,*omega])
+    q_current += q_dot*dt; q_current/=np.linalg.norm(q_current)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🧲 Magnetorquer Desaturation</span>
+                <span class="app-tag">☀️ Sun-Pointing Solar Power Mode</span>
+                <span class="app-tag">📡 UKF Attitude Estimator</span>
+                <span class="app-tag">🌍 Nadir-Pointing Camera Mode</span>
+                <span class="app-tag">🔭 3D Web Visualisation</span>
+                <span class="app-tag">🛰️ Hardware-in-the-Loop Sim</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $55 – $100</li><li><strong>Build Time:</strong> 12 – 20 hours</li><li><strong>Control Rate:</strong> 200 Hz</li><li><strong>Pointing Accuracy:</strong> &lt;1°</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Quaternion mathematics</li><li>Mahony sensor fusion filter</li><li>Quaternion PD attitude control</li><li>Reaction wheel dynamics</li><li>CubeSat ADCS systems</li><li>Control system analysis</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">numpy</span><span class="lib-desc"> — Quaternion algebra</span></li><li><span class="lib-name">pigpio</span><span class="lib-desc"> — ESC PWM control</span></li><li><span class="lib-name">matplotlib</span><span class="lib-desc"> — 3D body frame animation</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const sC=document.getElementById('satCanvas');const sCtx=sC.getContext('2d');
+    let sPhase=0,sqErr=0.15;
+    function drawSat(){
+      sCtx.fillStyle='rgba(0,0,8,0.4)';sCtx.fillRect(0,0,130,100);
+      // Stars
+      for(let i=0;i<30;i++){const x=((i*37+sPhase*0.5)%125)+3;const y=((i*53)%95)+3;sCtx.fillStyle='#ffffff';sCtx.fillRect(x,y,1,1);}
+      // CubeSat (rotating box)
+      const cx=65,cy=50,a=sPhase*0.3;
+      const pts=[[-15,-15],[-15,15],[15,15],[15,-15]];
+      const ca=Math.cos(a),sa=Math.sin(a);
+      const rpts=pts.map(([x,y])=>[cx+x*ca-y*sa,cy+x*sa+y*ca]);
+      sCtx.strokeStyle='#8888ff';sCtx.lineWidth=1.5;
+      sCtx.beginPath();sCtx.moveTo(rpts[0][0],rpts[0][1]);
+      rpts.forEach(p=>sCtx.lineTo(p[0],p[1]));sCtx.closePath();sCtx.stroke();
+      // Solar panels
+      [[1,1],[1,-1]].forEach(([sx,sy])=>{
+        const px=cx+(15*ca-0*sa)*sx;const py=cy+(15*sa+0*ca)*sx;
+        sCtx.strokeStyle='#4455ff';sCtx.lineWidth=3;
+        sCtx.beginPath();sCtx.moveTo(px,py);sCtx.lineTo(px+20*ca,py+20*sa);sCtx.stroke();
+      });
+      // Earth below
+      sCtx.fillStyle='#003366';sCtx.beginPath();sCtx.arc(65,130,60,0,Math.PI*2);sCtx.fill();
+      sCtx.fillStyle='#004422';sCtx.beginPath();sCtx.arc(55,115,20,0,Math.PI*2);sCtx.fill();
+      sqErr=sqErr*0.995;sPhase+=0.05;
+      document.getElementById('satQ0').textContent=(1-sqErr*0.5).toFixed(3);
+      document.getElementById('satQ1').textContent=(sqErr*0.2*Math.sin(sPhase)).toFixed(3);
+      document.getElementById('satQ2').textContent=(sqErr*0.15*Math.cos(sPhase*0.7)).toFixed(3);
+      document.getElementById('satQ3').textContent=(sqErr*0.1*Math.sin(sPhase*1.3)).toFixed(3);
+      document.getElementById('rwX').style.width=Math.round(20+15*Math.abs(Math.sin(sPhase)))+'%';
+      document.getElementById('rwY').style.width=Math.round(40+20*Math.abs(Math.cos(sPhase*0.8)))+'%';
+      document.getElementById('rwZ').style.width=Math.round(15+10*Math.abs(Math.sin(sPhase*1.2)))+'%';
+      requestAnimationFrame(drawSat);
+    }
+    drawSat();
+  </script>
+</body>
+</html>

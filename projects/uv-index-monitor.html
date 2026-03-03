@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UV Index Monitor – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a UV index monitor with Arduino and VEML6075 or ML8511 sensor. Display UV index, risk level, and safe exposure time on an OLED. Add BLE or OLED wearable output." />
+  <meta name="keywords" content="UV index monitor Arduino, VEML6075 UV sensor Arduino, ML8511 ultraviolet meter, UV radiation meter Arduino, portable UV index meter" />
+  <link rel="canonical" href="uv-index-monitor.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080800 0%,#101000 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .uv-sun{font-size:50px;position:relative;animation:uv-pulse 2s ease-in-out infinite;}
+    @keyframes uv-pulse{0%,100%{filter:brightness(1);transform:scale(1)}50%{filter:brightness(1.4);transform:scale(1.06)}}
+    .uv-scale{height:14px;width:240px;border-radius:7px;background:linear-gradient(to right,#00b000 0%, #a0d000 25%,#ffcc00 45%,#ff8800 65%,#ff3800 80%,#cc00cc 100%);position:relative;}
+    .uv-needle{position:absolute;top:-5px;width:4px;height:24px;background:#fff;border-radius:2px;transform:translateX(-2px);box-shadow:0 0 4px #fff;transition:left 0.8s ease;}
+    .uv-badge{padding:4px 18px;border-radius:20px;font-weight:bold;font-family:monospace;font-size:14px;transition:background 0.5s,color 0.5s;}
+    .oled-mock{background:#000;border:2px solid #333;border-radius:4px;padding:10px 16px;font-family:monospace;font-size:13px;color:#e0e0ff;line-height:1.5;text-align:left;min-width:200px;}
+    .exposure-row{font-family:monospace;font-size:11px;color:#d0c080;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>UV Index Monitor</h1>
+      <p>Measure real-time UV-A and UV-B radiation with a VEML6075 sensor, compute the standardised UV index (0–11+), display risk level and safe skin exposure time on an OLED.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">UV Index Monitor</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="uv-sun" id="uvSun">☀️</div>
+                <div style="position:relative;width:240px;">
+                  <div class="uv-scale"></div>
+                  <div class="uv-needle" id="uvNeedle" style="left:20%"></div>
+                </div>
+                <div class="uv-badge" id="uvBadge" style="background:#00b000;color:#fff;">UV 2 — LOW</div>
+                <div class="oled-mock">
+                  <div id="oledUVI">UVI: <b id="uviVal">2.4</b></div>
+                  <div id="oledRisk">Risk: <span id="riskVal">Low</span></div>
+                  <div id="oledExposure">Safe: <span id="expVal">67 min</span></div>
+                </div>
+                <div class="exposure-row">UVA: <span id="uvaVal">182</span> mW/m² | UVB: <span id="uvbVal">14</span> mW/m²</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+UV+index+monitor+VEML6075+ML8511+OLED" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Ultraviolet radiation is invisible but causes cumulative skin and eye damage. The WHO-standardised UV Index (UVI) compresses the irradiance spectrum into a single 0–11+ number that quantifies erythemally-weighted UV exposure regardless of latitude or season. A UVI of 3 warrants sun protection; above 8, unprotected skin can burn in as little as 10 minutes.</p>
+              <p>The VEML6075 is a 2-photodiode I2C sensor that separately measures UVA (315–400 nm) and UVB (280–315 nm) and does hardware compensation for visible and IR light leakage. The Arduino calculates UVI from the sensor's datasheet formula, computes safe exposure time for a skin type II person, and alerts with a buzzer above UVI 6. The build is compact enough for a wearable wristband or pocket device.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Nano / ESP32</span><span class="comp-note"> — I2C host; ESP32 adds BLE for phone notifications</span></div></li>
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">VEML6075 UV Sensor Breakout</span><span class="comp-note"> — I2C @ 0x10; separate UVA + UVB photodiodes with compensation</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">SSD1306 0.96″ OLED (128×64)</span><span class="comp-note"> — UVI, risk level, and safe exposure display</span></div></li>
+                <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive Buzzer + RGB LED</span><span class="comp-note"> — Colour-coded UVI level + audio alert at UVI &gt; 6</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">18650 Li-Ion + TP4056</span><span class="comp-note"> — Rechargeable power; low quiescent current for wearable use</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Read UVA and UVB with VEML6075</h4><p>Initialize with <code>uv.begin()</code>. Call <code>uv.readUVA()</code> and <code>uv.readUVB()</code> every 500 ms. The library handles the integration time (100 ms) and dynamic setting (1×). Raw counts are hardware-compensated for IR leakage internally — no calibration coefficients needed from user code.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Calculate UV Index</h4><p>Use the Vishay datasheet formula: <code>UVI = (UVA_comp × UVA_resp) + (UVB_comp × UVB_resp)</code> where UVA_resp = 0.001461 and UVB_resp = 0.002424. The VEML6075 Adafruit library wraps this in <code>uv.readUVI()</code>. Clamp to 0–20. Average 5 readings to remove flicker from rapidly-changing cloud cover.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Determine Risk Level and Safe Time</h4><p>Map UVI to WHO risk category: 0–2 Low (green), 3–5 Moderate (yellow), 6–7 High (orange), 8–10 Very High (red), 11+ Extreme (violet). Compute safe sunburn time for skin type II using: <code>minutes = 200 / (MED_factor × UVI)</code> where MED_factor ≈ 0.06 for type II. Display "<em>Safe: XX min — USE SPF50</em>" for High+.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Alert and Log</h4><p>When UVI exceeds 6, pulse the buzzer twice every 30 seconds and set RGB LED to orange. At UVI 11+, sound a 3-beep alarm and lock the display to "EXTREME — SEEK SHADE" until UVI drops below 8. Optional: write UVI + timestamp to SD card every 5 minutes for daily sun exposure tracking.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Adafruit_VEML6075.h&gt;
+#include &lt;Adafruit_SSD1306.h&gt;
+#include &lt;Wire.h&gt;
+
+Adafruit_VEML6075 uv;
+Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+
+const char* riskLabel[] = {"Low","Low","Low","Moderate","Moderate","Moderate",
+                            "High","High","VHigh","VHigh","VHigh","Extreme"};
+const uint16_t colors[]  = {0x07E0,0x07E0,0x07E0,0xFFE0,0xFFE0,0xFFE0,
+                             0xFC00,0xFC00,0xF800,0xF800,0xF800,0xF81F};
+
+void setup() {
+  Wire.begin(); uv.begin(); oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  oled.clearDisplay(); oled.display();
+}
+
+void loop() {
+  float uvi = uv.readUVI();
+  int idx = constrain((int)uvi, 0, 11);
+  // Safe exposure for skin type II (MED = 200, MEF = 0.06)
+  int safeMin = (uvi > 0) ? (int)(200.0 / (0.06 * uvi)) : 999;
+
+  oled.clearDisplay();
+  oled.setTextSize(2); oled.setCursor(0,0);
+  oled.print("UVI: "); oled.println(uvi, 1);
+  oled.setTextSize(1); oled.setCursor(0,20);
+  oled.print("Risk: "); oled.println(riskLabel[idx]);
+  oled.print("Safe: "); oled.print(safeMin); oled.println(" min");
+  if(uvi >= 6) { oled.println(">>> USE SPF50 <<<"); }
+  oled.display();
+
+  if(uvi >= 6) tone(8, 880, 200);
+  delay(500);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏖️ Beach Safety Companion</span>
+                <span class="app-tag">⛷️ Ski Resort UV Warning</span>
+                <span class="app-tag">🌿 Plant UV Study</span>
+                <span class="app-tag">💊 Vitamin D Optimiser</span>
+                <span class="app-tag">📡 IoT Weather Station</span>
+                <span class="app-tag">📱 BLE App Notification</span>
+                <span class="app-tag">👶 Baby Sunburn Guard</span>
+                <span class="app-tag">🌐 Add BME280 Weather</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $22</li>
+                <li><strong>Build Time:</strong> 3 – 4 hours</li>
+                <li><strong>Platform:</strong> Arduino Nano / ESP32</li>
+                <li><strong>Range:</strong> UVI 0 – 16+</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>VEML6075 I2C UV sensing</li>
+                <li>WHO UVI computation formula</li>
+                <li>OLED display with Adafruit GFX</li>
+                <li>RGB LED colour mapping</li>
+                <li>Exposure time calculation</li>
+                <li>BLE notification (ESP32)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Adafruit_VEML6075</span><span class="lib-desc"> — UVA/UVB reading + UVI formula</span></li>
+                <li><span class="lib-name">Adafruit_SSD1306</span><span class="lib-desc"> — OLED display driver</span></li>
+                <li><span class="lib-name">Adafruit_GFX</span><span class="lib-desc"> — Graphics primitives for OLED</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="wireless-sensor-oled-dashboard.html">Wireless Sensor OLED Dashboard</a></li>
+                <li><a href="smart-irrigation-system.html">Smart Irrigation (IoT)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const uvLevels = [
+      {uvi:1.2,uva:92,uvb:7,risk:'Low',color:'#00b000',bg:'#00b000',needle:'8%',safe:'166 min'},
+      {uvi:3.5,uva:268,uvb:21,risk:'Moderate',color:'#d4b000',bg:'#c0a000',needle:'28%',safe:'57 min'},
+      {uvi:5.8,uva:445,uvb:35,risk:'Moderate',color:'#c0a000',bg:'#a08000',needle:'45%',safe:'34 min'},
+      {uvi:7.2,uva:552,uvb:43,risk:'High',color:'#ff8800',bg:'#cc6600',needle:'57%',safe:'27 min'},
+      {uvi:9.4,uva:721,uvb:57,risk:'Very High',color:'#ff3800',bg:'#cc2000',needle:'74%',safe:'21 min'},
+      {uvi:11.3,uva:867,uvb:69,risk:'Extreme',color:'#cc00cc',bg:'#880088',needle:'89%',safe:'14 min'},
+      {uvi:4.1,uva:314,uvb:25,risk:'Moderate',color:'#c0a000',bg:'#a08000',needle:'32%',safe:'48 min'},
+    ];
+    let li = 0;
+    function updateUV() {
+      const s = uvLevels[li++ % uvLevels.length];
+      document.getElementById('uvNeedle').style.left = s.needle;
+      document.getElementById('uvBadge').textContent = 'UV ' + s.uvi.toFixed(1) + ' — ' + s.risk.toUpperCase();
+      document.getElementById('uvBadge').style.background = s.bg;
+      document.getElementById('uviVal').textContent = s.uvi.toFixed(1);
+      document.getElementById('riskVal').textContent = s.risk;
+      document.getElementById('expVal').textContent = s.safe;
+      document.getElementById('uvaVal').textContent = s.uva;
+      document.getElementById('uvbVal').textContent = s.uvb;
+    }
+    setInterval(updateUV, 2800);
+    updateUV();
+  </script>
+</body>
+</html>

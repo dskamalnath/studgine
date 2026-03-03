@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amateur Satellite Ground Station – Advanced Project | Studgine</title>
+  <meta name="description" content="Track and decode NOAA weather satellite images and CubeSat telemetry using RTL-SDR and a motorised Yagi antenna driven by TLE orbital predictions on Raspberry Pi." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000308;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .gs-info{font-family:monospace;font-size:9px;color:#44aaff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Amateur Satellite Ground Station</h1>
+      <p>Build a full satellite ground station: track orbital positions from Two-Line Element (TLE) data with Python sgp4, auto-point a motorised Yagi antenna via two servos, receive APT weather imagery from NOAA 15/18/19 and AX.25 telemetry from amateur CubeSats using an RTL-SDR and GNU Radio on Raspberry Pi 4.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Amateur Satellite Ground Station</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="gsCanvas" width="140" height="110"></canvas>
+                <div class="gs-info">
+                  <div>SAT: NOAA-18</div>
+                  <div>FREQ: 137.912 MHz</div>
+                  <div>MODE: APT FM</div>
+                  <div style="margin-top:3px;">ORBITAL</div>
+                  <div>EL: <span id="gsEl">42.3</span>°</div>
+                  <div>AZ: <span id="gsAz">218</span>°</div>
+                  <div>RANGE: <span id="gsRng">1842</span> km</div>
+                  <div style="margin-top:3px;">ANTENNA</div>
+                  <div>AZ CMD: <span id="gsAntAz">217</span>°</div>
+                  <div>EL CMD: <span id="gsAntEl">42</span>°</div>
+                  <div>SDR SNR: <span id="gsSNR">18.4</span>dB</div>
+                  <div style="color:#44ffaa;">RECEIVING ✓</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=NOAA+satellite+APT+RTL-SDR+Raspberry+Pi+ground+station" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>The NOAA weather satellites (NOAA-15, NOAA-18, NOAA-19) orbit at 850km altitude and continuously broadcast Automatic Picture Transmission (APT) images at 137 MHz — no decryption, free to receive. With an RTL-SDR USB dongle ($25), a V-dipole or Yagi antenna, and free software (GNU Radio + WxtoImg), you can receive actual satellite weather images from orbit. This advanced version adds: TLE-based orbital tracking with sgp4, two servo-driven auto-tracking antenna rotator, and AX.25 CubeSat telemetry decoding. A complete ground station for £60.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">RTL-SDR V3 Dongle + 137MHz Antenna</span><span class="comp-note"> — RTL2832U + R820T2 chipset; 137MHz V-dipole (free DIY: 2× 53.4cm wires at 120°) or 3-element Yagi for better gain</span></div></li>
+                <li><span class="comp-icon">🔄</span><div><span class="comp-name">2× Standard Servo (SG90 elevation + azimuth)</span><span class="comp-note"> — Azimuth: continuous rotation servo; elevation: standard 180° servo; 3D-printed rotator mount; pigpio PWM control</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4</span><span class="comp-note"> — GNU Radio Companion; SoapySDR + rtlsdr driver; pyephem/sgp4 for orbital mechanics; pigpio for servo control</span></div></li>
+                <li><span class="comp-icon">🧲</span><div><span class="comp-name">MPU-6050 IMU (Antenna Feedback)</span><span class="comp-note"> — Mount on Yagi to measure actual antenna elevation/azimuth; closed-loop corrections compensate for wind/settling</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>TLE Orbital Prediction with sgp4</h4><p>Download current TLE from CelesTrak: <code>curl -o noaa.tle "https://celestrak.org/SOCRATES/query.php?IDENT=NOAA-18"</code>. Parse and propagate: <code>from sgp4.api import Satrec, jday; sat = Satrec.twoline2rv(line1, line2); e, r, v = sat.sgp4(jd, fr)</code>. Convert ECI→AzEl: subtract observer's ECEF position, rotate to local topocentric frame. Compute azimuth, elevation, range. Schedule next pass: find next time elevation &gt; 5°, duration, maximum elevation. Print pass table for the next 24 hours.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Auto-Tracking Antenna Rotator</h4><p>During pass: update antenna az/el every 1 second. Azimuth: continuous rotation servo — PD controller: <code>duty = 7.5 + Kp*(az_error) + Kd*(az_error-prev_err)</code>; clamp 5–10% (1000–2000μs). Elevation: standard servo mapped 0–90°: <code>pulse = 1000 + el/90*1000</code>. IMU feedback for closed-loop: read MPU-6050 pitch (elevation), compass (azimuth) to verify pointing. Doppler correction: compute range rate, frequency offset: <code>df = -137.912e6 * v_radial/c</code>; apply to RTL-SDR centre frequency via SoapySDR API.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>NOAA APT Image Decoding</h4><p>Install WXtoImg or use Python apt-decoder. GNU Radio flowgraph: RTL-SDR source → narrow FM demod (bandwidth 34kHz) → audio sink at 11025 Hz. Record audio during pass as WAV. Decode APT: WXtoImg auto-processes WAV to produce false-colour infrared + visible channel image. Python alternative: <code>pip install apt-decoder; apt-decoder.decode("pass.wav", "output.png")</code>. Result: actual satellite weather image ~ 2000km wide strip of Earth.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>CubeSat AX.25 Telemetry Decoding</h4><p>Many amateur CubeSats (FUNcube, OSCAR series) transmit AX.25 packet telemetry at 145.825 MHz (ISS APRS) or satellite-specific frequencies. GNU Radio + gr-ax25 plugin demodulates AFSK1200 packets. Python: <code>import kiss; frame = kiss.decode(raw_bytes); callsign = frame[:7]; data = frame[16:]</code>. Submit decoded packets to amateur satellite networks (SatNOGS). Visualise: battery voltage, temperatures, orbital data from satellite's own sensors. Search satnogs.org for your satellite's beacon frequency.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>from sgp4.api import Satrec, jday
+from datetime import datetime, timezone
+import math
+
+def eci_to_azel(r_eci, obs_lat, obs_lon, obs_alt, dt):
+    """Convert ECI position to topocentric Az/El."""
+    lat, lon = math.radians(obs_lat), math.radians(obs_lon)
+    jd, fr = jday(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+    # GMST
+    t = (jd - 2451545.0) / 36525.0
+    gmst = math.radians((360.98564724 * (jd - 2451545.0)) % 360)
+    # Observer ECEF
+    R_E = 6378.137; h = obs_alt/1000
+    N = R_E / math.sqrt(1 - 0.00669437999**2 * math.sin(lat)**2)
+    ox = (N + h)*math.cos(lat)*math.cos(lon + gmst)
+    oy = (N + h)*math.cos(lat)*math.sin(lon + gmst)
+    oz = (N*(1-0.00669437999**2)+h)*math.sin(lat)
+    # Range vector
+    dx, dy, dz = r_eci[0]-ox, r_eci[1]-oy, r_eci[2]-oz
+    rng = math.sqrt(dx**2+dy**2+dz**2)
+    # SEZ transform
+    S = math.sin(lat)*math.cos(lon+gmst)*dx + math.sin(lat)*math.sin(lon+gmst)*dy - math.cos(lat)*dz
+    E = -math.sin(lon+gmst)*dx + math.cos(lon+gmst)*dy
+    Z = math.cos(lat)*math.cos(lon+gmst)*dx + math.cos(lat)*math.sin(lon+gmst)*dy + math.sin(lat)*dz
+    az = (math.degrees(math.atan2(-E, S)) + 360) % 360
+    el = math.degrees(math.asin(Z/rng))
+    return az, el, rng</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌍 NOAA APT Weather Images</span>
+                <span class="app-tag">🛰️ ISS APRS Packet Decoding</span>
+                <span class="app-tag">📻 SatNOGS Network Upload</span>
+                <span class="app-tag">📊 Pass Schedule Web Dashboard</span>
+                <span class="app-tag">🔭 Moon Bounce (EME) Attempt</span>
+                <span class="app-tag">🎯 GPS Disciplined Oscillator</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $65 – $130</li><li><strong>Build Time:</strong> 12 – 20 hours</li><li><strong>Frequency:</strong> 137 + 145 MHz</li><li><strong>Output:</strong> Real satellite images</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>sgp4 orbital mechanics</li><li>ECI→AzEl coordinate transform</li><li>RTL-SDR + GNU Radio</li><li>APT / AX.25 signal decoding</li><li>Servo antenna rotator</li><li>Doppler frequency correction</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">sgp4</span><span class="lib-desc"> — TLE orbital propagation</span></li><li><span class="lib-name">GNU Radio + SoapySDR</span><span class="lib-desc"> — RF signal processing</span></li><li><span class="lib-name">apt-decoder</span><span class="lib-desc"> — NOAA image decode</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const gsC=document.getElementById('gsCanvas');const gsCtx=gsC.getContext('2d');
+    let gsPhase=0;
+    function drawGS(){
+      gsCtx.fillStyle='rgba(0,3,8,0.4)';gsCtx.fillRect(0,0,140,110);
+      // Stars
+      for(let i=0;i<25;i++){gsCtx.fillStyle='#ffffff';gsCtx.fillRect((i*31+3)%138,(i*47+5)%108,1,1);}
+      // Earth
+      gsCtx.fillStyle='#003366';gsCtx.beginPath();gsCtx.arc(70,130,80,0,Math.PI*2);gsCtx.fill();
+      // Satellite orbit arc
+      gsCtx.strokeStyle='rgba(0,150,255,0.3)';gsCtx.lineWidth=1;
+      gsCtx.beginPath();gsCtx.ellipse(70,110,80,40,0,Math.PI,2*Math.PI);gsCtx.stroke();
+      // Satellite
+      const satX=70+75*Math.cos(gsPhase*0.4+Math.PI);
+      const satY=110+35*Math.sin(gsPhase*0.4+Math.PI);
+      if(satY<108){
+        gsCtx.fillStyle='#ffcc44';gsCtx.fillRect(satX-4,satY-2,8,4);
+        gsCtx.strokeStyle='#ffcc44';gsCtx.lineWidth=1;
+        gsCtx.beginPath();gsCtx.moveTo(satX-8,satY);gsCtx.lineTo(satX+8,satY);gsCtx.stroke();
+        // Signal beam
+        gsCtx.strokeStyle='rgba(100,200,255,0.4)';gsCtx.lineWidth=0.7;
+        gsCtx.beginPath();gsCtx.moveTo(satX,satY);gsCtx.lineTo(70,98);gsCtx.stroke();
+      }
+      // Ground station
+      gsCtx.fillStyle='#44aaff';gsCtx.fillRect(67,95,6,8);
+      gsCtx.strokeStyle='#44ffaa';gsCtx.lineWidth=1.5;
+      gsCtx.beginPath();gsCtx.moveTo(70,95);gsCtx.lineTo(70-8,88);gsCtx.stroke();
+      gsCtx.beginPath();gsCtx.moveTo(70,95);gsCtx.lineTo(70+8,88);gsCtx.stroke();
+      gsPhase+=0.04;
+      const el=40+12*Math.sin(gsPhase*0.4);const az=210+18*Math.sin(gsPhase*0.2);
+      document.getElementById('gsEl').textContent=el.toFixed(1);
+      document.getElementById('gsAz').textContent=az.toFixed(0);
+      document.getElementById('gsRng').textContent=Math.round(1800+200*Math.cos(gsPhase*0.4));
+      document.getElementById('gsAntAz').textContent=(az-1).toFixed(0);
+      document.getElementById('gsAntEl').textContent=el.toFixed(0);
+      document.getElementById('gsSNR').textContent=(18+2*Math.sin(gsPhase)).toFixed(1);
+      requestAnimationFrame(drawGS);
+    }
+    drawGS();
+  </script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomous GPS Boat – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a Raspberry Pi GPS boat that autonomously navigates waypoints using bearing-hold PID and differential thrust vector control." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(180deg,#001a33 50%,#003366 100%);border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+    .boat-map{width:160px;height:120px;border:2px solid #0066aa;border-radius:6px;background:#001428;position:relative;overflow:hidden;}
+    .wave-strip{position:absolute;bottom:0;width:100%;height:30%;background:repeating-linear-gradient(90deg,#003366,#004488 10px,#003366 20px);opacity:0.4;}
+    .boat-dot{width:10px;height:10px;background:#ff6600;border-radius:50%;position:absolute;box-shadow:0 0 6px #ff6600;}
+    .wp-dot{width:6px;height:6px;background:#00ff88;border-radius:50%;position:absolute;}
+    .path-line{position:absolute;background:#ffcc0066;height:1px;}
+    .boat-info{font-family:monospace;font-size:9px;color:#00ccff;display:flex;flex-direction:column;gap:4px;margin-left:16px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Autonomous GPS Boat</h1>
+      <p>A waterproofed Raspberry Pi boat platform autonomously navigates pre-programmed GPS waypoints using bearing-hold PID and differential brushless motor thrust vector control — all in a sealed pelican-case hull.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Autonomous GPS Boat</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div class="boat-map" id="boatMapDiv">
+                    <div class="wave-strip"></div>
+                    <div class="boat-dot" id="boatDot" style="left:20px;top:60px;"></div>
+                    <div class="wp-dot" style="left:60px;top:25px;"></div>
+                    <div class="wp-dot" style="left:110px;top:45px;"></div>
+                    <div class="wp-dot" style="left:130px;top:80px;"></div>
+                  </div>
+                  <div style="font-family:monospace;font-size:7px;color:#0088cc;">GPS WAYPOINT NAV</div>
+                </div>
+                <div class="boat-info">
+                  <div>LAT: <span id="boatLat">51.5074</span>°</div>
+                  <div>LON: <span id="boatLon">-0.1278</span>°</div>
+                  <div>BRG: <span id="boatBrg">042</span>°</div>
+                  <div>DST: <span id="boatDst">2.4m</span></div>
+                  <div>WP:  <span id="boatWp">1/3</span></div>
+                  <div style="color:#00ff88;">PID HOLD</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+autonomous+boat+GPS+waypoint+navigation" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Autonomous surface vehicles (ASVs) combine GPS navigation, motor control, and waterproof engineering. This project builds a twin-motor catamaran platform with a Raspberry Pi as the "autopilot brain". The NEO-6M GPS module provides position at 5 Hz; the Pi computes bearing to next waypoint using the haversine formula and drives a PID loop to keep the true bearing locked, with differential thrust on two brushless motors providing yaw control.</p><p>The vessel's electronics live in a sealed IP-rated enclosure with cable glands for motor power and GPS antenna. RC override via a standard RC receiver lets you regain manual control at any time — critical for safe operation near shores and obstacles.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">NEO-6M GPS Module</span><span class="comp-note"> — 5 Hz update rate; 2.5m horizontal accuracy; UART NMEA output; connected to Pi UART (/dev/ttyAMA0)</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (2 GB) + Pelican Case</span><span class="comp-note"> — Python autopilot; IP-67 waterproof Pelican 1120 case; cable glands for motor ESC wires</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">2× 30A Brushless ESCs</span><span class="comp-note"> — 30A BEC ESC; controlled via pigpio PPM signal (1000–2000µs); differential thrust = yaw control</span></div></li>
+                <li><span class="comp-icon">🔩</span><div><span class="comp-name">2× A2212 1000KV Brushless Motors + Props</span><span class="comp-note"> — Twin-motor catamaran; 70mm propellers; 3S LiPo 2200mAh for ~45 min runtime</span></div></li>
+                <li><span class="comp-icon">🕹️</span><div><span class="comp-name">FlySky FS-iA6B RC Receiver</span><span class="comp-note"> — RC override channel; autopilot monitors CH5 to switch between AUTO and MANUAL modes</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>GPS Position Parsing</h4><p>Parse NMEA GPRMC sentences from NEO-6M on UART: <code>serial.Serial('/dev/ttyAMA0', 9600)</code>. Extract latitude/longitude as decimal degrees. Use <code>pynmea2</code> library: <code>lat = msg.latitude; lon = msg.longitude</code>. Compute bearing to target waypoint using haversine: <code>dlon = lon2-lon1; y = sin(dlon)*cos(lat2); x = cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(dlon); bearing = atan2(y,x) in degrees</code>. Compute Euclidean distance: <code>d = sqrt((Δlat*111320)² + (Δlon*111320*cos(lat))²)</code> in metres. Waypoint reached when d &lt; 1.5m.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Compass Heading + Yaw Error</h4><p>A QMC5883L I²C magnetometer provides compass heading. Apply hard-iron calibration: capture readings in a circle, subtract ellipse centre offsets. Compute yaw error: <code>error = target_bearing - compass_heading</code>. Wrap to ±180°: <code>error = ((error+180)%360)-180</code>. This normalized error feeds the PID controller.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Bearing-Hold PID → Differential Thrust</h4><p>PID controller: <code>output = Kp*error + Ki*integral + Kd*(error-prev_error)</code>. Tuned values: Kp=0.8, Ki=0.05, Kd=0.15. Convert to motor commands: <code>left_throttle = base_throttle - pid_output</code>, <code>right_throttle = base_throttle + pid_output</code>. Clamp to [0,100]%. Send PPM pulses via pigpio: <code>pi.set_servo_pulsewidth(ESC_L, int(1000+left_throttle*10))</code>. At yaw error &gt; 20°, reduce forward thrust to allow tighter turn radius.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Waypoint Mission + RC Override</h4><p>Load mission from JSON: <code>[{"lat":51.5074,"lon":-0.1278},...]</code>. Advance waypoint index when arrived. Monitor RC CH5 (override channel) via pigpio callback: if pulse &gt; 1600µs, switch to MANUAL and pass RC throttle/yaw directly to ESCs. Log GPS track to CSV for post-flight analysis. Heartbeat LED blinks every second in AUTO mode, solid in MANUAL mode.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import pigpio, serial, pynmea2, json, math, time
+
+pi = pigpio.pi()
+ESC_L, ESC_R = 18, 19  # GPIO pins
+gps = serial.Serial('/dev/ttyAMA0', 9600, timeout=1)
+
+waypoints = [{"lat":51.5074,"lon":-0.1278},{"lat":51.5076,"lon":-0.1270}]
+wp_idx = 0
+
+def haversine_bearing(lat1,lon1,lat2,lon2):
+    lat1,lon1,lat2,lon2 = map(math.radians,[lat1,lon1,lat2,lon2])
+    dlon = lon2-lon1
+    y = math.sin(dlon)*math.cos(lat2)
+    x = math.cos(lat1)*math.sin(lat2)-math.sin(lat1)*math.cos(lat2)*math.cos(dlon)
+    return math.degrees(math.atan2(y,x))
+
+def set_motor(pin, throttle):  # throttle 0–100
+    pw = int(1000 + throttle*10)
+    pi.set_servo_pulsewidth(pin, pw)
+
+# PID state
+Kp,Ki,Kd = 0.8,0.05,0.15
+integral=0.0; prev_error=0.0; BASE_THROTTLE=50
+
+while wp_idx < len(waypoints):
+    line = gps.readline().decode('ascii','ignore')
+    if line.startswith('$GPRMC'):
+        msg = pynmea2.parse(line)
+        if msg.status=='A':
+            bearing = haversine_bearing(msg.latitude,msg.longitude,
+                          waypoints[wp_idx]['lat'],waypoints[wp_idx]['lon'])
+            # PID on yaw error (needs compass heading for real heading)
+            error = ((bearing - COMPASS_HEADING + 180)%360)-180
+            integral += error; derivative = error-prev_error
+            pid = Kp*error + Ki*integral + Kd*derivative
+            prev_error = error
+            set_motor(ESC_L, max(0,min(100, BASE_THROTTLE - pid)))
+            set_motor(ESC_R, max(0,min(100, BASE_THROTTLE + pid)))</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Project Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌊 Water Sample Collector</span>
+                <span class="app-tag">📷 Underwater Camera</span>
+                <span class="app-tag">🗺️ Return-to-Home Mode</span>
+                <span class="app-tag">📡 LoRa Telemetry Link</span>
+                <span class="app-tag">🤖 SLAM Surface Mapping</span>
+                <span class="app-tag">⚡ Solar Charging Hull</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $80 – $150</li><li><strong>Build Time:</strong> 8 – 12 hours</li><li><strong>GPS Accuracy:</strong> 2.5m CEP</li><li><strong>Runtime:</strong> ~45 min (3S 2200mAh)</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>NMEA GPS parsing (pynmea2)</li><li>Haversine bearing computation</li><li>PID-based heading control</li><li>Differential thrust steering</li><li>Waterproof enclosure design</li><li>RC override safety systems</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pynmea2</span><span class="lib-desc"> — NMEA sentence parser</span></li><li><span class="lib-name">pigpio</span><span class="lib-desc"> — PPM ESC control</span></li><li><span class="lib-name">smbus2</span><span class="lib-desc"> — QMC5883L compass</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let bx=20,by=60,wpX=[60,110,130],wpY=[25,45,80],wpI=0,ang=0;
+    const dot=document.getElementById('boatDot');
+    function animBoat(){
+      const tx=wpX[wpI],ty=wpY[wpI];
+      const dx=tx-bx,dy=ty-by,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<3){wpI=(wpI+1)%3;}
+      else{bx+=dx/d*0.5;by+=dy/d*0.5;}
+      dot.style.left=Math.round(bx)+'px'; dot.style.top=Math.round(by)+'px';
+      document.getElementById('boatBrg').textContent=String(Math.round(Math.atan2(dx,dy)*180/Math.PI+360)%360).padStart(3,'0');
+      document.getElementById('boatDst').textContent=d.toFixed(1)+'m';
+      document.getElementById('boatWp').textContent=(wpI+1)+'/3';
+      requestAnimationFrame(animBoat);
+    }
+    animBoat();
+  </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Grid Energy Analyser – Advanced Project | Studgine</title>
+  <meta name="description" content="Monitor whole-home power with current transformers, detect appliance signatures via ML, and publish load-disaggregation results to a Grafana dashboard." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#0a0f0a;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .power-bar-group{display:flex;flex-direction:column;gap:4px;width:100px;}
+    .power-bar-row{display:flex;align-items:center;gap:4px;font-family:monospace;font-size:8px;color:#88cc88;}
+    .power-bar-fill{height:7px;background:#00cc44;border-radius:2px;transition:width 0.5s;}
+    .energy-info{font-family:monospace;font-size:9px;color:#00cc66;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Smart Grid Energy Analyser</h1>
+      <p>Clamp current transformers onto your mains circuits, sample power at 5 kHz, classify running appliances via a trained ML signature model, and push real-time disaggregated load data to a Grafana energy dashboard via MQTT + InfluxDB.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Smart Grid Energy Analyser</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="power-bar-group">
+                  <div style="font-family:monospace;font-size:8px;color:#aaa;margin-bottom:4px;">LOAD BREAKDOWN</div>
+                  <div class="power-bar-row"><span style="width:36px;">Kettle</span><div class="power-bar-fill" id="b1" style="width:70px;"></div><span id="v1">2.4kW</span></div>
+                  <div class="power-bar-row"><span style="width:36px;">Fridge</span><div class="power-bar-fill" id="b2" style="width:10px;background:#0099ff;"></div><span id="v2">80W</span></div>
+                  <div class="power-bar-row"><span style="width:36px;">TV</span><div class="power-bar-fill" id="b3" style="width:6px;background:#ffaa00;"></div><span id="v3">50W</span></div>
+                  <div class="power-bar-row"><span style="width:36px;">Other</span><div class="power-bar-fill" id="b4" style="width:14px;background:#cc44ff;"></div><span id="v4">120W</span></div>
+                </div>
+                <div class="energy-info">
+                  <div>TOTAL: <span id="totalW">2.65kW</span></div>
+                  <div>TODAY: <span id="todayKwh">8.2kWh</span></div>
+                  <div>COST:  <span id="costP">£1.97</span></div>
+                  <div>PF:    <span id="pf">0.96</span></div>
+                  <div style="color:#00ff88;">MQTT: LIVE</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+current+transformer+energy+monitor+NILM+ML" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Non-Intrusive Load Monitoring (NILM) uses a single current sensor on the mains to disaggregate individual appliance consumption — no per-device sensors needed. This project clamps SCT-013 current transformers (CTs) on live 240V wires (safely, non-invasively) and feeds the AC current signal through a burden resistor + DC bias circuit into an MCP3208 ADC. A Raspberry Pi samples at 5 kHz, computes RMS current and real power at 50 Hz mains frequency, then classifies the combined load signature using a pre-trained Random Forest model.</p><p>Results are published via Paho MQTT to an InfluxDB time-series database ingested by Grafana for beautiful real-time energy dashboards.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">SCT-013 Non-Invasive Current Transformer (100A)</span><span class="comp-note"> — Clamp around single live wire; outputs 0–50mA AC proportional to load current; no mains wiring required</span></div></li>
+                <li><span class="comp-icon">🔬</span><div><span class="comp-name">Signal Conditioning Board</span><span class="comp-note"> — 33Ω burden resistor + 1.65V DC bias (two 10kΩ) + 10µF coupling cap; scales CT output to 0–3.3V for ADC</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">MCP3208 ADC + Raspberry Pi 4</span><span class="comp-note"> — SPI at 500kHz; 12-bit voltage samples fed to emonLib-style RMS calculation in Python</span></div></li>
+                <li><span class="comp-icon">📊</span><div><span class="comp-name">InfluxDB + Grafana + MQTT Broker</span><span class="comp-note"> — Mosquitto MQTT broker; Paho Python client; InfluxDB 2.0 time-series DB; Grafana 10 dashboard</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>RMS Power Measurement</h4><p>Sample 1000 ADC readings per 50Hz cycle (5kHz sample rate) on MCP3208. Convert to current: <code>I_rms = sqrt(mean((V_adc - V_bias)**2)) * CT_ratio / burden</code>. Measure voltage via a plug-in AC-AC adapter (9V) as voltage reference: <code>V_rms_scale = 230 * (measured_ratio)</code>. Real power = <code>sum(V_inst * I_inst) / N</code> over one cycle. Apparent power = <code>V_rms * I_rms</code>. Power factor = real/apparent.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Appliance Signature Feature Extraction</h4><p>Extract features from each 1-second power window: [P_rms, Q_reactive, PF, THD_3rd_harmonic, P_delta_on, P_delta_off, P_steady_state]. FFT of current waveform reveals harmonics: <code>np.fft.rfft(current_samples)</code>. Compute 3rd/5th/7th harmonic ratios — each appliance type has a unique harmonic signature (e.g., kettle = resistive → PF≈1; fridge motor = inductive → PF≈0.7; CFL lamp → high THD).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>ML Classifier Training + Inference</h4><p>Record labeled training data for each appliance: label events (appliance ON/OFF transition in raw power data). Build feature matrix. Train: <code>sklearn.ensemble.RandomForestClassifier(n_estimators=100)</code>. Save with joblib. Runtime inference: extract features from current 1s window, call <code>model.predict(features)</code> → returns appliance label. Disaggregate total load: sum classified appliance powers, remainder = "Other".</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>MQTT + Grafana Dashboard</h4><p>Publish JSON payload every 5s: <code>mqtt.publish("home/energy", json.dumps({"total_w":2650, "kettle":2400, "fridge":80}))</code>. InfluxDB Telegraf MQTT consumer writes to <code>energy</code> measurement bucket. Grafana panels: time-series power graph, pie chart load breakdown, stat tiles (today's kWh, estimated cost at £0.24/kWh). Set thresholds → alert if daily cost exceeds budget.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np, spidev, time, json
+import paho.mqtt.client as mqtt
+import joblib
+
+spi = spidev.SpiDev(); spi.open(0,0); spi.max_speed_hz = 500_000
+model = joblib.load('energy_model.pkl')
+client = mqtt.Client(); client.connect("localhost", 1883)
+
+def read_adc(ch):
+    r = spi.xfer2([0x06|(ch>>2),(ch&3)<<6,0])
+    return ((r[1]&0x0F)<<8)|r[2]
+
+SAMPLES, RATE = 100, 5000
+V_BIAS = 2048; CT_RATIO = 2000; BURDEN = 33
+
+def measure_power():
+    raw = [read_adc(0) for _ in range(SAMPLES)]
+    centered = np.array(raw) - V_BIAS
+    I_rms = np.sqrt(np.mean(centered**2)) * CT_RATIO/4096*3.3/BURDEN
+    real_power = I_rms * 230  # simplified (no phase shift)
+    harmonics = np.abs(np.fft.rfft(centered))
+    thd = harmonics[3]/harmonics[1] if harmonics[1]>0 else 0
+    return real_power, I_rms, thd
+
+while True:
+    P, I, THD = measure_power()
+    features = [[P, I, P/(I*230+0.001), THD, 0, 0, P]]
+    label = model.predict(features)[0]
+    payload = json.dumps({"total_w": round(P), "appliance": label,
+                          "pf": round(P/(I*230+0.001), 2)})
+    client.publish("home/energy", payload)
+    time.sleep(5)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">☀️ Solar Generation Monitor</span>
+                <span class="app-tag">⚡ EV Charger Detection</span>
+                <span class="app-tag">💡 Smart Tariff Scheduling</span>
+                <span class="app-tag">📱 Mobile App Dashboard</span>
+                <span class="app-tag">🔔 Anomaly Alerts (Stuck Appliance)</span>
+                <span class="app-tag">📉 Carbon Footprint Tracker</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $100</li><li><strong>Build Time:</strong> 8 – 12 hours</li><li><strong>Sample Rate:</strong> 5 kHz</li><li><strong>CT Accuracy:</strong> ±2% RMS</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>AC RMS power measurement</li><li>Current transformer signal conditioning</li><li>NILM feature engineering</li><li>Random Forest ML classifier</li><li>MQTT + InfluxDB + Grafana stack</li><li>Energy disaggregation algorithms</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">scikit-learn</span><span class="lib-desc"> — RF classifier training</span></li><li><span class="lib-name">paho-mqtt</span><span class="lib-desc"> — MQTT publisher</span></li><li><span class="lib-name">numpy</span><span class="lib-desc"> — FFT + RMS math</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const appliances=[{w:2400,name:'Kettle'},{w:0,name:'Kettle'},{w:80,name:'Fridge'},{w:80,name:'Fridge'}];
+    let t=0;
+    function animEnergy(){
+      const kettleOn=Math.sin(t*0.7)>0;
+      const kW=kettleOn?2.4:0;
+      const total=(kW+0.08+0.05+0.12).toFixed(2);
+      document.getElementById('b1').style.width=Math.round(kW/3*90)+'px';
+      document.getElementById('v1').textContent=kettleOn?'2.4kW':'0W';
+      document.getElementById('totalW').textContent=total+'kW';
+      document.getElementById('todayKwh').textContent=(8+t*0.001).toFixed(1)+'kWh';
+      document.getElementById('costP').textContent='£'+(+(8+t*0.001)*0.24).toFixed(2);
+      t++; setTimeout(animEnergy,600);
+    }
+    animEnergy();
+  </script>
+</body>
+</html>

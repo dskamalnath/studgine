@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MPPT Solar Tracker – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a dual-axis MPPT solar tracker with LDR sensors and servo motors. Follows the sun for maximum power output with a Perturb & Observe MPPT algorithm on Arduino." />
+  <meta name="keywords" content="MPPT solar tracker Arduino, dual axis solar panel tracker LDR, perturb observe MPPT algorithm, solar energy IoT project, servo motor solar tracking" />
+  <link rel="canonical" href="mppt-solar-tracker.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080808 0%,#101820 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .sun{width:50px;height:50px;background:radial-gradient(circle,#fff9a0 0%,#ffcc00 60%,transparent 100%);border-radius:50%;box-shadow:0 0 20px 10px rgba(255,200,0,0.3);transition:left 2s ease,top 2s ease;position:absolute;}
+    .sky{position:relative;width:260px;height:100px;background:linear-gradient(180deg,#0a0a20 0%,#001428 100%);border-radius:8px;overflow:hidden;}
+    .panel{width:58px;height:36px;background:linear-gradient(135deg,#102060 0%,#1840a0 50%,#102060 100%);border:2px solid #2a6acc;border-radius:2px;position:absolute;bottom:6px;left:50%;transform-origin:bottom center;transition:transform 1.5s ease;}
+    .panel-grid{position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 10px,rgba(255,255,255,0.08) 10px,rgba(255,255,255,0.08) 11px),repeating-linear-gradient(90deg,transparent,transparent 18px,rgba(255,255,255,0.08) 18px,rgba(255,255,255,0.08) 19px);}
+    .power-bar{width:180px;height:12px;background:#0a1a0a;border-radius:6px;overflow:hidden;}
+    .power-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#ffcc00,#ff8800);transition:width 1s ease;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>MPPT Solar Tracker</h1>
+      <p>Combine dual-axis LDR sun-following with a Perturb &amp; Observe Maximum Power Point Tracking algorithm. Servo motors tilt the panel toward the sun while the MPPT code extracts the maximum available power from any irradiance condition.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">MPPT Solar Tracker</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+                  <div class="sky" id="sky">
+                    <div class="sun" id="sun" style="left:20px;top:15px;"></div>
+                    <div class="panel" id="panel" style="transform:translateX(-50%) rotate(-30deg);"><div class="panel-grid"></div></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;width:260px;font-family:monospace;font-size:10px;color:#606080;">
+                    <span>🔆 LDR angle: <span id="ldrAngle">-30°</span></span>
+                    <span>⚡ Power: <span id="powerVal">62</span> W</span>
+                  </div>
+                  <div>
+                    <div style="font-family:monospace;font-size:10px;color:#a0a040;margin-bottom:3px;">⚡ MPPT Output Power</div>
+                    <div class="power-bar"><div class="power-fill" id="powerFill" style="width:62%"></div></div>
+                    <div style="font-family:monospace;font-size:9px;color:#808040;margin-top:2px;" id="mpptStatus">P&O: tracking...</div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=dual+axis+solar+tracker+MPPT+Arduino+LDR+servo" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>A fixed solar panel produces up to 40% less energy than one that tracks the sun across the sky. This project adds two layers of intelligence: a physical tracking layer using quad-LDR differential sensing that continuously tilts the panel toward the sun, and a power-point tracking layer using the Perturb &amp; Observe (P&O) algorithm that adjusts the PWM duty cycle on a DC-DC converter to extract the maximum power at the panel's operating point.</p>
+              <p>Together these techniques can increase daily energy harvest by 35–55% compared to fixed-mount systems, making the project highly relevant to renewable energy engineering coursework.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">5 V / 1 W Mini Solar Panel</span><span class="comp-note"> — Primary power source for demonstration; 138 × 60 mm typical</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">4× LDR (GL5528) + 10 kΩ Resistors</span><span class="comp-note"> — Voltage dividers in quad arrangement: top-left, top-right, bot-left, bot-right</span></div></li>
+                <li><span class="comp-icon">🤖</span><div><span class="comp-name">2× MG995 Servo Motors</span><span class="comp-note"> — Azimuth (±90°) and elevation (0–90°) axes</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Runs both tracking loop and P&O MPPT algorithm</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">INA219 Voltage/Current Module</span><span class="comp-note"> — Measures Vpanel and Ipanel for P&O power calculation</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">Li-Po 3.7 V Battery + TP4056</span><span class="comp-note"> — Stores harvested energy; TP4056 handles safe charging</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Quad-LDR Sun Tracking</h4><p>Mount four LDRs at the panel corners separated by a cross-shaped cardboard divider. Read ADC values for all four. Compute: <code>topDiff = (TL+TR) - (BL+BR)</code> for elevation; <code>leftDiff = (TL+BL) - (TR+BR)</code> for azimuth. If |diff| exceeds a threshold (deadband), increment the respective servo angle by 1°. This prevents hunting when sun is already centred. Limit servo range to 10°–170° to protect mechanism.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Perturb &amp; Observe MPPT</h4><p>Every 100 ms: read Vpanel and Ipanel from INA219. Compute <code>P_new = V * I</code>. If <code>P_new > P_old</code>: panel is moving toward MPP — continue in same direction (increment duty cycle). If <code>P_new &lt; P_old</code>: overshot — reverse direction. Update <code>P_old = P_new</code>. Output the duty cycle to a PWM-controlled MOSFET driving a DC-DC buck converter that feeds the load.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Night-Return and Cloud Handling</h4><p>Monitor total LDR average. If ambient light drops below threshold (e.g., LDR average > 900 on 10-bit scale): enter sleep mode. Park both servos at home position (panel flat, facing east for morning sun). Wake from sleep mode when LDR average drops below 600 — indicating sunrise. Handle passing clouds by pausing MPPT for 5 s to avoid erratic hunting during rapid irradiance changes.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>OLED Dashboard &amp; Logging</h4><p>Display on 0.96″ OLED: panel voltage, current, power (W), daily energy Wh counter (accumulated), efficiency % vs fixed mount (estimated). Log every 5 min to SD card for post-session chart. Optionally upload via ESP8266 to ThingSpeak for web-based monitoring. A 4-digit 7-segment display showing live watts is also a popular output for live demos.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet (P&O MPPT)</h2>
+              <pre><code>float V_old = 0, P_old = 0;
+int dutyCycle = 128;  // 0–255 PWM
+int perturbStep = 3;
+
+void mpptStep() {
+  float V = ina219.getBusVoltage_V();
+  float I = ina219.getCurrent_mA() / 1000.0;
+  float P = V * I;
+
+  if(P > P_old) {
+    // still climbing toward MPP — keep direction
+    if(V > V_old) dutyCycle += perturbStep;
+    else dutyCycle -= perturbStep;
+  } else {
+    // overshot — reverse direction
+    if(V > V_old) dutyCycle -= perturbStep;
+    else dutyCycle += perturbStep;
+  }
+  dutyCycle = constrain(dutyCycle, 50, 230);
+  analogWrite(PWM_PIN, dutyCycle);
+  V_old = V; P_old = P;
+}
+
+void trackSun() {
+  int TL = analogRead(A0), TR = analogRead(A1);
+  int BL = analogRead(A2), BR = analogRead(A3);
+  int errElev = (TL+TR) - (BL+BR);
+  int errAzi = (TL+BL) - (TR+BR);
+  if(abs(errElev) > 50) elevAngle += (errElev>0)?1:-1;
+  if(abs(errAzi) > 50) aziAngle += (errAzi>0)?1:-1;
+  elevServo.write(constrain(elevAngle,10,170));
+  aziServo.write(constrain(aziAngle,10,170));
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">☀️ Off-Grid Power Boost</span>
+                <span class="app-tag">🌾 Rural Solar Pumping</span>
+                <span class="app-tag">🛰️ Satellite Panel Model</span>
+                <span class="app-tag">📊 P&O vs INC MPPT Compare</span>
+                <span class="app-tag">☁️ Cloud-Compensated MPPT</span>
+                <span class="app-tag">🔋 Battery SOC Dashboard</span>
+                <span class="app-tag">📡 ThingSpeak Energy Log</span>
+                <span class="app-tag">🏗️ 10W Panel Scale-Up</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $20 – $35</li>
+                <li><strong>Build Time:</strong> 5 – 8 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Nano</li>
+                <li><strong>Power Gain:</strong> 35–55% vs fixed</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Quad-LDR differential tracking</li>
+                <li>P&O MPPT algorithm</li>
+                <li>Dual-axis servo control</li>
+                <li>INA219 power measurement</li>
+                <li>PWM DC-DC converter driving</li>
+                <li>Solar energy system design</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Servo</span><span class="lib-desc"> — Arduino PWM servo positioning</span></li>
+                <li><span class="lib-name">Adafruit INA219</span><span class="lib-desc"> — High-side current/power sensing</span></li>
+                <li><span class="lib-name">Adafruit SSD1306</span><span class="lib-desc"> — OLED dashboard display</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="solar-charge-controller.html">Solar Charge Controller</a></li>
+                <li><a href="dual-axis-solar-tracker.html">Dual-Axis Solar Tracker (Advanced)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let sunX = 20, sunDir = 1, panelAngle = -30;
+    function updateTracker() {
+      sunX += sunDir * 2.5;
+      if(sunX > 200) sunDir = -1;
+      if(sunX < 10) sunDir = 1;
+      const targetAngle = ((sunX - 105) / 105) * 55;
+      panelAngle += (targetAngle - panelAngle) * 0.15;
+      document.getElementById('sun').style.left = sunX + 'px';
+      document.getElementById('sun').style.top = (10 + Math.abs(sunX - 105) / 8) + 'px';
+      document.getElementById('panel').style.transform = 'translateX(-50%) rotate(' + panelAngle.toFixed(1) + 'deg)';
+      document.getElementById('ldrAngle').textContent = panelAngle.toFixed(0) + '°';
+      const efficiency = 100 - Math.abs(targetAngle - panelAngle) * 0.5;
+      const power = Math.round(efficiency * 0.85);
+      document.getElementById('powerVal').textContent = power;
+      document.getElementById('powerFill').style.width = power + '%';
+      document.getElementById('mpptStatus').textContent = power > 75 ? 'P&O: at MPP ✓' : 'P&O: tracking...';
+    }
+    setInterval(updateTracker, 300);
+  </script>
+</body>
+</html>

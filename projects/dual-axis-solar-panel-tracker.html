@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dual-Axis Solar Panel Tracker – Advanced Project | Studgine</title>
+  <meta name="description" content="Four LDR sensors drive pan-tilt servo gimbals to orient a solar panel at the sun and log harvest improvement vs. fixed-panel baseline." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#0a0a18;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .solar-viz{display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .panel-rect{width:50px;height:30px;background:linear-gradient(135deg,#003366,#0055aa);border:1.5px solid #0088ff;transform-origin:center;transition:transform 0.5s;}
+    .sun-circle{width:24px;height:24px;background:radial-gradient(#ffee00,#ff8800);border-radius:50%;box-shadow:0 0 12px #ffcc00;}
+    .solar-info{font-family:monospace;font-size:9px;color:#ffcc00;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Dual-Axis Solar Panel Tracker</h1>
+      <p>Four LDR sensors arranged in a quad pattern drive pan-tilt servo gimbals to continuously orient a solar panel toward the sun. Logs watt-hour harvest improvement vs. a fixed-panel baseline over several days — typically 30–50% more energy.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Dual-Axis Solar Panel Tracker</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="solar-viz">
+                  <div id="sunEl" class="sun-circle" style="margin-left:30px;"></div>
+                  <div id="panelEl" class="panel-rect"></div>
+                  <div style="font-family:monospace;font-size:7px;color:#ffaa00;margin-top:2px;">SOLAR PANEL</div>
+                </div>
+                <div class="solar-info">
+                  <div>PAN:  <span id="panAngle">45</span>°</div>
+                  <div>TILT: <span id="tiltAngle">38</span>°</div>
+                  <div>IRRAD:<span id="irrad">820</span> W/m²</div>
+                  <div>TRACK:<span id="trackPct">+42%</span></div>
+                  <div>TODAY:<span id="todayWh">1.84</span>kWh</div>
+                  <div style="color:#00ff88;">TRACKING</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=dual+axis+solar+tracker+LDR+servo+Arduino+Raspberry+Pi" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>A dual-axis solar tracker keeps the panel perpendicular to the sun throughout the day, capturing significantly more irradiance than a fixed-tilt panel. The sensing principle uses four LDRs (Light Dependent Resistors), one in each quadrant of a divided aperture. When the sun is not directly facing the panel, one pair of LDRs reads higher resistance than the opposite pair. A P controller derives pan and tilt correction signals and drives two MG996R servos (pan: 0–270°, tilt: 0–90°). Power from the tracked vs. fixed panel is measured with INA219 current sensors and logged to CSV.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">💡</span><div><span class="comp-name">4× LDR + Voltage Dividers</span><span class="comp-note"> — GL5528 LDRs; 10kΩ dividers; separated by cross-shaped baffle on sensor mount; read via MCP3208 ADC</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">2× MG996R Servos (Pan + Tilt)</span><span class="comp-note"> — Pan: 180° range; Tilt: 0–90° elevation; both on PCA9685 PWM driver; driven by RPi or Arduino</span></div></li>
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">5W Polycrystalline Solar Panel</span><span class="comp-note"> — Tracker panel + identical fixed reference panel; compare output via 2× INA219 current sensors</span></div></li>
+                <li><span class="comp-icon">📊</span><div><span class="comp-name">INA219 Current/Voltage Sensor</span><span class="comp-note"> — I²C; measures panel voltage + current; compute instantaneous watt output; log to CSV every 60s</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>LDR Quad Sensor Differential</h4><p>Read all four LDRs via MCP3208 ADC channels 0–3. Divide into pairs: Top-Left (TL), Top-Right (TR), Bottom-Left (BL), Bottom-Right (BR). Pan error: <code>pan_err = (TL + BL) - (TR + BR)</code>. Tilt error: <code>tilt_err = (TL + TR) - (BL + BR)</code>. When sun is centred, all four values match and errors → 0. A cross-shaped cardboard baffle casts asymmetric shadows to amplify the differential signal.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>P-Controller Servo Update</h4><p>Apply proportional controller: <code>pan_angle += Kp * pan_err</code>, <code>tilt_angle += Kp * tilt_err</code>. Kp = 0.01 (tune to avoid hunting). Clamp: pan to [0°, 180°], tilt to [10°, 80°]. Update PCA9685 servo PWM every 500ms. Add dead-band: skip update if |err| &lt; 50 ADC counts to prevent jitter in bright overcast (uniform diffuse light). Night mode: return to home position (pan=90°, tilt=20°) when irradiance drops below threshold.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Power Harvesting Measurement</h4><p>INA219 (I²C addr 0x40) measures tracked panel: <code>bus_voltage = ina.bus_voltage; current_mA = ina.current; power_mW = bus_voltage * current_mA</code>. INA219 at 0x41 measures fixed reference panel. Log every 60s to CSV: timestamp, tracked_mW, fixed_mW, pan, tilt. Compute cumulative harvest ratio: <code>sum(tracked_Wh) / sum(fixed_Wh)</code>. Expected gain: 30–50% more energy capture on clear sunny days.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Data Visualisation</h4><p>Plot logged CSV with matplotlib: two overlaid power curves (tracked vs. fixed) across the day. Area under curve = total Wh harvested. Annotate crossover times. Optional: push data to Grafana via MQTT for live web dashboard. Cloud option: log to Google Sheets via gspread API for long-term multi-day comparison — very compelling project presentation data.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import time, csv
+from adafruit_pca9685 import PCA9685
+from ina219 import INA219
+import spidev
+
+spi = spidev.SpiDev(); spi.open(0,0); spi.max_speed_hz=500000
+ina_track = INA219(0.1, address=0x40)
+ina_fixed = INA219(0.1, address=0x41)
+ina_track.configure(); ina_fixed.configure()
+
+pan, tilt = 90.0, 45.0
+Kp = 0.008; DEAD_BAND = 50
+
+def read_ldr(ch):
+    r = spi.xfer2([0x06|(ch>>2),(ch&3)<<6,0])
+    return ((r[1]&0x0F)<<8)|r[2]
+
+def set_servo(pca, ch, angle):
+    pulse = int(1000 + angle*(1000/180))
+    duty = int((pulse/20000)*0xFFFF)
+    pca.channels[ch].duty_cycle = duty
+
+import busio, board
+i2c = busio.I2C(board.SCL, board.SDA)
+pca = PCA9685(i2c); pca.frequency = 50
+
+with open('harvest_log.csv','a') as f:
+    writer = csv.writer(f)
+    while True:
+        tl,tr,bl,br = read_ldr(0),read_ldr(1),read_ldr(2),read_ldr(3)
+        pan_err = (tl+bl)-(tr+br)
+        tilt_err = (tl+tr)-(bl+br)
+        if abs(pan_err) > DEAD_BAND:
+            pan = max(0, min(180, pan + Kp*pan_err))
+        if abs(tilt_err) > DEAD_BAND:
+            tilt = max(10, min(80, tilt + Kp*tilt_err))
+        set_servo(pca, 0, pan); set_servo(pca, 1, tilt)
+        tracked_mW = ina_track.power()
+        fixed_mW = ina_fixed.power()
+        writer.writerow([time.time(), tracked_mW, fixed_mW, pan, tilt])
+        time.sleep(0.5)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌤️ Weather-Adaptive Backtrack</span>
+                <span class="app-tag">🔋 Battery Charge Controller</span>
+                <span class="app-tag">☁️ Cloud Data Logging</span>
+                <span class="app-tag">📐 Astronomical Sun Tracking</span>
+                <span class="app-tag">🌡️ Temperature Coefficient Correction</span>
+                <span class="app-tag">📱 Mobile Dashboard App</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $90</li><li><strong>Build Time:</strong> 6 – 9 hours</li><li><strong>Energy Gain:</strong> 30–50% vs. fixed</li><li><strong>Panel Power:</strong> 5W test panel</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>LDR quad differential sensor</li><li>Proportional controller servo driving</li><li>INA219 power measurement</li><li>Energy harvest data logging</li><li>Matplotlib comparison plotting</li><li>Pan-tilt gimbal mechanical design</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">adafruit-pca9685</span><span class="lib-desc"> — Servo PWM control</span></li><li><span class="lib-name">pi-ina219</span><span class="lib-desc"> — Power measurement</span></li><li><span class="lib-name">matplotlib</span><span class="lib-desc"> — Harvest comparison plot</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let sunX=0,t=0;
+    function animSolar(){
+      t+=0.02;
+      const pan=90+60*Math.sin(t);
+      const tilt=45+25*Math.cos(t*0.7);
+      document.getElementById('panelEl').style.transform=`rotate(${pan*0.15-10}deg)`;
+      document.getElementById('sunEl').style.marginLeft=Math.round(pan*0.3)+'px';
+      document.getElementById('panAngle').textContent=Math.round(pan);
+      document.getElementById('tiltAngle').textContent=Math.round(tilt);
+      document.getElementById('irrad').textContent=Math.round(800+100*Math.cos(t));
+      setTimeout(animSolar,80);
+    }
+    animSolar();
+  </script>
+</body>
+</html>

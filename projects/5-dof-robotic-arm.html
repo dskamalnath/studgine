@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5-DOF Robotic Arm – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a 5-servo 3D-printed robotic arm controlled via inverse kinematics from a Raspberry Pi touchscreen. Teaches IK solvers, joint planning, and pick-and-place." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#0d0d1a;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .arm-info{font-family:monospace;font-size:9px;color:#cc88ff;display:flex;flex-direction:column;gap:3px;}
+    .joint-row{display:flex;align-items:center;gap:5px;font-family:monospace;font-size:8px;color:#9966ff;}
+    .joint-bar{width:50px;height:5px;background:#220033;border-radius:2px;overflow:hidden;}
+    .joint-fill{height:100%;background:#9966ff;border-radius:2px;transition:width 0.4s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                  <div class="joint-row"><span style="width:20px;">J1</span><div class="joint-bar"><div class="joint-fill" id="j1f" style="width:50%;"></div></div><span id="j1v">90°</span></div>
+                  <div class="joint-row"><span style="width:20px;">J2</span><div class="joint-bar"><div class="joint-fill" id="j2f" style="width:60%;background:#cc88ff;"></div></div><span id="j2v">108°</span></div>
+                  <div class="joint-row"><span style="width:20px;">J3</span><div class="joint-bar"><div class="joint-fill" id="j3f" style="width:40%;background:#ff88cc;"></div></div><span id="j3v">72°</span></div>
+                  <div class="joint-row"><span style="width:20px;">J4</span><div class="joint-bar"><div class="joint-fill" id="j4f" style="width:55%;background:#ffcc88;"></div></div><span id="j4v">99°</span></div>
+                  <div class="joint-row"><span style="width:20px;">J5</span><div class="joint-bar"><div class="joint-fill" id="j5f" style="width:50%;background:#88ffcc;"></div></div><span id="j5v">90°</span></div>
+                  <div style="font-family:monospace;font-size:8px;color:#00ff88;margin-top:4px;">IK: SOLVED</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+5DOF+robotic+arm+inverse+kinematics+servo" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Degrees of Freedom (DOF) in robotics refer to the number of independent joints. A 5-DOF arm (base rotation + shoulder + elbow + wrist pitch + gripper) can reach most positions in a hemisphere. Inverse kinematics (IK) computes what joint angles produce a desired end-effector (gripper) position — the reverse of forward kinematics (given angles → compute position). For a 5-DOF arm with known link lengths L1–L4, closed-form geometric IK gives exact solutions much faster than numerical iterative methods.</p><p>This project uses 16-channel PCA9685 I²C servo controller to drive all 5 MG996R servos from a Raspberry Pi. A tkinter UI on the 7" touchscreen lets users specify (x,y,z) Cartesian target coordinates and watch the arm move there smoothly.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">5× MG996R High-Torque Servos</span><span class="comp-note"> — 11 kg·cm torque; 50Hz PWM 1000–2000µs; J1 base: 270° or 2× MG996R for stability; metal gear</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">PCA9685 16-Channel I²C Servo Controller</span><span class="comp-note"> — 12-bit PWM; 25MHz clock; drives all servos with stable 50Hz frequency; 5V separate supply for servos</span></div></li>
+                <li><span class="comp-icon">🖨️</span><div><span class="comp-name">3D-Printed Arm + Gripper STL Files</span><span class="comp-note"> — Open-source designs: EEZYbotArm Mk2 or BCN3D Moveo parts; PLA printing; M3 screws + bearings</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 + 7" DSI Touchscreen</span><span class="comp-note"> — Python IK solver + tkinter UI; touchscreen for XYZ coordinate input + joint sliders</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>PCA9685 Servo Control</h4><p>I²C address 0x40. Set PWM frequency: <code>pca.frequency = 50</code>. Set servo angle: pulse width = 1000µs + angle×(1000/180)µs. PWM counts: <code>pulse = int((pw_us / 20000) * 4096)</code>. <code>pca.channels[ch].duty_cycle = pulse</code>. All 5 channels update simultaneously with no jitter. Power servos from separate 5V 3A supply via PCA power pins (not Raspberry Pi).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Forward Kinematics (FK)</h4><p>Link lengths: L1=100mm shoulder, L2=90mm upper arm, L3=80mm forearm, L4=60mm wrist. Given joint angles [θ1,θ2,θ3,θ4], end-effector position: <code>r = L2*cos(θ2) + L3*cos(θ2+θ3) + L4*cos(θ2+θ3+θ4)</code>, <code>z = L1 + L2*sin(θ2) + L3*sin(θ2+θ3) + L4*sin(θ2+θ3+θ4)</code>, <code>x = r*cos(θ1)</code>, <code>y = r*sin(θ1)</code>. Implements using numpy trigonometry.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Inverse Kinematics (IK) Solver</h4><p>Given target (x, y, z): <code>θ1 = atan2(y, x)</code> (base rotation). Wrist position: <code>r = sqrt(x²+y²)</code>. For 3-link planar IK in (r,z): <code>D = (r²+z²-L2²-L3²)/(2*L2*L3)</code>; <code>θ3 = atan2(±sqrt(1-D²), D)</code> (elbow up/down solution). <code>θ2 = atan2(z,r) - atan2(L3*sin(θ3), L2+L3*cos(θ3))</code>. θ4 controls wrist pitch (angle relative to horizontal). Clamp all joint angles to mechanical limits before sending.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Trajectory Planning + Pick-and-Place</h4><p>Interpolate between current and target joint angles in N steps: <code>theta_interp = np.linspace(theta_current, theta_target, steps=50)</code>. Execute at 20ms/step for smooth 1-second motion. Pick-and-place sequence: (1) move to above object, (2) lower Z, (3) close gripper, (4) raise Z, (5) move to drop zone, (6) lower, (7) open gripper. Save named positions (e.g. "HOME", "PICK_A") to JSON for teachable repetitive tasks.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import math, numpy as np
+from adafruit_pca9685 import PCA9685
+import board, busio
+
+i2c = busio.I2C(board.SCL, board.SDA)
+pca = PCA9685(i2c)
+pca.frequency = 50
+
+# Link lengths (mm)
+L1, L2, L3, L4 = 100, 90, 80, 60
+
+def set_servo(channel, deg):
+    deg = max(0, min(180, deg))
+    pulse_us = 1000 + deg*(1000/180)
+    duty = int((pulse_us/20000) * 0xFFFF)
+    pca.channels[channel].duty_cycle = duty
+
+def inverse_kinematics(x, y, z):
+    theta1 = math.degrees(math.atan2(y, x))
+    r = math.sqrt(x**2 + y**2)
+    # Wrist at end of link3 (simplified, no link4 wrist bend)
+    D = (r**2 + z**2 - L2**2 - L3**2) / (2*L2*L3)
+    if abs(D) > 1: return None  # unreachable
+    theta3 = math.degrees(math.atan2(math.sqrt(1-D**2), D))
+    theta2 = math.degrees(math.atan2(z, r) -
+                           math.atan2(L3*math.sin(math.radians(theta3)),
+                                      L2 + L3*math.cos(math.radians(theta3))))
+    return theta1, theta2, theta3, 90.0, 90.0
+
+# Move to target position
+target = (120, 50, 80)  # mm
+angles = inverse_kinematics(*target)
+if angles:
+    for ch, angle in enumerate(angles):
+        set_servo(ch, angle + 90)  # offset to servo centre</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📷 Camera-Guided Grasping</span>
+                <span class="app-tag">🎮 Joystick Teleoperation</span>
+                <span class="app-tag">💾 Teachable Waypoints</span>
+                <span class="app-tag">🤖 ROS MoveIt Integration</span>
+                <span class="app-tag">🖐️ Data Glove Control</span>
+                <span class="app-tag">⚖️ Force-Torque Sensing</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $45 – $90</li><li><strong>Build Time:</strong> 8 – 15 hours</li><li><strong>Joint Torque:</strong> 11 kg·cm</li><li><strong>Reach:</strong> ~250mm radius</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>PCA9685 I²C servo control</li><li>Forward + inverse kinematics math</li><li>Joint-space trajectory interpolation</li><li>3D printing for structural parts</li><li>Pick-and-place automation sequences</li><li>tkinter touchscreen control UI</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">adafruit-circuitpython-pca9685</span><span class="lib-desc"> — Servo PWM driver</span></li><li><span class="lib-name">numpy</span><span class="lib-desc"> — IK math + interpolation</span></li><li><span class="lib-name">tkinter</span><span class="lib-desc"> — Touchscreen UI</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let phase=0;
+    const joints=[0.5,0.6,0.4,0.55,0.5];
+    function animArm(){
+      joints[0]=0.5+0.3*Math.sin(phase*0.7);
+      joints[1]=0.6+0.2*Math.cos(phase*0.5);
+      joints[2]=0.4+0.25*Math.sin(phase*0.9+1);
+      joints[3]=0.55+0.2*Math.cos(phase*0.6+2);
+      ['j1f','j2f','j3f','j4f','j5f'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el) el.style.width=Math.round(joints[i]*100)+'%';
+      });
+      const deg=[90,108,72,99,90].map((d,i)=>Math.round(d+joints[i]*40-20));
+      ['j1v','j2v','j3v','j4v','j5v'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el) el.textContent=deg[i]+'°';
+      });
+      phase+=0.04;
+      requestAnimationFrame(animArm);
+    }
+    animArm();
+  </script>
+</body>
+</html>

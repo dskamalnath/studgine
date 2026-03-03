@@ -1,0 +1,309 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power Failure Alert IoT – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an IoT power failure alerter with ESP8266. Detect mains AC loss, send Telegram or IFTTT push notification via Wi-Fi before backup power dies." />
+  <meta name="keywords" content="power failure alert ESP8266, mains failure notification, IoT power outage alert, Telegram power alert Arduino, ESP8266 power cut detector" />
+  <link rel="canonical" href="power-failure-alert-iot.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080010 0%,#100020 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .grid-row{display:flex;align-items:center;gap:12px;}
+    .power-icon{font-size:40px;transition:filter 0.4s;}
+    .power-icon.off{filter:grayscale(1) brightness(0.3);}
+    .wifi-ripple{position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
+    .wifi-ripple .ripple{position:absolute;border-radius:50%;animation:ripple-out 1.5s ease-out infinite;opacity:0;}
+    @keyframes ripple-out{0%{width:8px;height:8px;opacity:0.8}100%{width:44px;height:44px;opacity:0}}
+    .r1{background:#7f40ff;animation-delay:0s;}
+    .r2{background:#7f40ff;animation-delay:0.5s;}
+    .r3{background:#7f40ff;animation-delay:1s;}
+    .esp-box{background:#0a0020;border:2px solid #3a1a6a;border-radius:6px;padding:6px 10px;font-family:monospace;font-size:11px;color:#a070ff;text-align:center;}
+    .notif-card{background:#1a0a2a;border:1px solid #5a1a9a;border-radius:8px;padding:8px 14px;font-family:sans-serif;font-size:12px;color:#e0b0ff;display:flex;flex-direction:column;gap:2px;min-width:200px;max-width:240px;}
+    .notif-app{font-size:10px;color:#9a60ca;display:flex;align-items:center;gap:4px;}
+    .telegram-icon{color:#29b6f6;font-weight:bold;}
+    .status-pill{padding:2px 10px;border-radius:10px;font-family:monospace;font-size:11px;}
+    .pill-ok{background:#1a3a1a;color:#60ff60;}
+    .pill-fail{background:#3a0a0a;color:#ff6060;animation:blink 0.6s step-start infinite;}
+    @keyframes blink{50%{opacity:0.3}}
+    .batt-micro{width:30px;height:14px;border:2px solid #5a5a0a;border-radius:2px;position:relative;display:inline-block;}
+    .batt-micro::after{content:'';width:4px;height:6px;background:#5a5a0a;position:absolute;right:-6px;top:50%;transform:translateY(-50%);border-radius:0 2px 2px 0;}
+    .batt-inner{height:100%;background:#d4d400;border-radius:0;transition:width 0.5s;animation:drain 8s linear infinite;}
+    @keyframes drain{from{width:100%}to{width:10%}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Power Failure Alert IoT</h1>
+      <p>Detect mains AC power loss with an ESP8266 and instantly push a Telegram or IFTTT notification to your phone — before a small UPS capacitor drains. Reconnection alerts included.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Power Failure Alert IoT</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="grid-row">
+                  <div class="power-icon" id="powerIcon">🔌</div>
+                  <div>→</div>
+                  <div class="esp-box">ESP8266<br>NodeMCU<br><span id="espStatus" style="color:#60ff60">AC OK</span></div>
+                  <div class="wifi-ripple">
+                    <div class="ripple r1"></div>
+                    <div class="ripple r2"></div>
+                    <div class="ripple r3"></div>
+                    <span style="font-size:20px;z-index:1;">📶</span>
+                  </div>
+                  <div>
+                    <div class="batt-micro"><div class="batt-inner" id="battInner"></div></div>
+                    <div style="font-family:monospace;font-size:9px;color:#d4d400;text-align:center;margin-top:2px;" id="battLabel">UPS</div>
+                  </div>
+                </div>
+                <div class="notif-card" id="notifCard" style="opacity:0;transition:opacity 0.5s;">
+                  <div class="notif-app"><span class="telegram-icon">✈</span> Telegram Bot · now</div>
+                  <div style="font-weight:bold;color:#ff8888;" id="notifTitle">⚠️ POWER FAILURE</div>
+                  <div id="notifBody" style="font-size:11px;">Mains power lost at 14:32:07<br>Location: Home Server Room</div>
+                </div>
+                <div class="status-pill" id="statusPill" style="background:#1a3a1a;color:#60ff60;">● MAINS OK</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP8266+power+failure+alert+Telegram+IoT+project" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>A power failure IoT alerter is deceptively simple in concept — detect that AC power has been cut, then fire off a network notification — but it has one critical constraint: the ESP8266 must successfully send the alert before its backup power runs out. This project uses a 1000 µF bulk capacitor and/or a small Li-Po cell as ~30-second bridging power, giving the module time to form a Wi-Fi connection and execute one HTTPS POST.</p>
+              <p>AC presence is detected by a 5V rectified sense circuit (miniature transformer-free resistor divider from the 5V USB supply): when the mains adapter is plugged in, GPIO pin reads HIGH; when power fails, GPIO reads LOW immediately. The ESP wakes, connects to saved Wi-Fi, sends a Telegram message (or IFTTT webhook), then goes back to deep sleep if power is still absent — saving the remaining battery for a confirmed reconnection alert.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">ESP8266 NodeMCU v3</span><span class="comp-note"> — Wi-Fi, HTTPS client, deep-sleep GPIO16 wake</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">HLK-PM01 5V/1A Mains Module</span><span class="comp-note"> — Isolated 230/110V → 5V. DO NOT use home-brew mains circuits</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">500 mAh Li-Po + TP4056 BMS</span><span class="comp-note"> — UPS power for ~25–30 s at full Wi-Fi TX power</span></div></li>
+                <li><span class="comp-icon">🔀</span><div><span class="comp-name">P-Channel MOSFET (IRF9540N)</span><span class="comp-note"> — Automatic switchover: HLK primary, Li-Po when AC fails</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">1N5819 Schottky Diodes (2×)</span><span class="comp-note"> — OR-ing diodes to prevent backfeed from mains to battery</span></div></li>
+                <li><span class="comp-icon">📱</span><div><span class="comp-name">Telegram Bot or IFTTT Webhook</span><span class="comp-note"> — Push notification delivery service</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Detect AC Presence</h4><p>The HLK-PM01 output charges a 220 µF capacitor through a 4.7kΩ resistor, holding GPIO14 HIGH via a 10kΩ pull-up. When mains is cut, this node discharges through the pull-down divider (10kΩ to GND) within ≈ 2 ms. The ESP polls this pin every 500 ms — if it reads LOW for 2 consecutive samples, it declares a power failure (debounce).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Use WiFiManager for Zero-Config Setup</h4><p>On first boot, connect to "PowerAlert-Setup" AP (192.168.4.1), enter your Wi-Fi SSID/password and Telegram chat ID via a web form. WiFiManager saves credentials to EEPROM. On all subsequent boots, ESP connects silently in &lt;3 seconds to saved network — essential as the UPS power window is only ~30 s.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Send Telegram Notification via HTTPS</h4><p>Use <code>WiFiClientSecure</code> + the Telegram Bot API: <code>GET https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text=⚠️POWER+FAILURE</code>. Use fingerprint verification OR <code>client.setInsecure()</code> for simplicity in a local network. Include timestamp from <code>millis()</code> and a configurable device name. Send reconnection notice on the same path when AC sense pin returns HIGH.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Deep Sleep When AC Is Present</h4><p>When AC is live, run <code>ESP.deepSleep(30e6)</code> (30 s), wake via GPIO16-RST jumper, re-check pin, sleep again. This reduces average current from 70 mA (active) to &lt;20 µA (deep sleep) — extending Li-Po standby life to weeks. On failure detection, skip the sleep, connect Wi-Fi, alert, then enter indefinite sleep with a 60 s watchdog for reconnect retry.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;ESP8266WiFi.h&gt;
+#include &lt;WiFiClientSecure.h&gt;
+#include &lt;EEPROM.h&gt;
+
+#define AC_SENSE    14  // GPIO14 (D5)
+#define TOKEN       "YOUR_BOT_TOKEN"
+#define CHAT_ID     "YOUR_CHAT_ID"
+
+bool acWasPresent = true;
+
+void sendTelegram(String msg) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  if (client.connect("api.telegram.org", 443)) {
+    String url = "/bot" + String(TOKEN) + "/sendMessage?chat_id=" + CHAT_ID + "&text=" + msg;
+    client.print("GET " + url + " HTTP/1.1\r\nHost: api.telegram.org\r\nConnection: close\r\n\r\n");
+    delay(500);
+  }
+}
+
+void setup() {
+  pinMode(AC_SENSE, INPUT_PULLUP);
+  bool acNow = digitalRead(AC_SENSE);
+
+  WiFi.begin("YOUR_SSID", "YOUR_PASS");
+  int t = 0;
+  while (WiFi.status() != WL_CONNECTED && t++ &lt; 20) delay(500);
+
+  if (WiFi.status() == WL_CONNECTED) {
+    if (!acNow) {
+      sendTelegram("⚠️+POWER+FAILURE+detected");
+    } else {
+      sendTelegram("✅+Power+RESTORED");
+    }
+  }
+  // Sleep and retry in 60 s regardless
+  ESP.deepSleep(!acNow ? 60e6 : 30e6);
+}
+
+void loop() {} // never reached — deep sleep restarts setup()</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Home Server Watchdog</span>
+                <span class="app-tag">❄️ Freezer/Fridge Alarm</span>
+                <span class="app-tag">💊 Medical Equipment Alert</span>
+                <span class="app-tag">🔒 Security System Tamper</span>
+                <span class="app-tag">📡 Telecom Cabinet Monitor</span>
+                <span class="app-tag">🏭 Industrial Downtime Log</span>
+                <span class="app-tag">📩 IFTTT / PushBullet Variant</span>
+                <span class="app-tag">🔧 UPS Runtime Calculator</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $22</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> ESP8266 NodeMCU</li>
+                <li><strong>Alert Latency:</strong> &lt; 8 s from cut</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>ESP8266 deep sleep / wake</li>
+                <li>Telegram Bot API (HTTPS GET)</li>
+                <li>WiFiManager credential storage</li>
+                <li>Li-Po UPS switchover circuit</li>
+                <li>Schottky diode OR-ing</li>
+                <li>EEPROM for config persistence</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">ESP8266WiFi (built-in)</span><span class="lib-desc"> — Wi-Fi stack for ESP8266</span></li>
+                <li><span class="lib-name">WiFiClientSecure</span><span class="lib-desc"> — TLS HTTPS client</span></li>
+                <li><span class="lib-name">WiFiManager</span><span class="lib-desc"> — Captive-portal credential config</span></li>
+                <li><span class="lib-name">EEPROM (built-in)</span><span class="lib-desc"> — Persistent settings storage</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="iot-flood-sensor-alert.html">IoT Flood Sensor Alert</a></li>
+                <li><a href="tank-level-wifi-monitor.html">Tank Level Wi-Fi Monitor</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let powerOn = true, toggleTimer = 0;
+    function updatePower() {
+      toggleTimer++;
+      if(toggleTimer === 50) { powerOn = false; }
+      if(toggleTimer === 90) { powerOn = true; toggleTimer = 0; }
+      document.getElementById('powerIcon').className = 'power-icon' + (powerOn ? '' : ' off');
+      document.getElementById('espStatus').textContent = powerOn ? 'AC OK' : 'AC FAIL';
+      document.getElementById('espStatus').style.color = powerOn ? '#60ff60' : '#ff6060';
+      const notif = document.getElementById('notifCard');
+      notif.style.opacity = (toggleTimer > 54 && toggleTimer < 90) ? '1' : '0';
+      if(toggleTimer === 55) {
+        document.getElementById('notifTitle').textContent = '⚠️ POWER FAILURE';
+        document.getElementById('notifBody').textContent = 'Mains power lost at ' + new Date().toLocaleTimeString() + '\nLocation: Home';
+      }
+      if(toggleTimer === 91) {
+        document.getElementById('notifTitle').textContent = '✅ POWER RESTORED';
+        document.getElementById('notifBody').textContent = 'Mains reconnected at ' + new Date().toLocaleTimeString();
+      }
+      const pill = document.getElementById('statusPill');
+      if(powerOn) { pill.textContent = '● MAINS OK'; pill.className = 'status-pill'; pill.style.background='#1a3a1a'; pill.style.color='#60ff60'; }
+      else { pill.textContent = '⚠ POWER FAIL'; pill.className = 'status-pill pill-fail'; }
+    }
+    setInterval(updatePower, 100);
+  </script>
+</body>
+</html>

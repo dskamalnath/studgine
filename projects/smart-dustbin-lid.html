@@ -1,0 +1,205 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Dustbin Lid – Studgine</title>
+  <meta name="description" content="Build a touchless dustbin lid opener with ultrasonic sensor and servo. Learn servo control and proximity detection." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    /* ── Smart Bin Animation ── */
+    .anim-stage { display:flex; align-items:flex-end; justify-content:center; gap:32px; padding:28px 16px; }
+    .bin-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .bin-lid { width:68px; height:14px; background:linear-gradient(90deg,#374151,#4b5563); border-radius:8px 8px 2px 2px; transform-origin:bottom left; animation:lid-open 3s ease-in-out infinite; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+    @keyframes lid-open { 0%,30%{transform:rotate(0deg)} 55%,80%{transform:rotate(-65deg)} 100%{transform:rotate(0deg)} }
+    .bin-body { width:68px; height:80px; background:linear-gradient(180deg,#4b5563,#374151); border-radius:0 0 10px 10px; border-top:2px solid #6b7280; display:flex; align-items:center; justify-content:center; }
+    .bin-logo { font-size:1.4rem; opacity:.5; }
+    .sensor-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .sensor-box { width:44px; height:28px; background:linear-gradient(135deg,#1e3a8a,#0ea5e9); border-radius:6px; display:flex; align-items:center; justify-content:center; gap:4px; }
+    .sensor-eye { width:10px; height:10px; background:#fff; border-radius:50%; opacity:.8; }
+    .sensor-beam { position:absolute; width:0; height:0; border-left:50px solid rgba(14,165,233,.2); border-top:20px solid transparent; border-bottom:20px solid transparent; animation:beam-detect 3s ease-in-out infinite; }
+    @keyframes beam-detect { 0%,100%{opacity:.2} 20%,35%{opacity:.8; border-left-color:rgba(14,165,233,.5);} }
+    .hand-icon { font-size:1.8rem; animation:hand-approach 3s ease-in-out infinite; }
+    @keyframes hand-approach { 0%,100%{transform:translateX(30px); opacity:0;} 15%,30%{transform:translateX(0); opacity:1;} 55%,80%{transform:translateX(-10px); opacity:.6;} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html"    class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html"    class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Smart Dustbin Lid</h1>
+      <p class="hero-sub">An ultrasonic sensor detects a hand approaching and a servo automatically opens the bin lid — a hygienic, impressive build combining proximity sensing with servo actuation.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Smart Dustbin Lid</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+
+        <div class="anim-stage">
+          <div class="sensor-wrap" style="position:relative;">
+            <div class="sensor-box"><div class="sensor-eye"></div><div class="sensor-eye"></div></div>
+            <div class="sensor-beam" style="position:absolute;top:4px;right:-50px;"></div>
+            <span style="font-size:.7rem;color:var(--color-text-muted);">HC-SR04</span>
+          </div>
+          <div class="hand-icon">🖐️</div>
+          <div class="bin-wrap">
+            <div class="bin-lid"></div>
+            <div class="bin-body"><span class="bin-logo">🗑️</span></div>
+            <span style="font-size:.7rem;color:var(--color-text-muted);">SMART BIN</span>
+          </div>
+        </div>
+        <p class="anim-stage-label">Hand detected within 20 cm → servo opens lid automatically</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+smart+dustbin+ultrasonic+servo" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>A <strong>smart touchless dustbin</strong> is one of the most satisfying beginner builds because it's genuinely useful and immediately impressive. An HC-SR04 ultrasonic sensor on the lid measures the distance to the nearest object. When a hand comes within ~20 cm, a servo sweeps the lid open; after a hold timeout, it automatically closes again.</p>
+        <p>This project combines two skills you may have learned separately — ultrasonic distance measurement and servo control — into a functional product. It's also a great enclosure challenge: fitting everything inside a real bin or cardboard box teaches mechanical design thinking alongside electronics.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Main microcontroller</span></div></li>
+          <li><span class="comp-icon">📡</span><div><span class="comp-name">HC-SR04 Ultrasonic Sensor</span><span class="comp-note">Proximity detection (2–400 cm)</span></div></li>
+          <li><span class="comp-icon">⚙️</span><div><span class="comp-name">SG90 / MG90 Servo Motor</span><span class="comp-note">Opens and closes the lid</span></div></li>
+          <li><span class="comp-icon">📦</span><div><span class="comp-name">Plastic or cardboard bin</span><span class="comp-note">Physical enclosure for the project</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype connections</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">USB cable / 5 V adapter</span><span class="comp-note">Power — servo needs stable 5 V</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Measure distance</strong> — Connect HC-SR04: VCC → 5 V, GND → GND, TRIG → pin 9, ECHO → pin 10. In a <code>getDistance()</code> function, pulse TRIG for 10 µs, time the ECHO pulse duration, and calculate: <code>distance = duration * 0.034 / 2;</code> in cm.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Threshold detection</strong> — In <code>loop()</code>: if <code>distance &lt; 20</code> and the lid is not already open, sweep the servo to the open position (e.g. <code>servo.write(90)</code>) and record <code>openedAt = millis()</code>. Set <code>lidOpen = true</code>.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Auto-close timer</strong> — Once the lid is open, keep checking <code>millis() - openedAt</code>. After a hold time (e.g. 3000 ms), call <code>servo.write(0)</code> to close and reset <code>lidOpen = false</code>. This ensures the lid closes even if nothing is thrown in.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Mount and calibrate</strong> — Mount the servo arm to the lid with a rigid link or directly via a horn bracket. Adjust the open/close angles for your physical geometry — try 0°/90° first, then fine-tune. Hot-glue the ultrasonic sensor facing outward at the front of the lid for best detection.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🏥 Hospital hygiene station</span>
+          <span class="app-tag">🍳 Touchless kitchen bin</span>
+          <span class="app-tag">🐕 Automatic pet food cover</span>
+          <span class="app-tag">📦 Smart storage box opener</span>
+          <span class="app-tag">🔋 Battery-powered portable</span>
+          <span class="app-tag">📊 Fullness sensor + LED alert</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$6 – $14</span></li>
+            <li class="fact-row"><span>Build Time</span><span>2 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Power</span><span>5 V USB</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">HC-SR04 ultrasonic</span></li>
+            <li><span class="skill-tag">pulseIn() function</span></li>
+            <li><span class="skill-tag">Servo.h actuation</span></li>
+            <li><span class="skill-tag">millis() auto-close</span></li>
+            <li><span class="skill-tag">Mechanical mounting</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;"><strong>Servo.h</strong> — built into Arduino IDE, no install needed.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="servo-door-opener.html" class="skill-tag">Servo Door Opener</a></li>
+            <li><a href="ultrasonic-distance-meter.html" class="skill-tag">Ultrasonic Distance Meter</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

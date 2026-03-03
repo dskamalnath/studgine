@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sound Level Meter – Studgine</title>
+  <meta name="description" content="Sample ambient audio with a MAX4466 microphone amplifier and display a VU-meter bar graph on an LED array or OLED with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:flex-end; justify-content:center; padding:16px; height:120px; gap:12px; }
+    .vu-bars { display:flex; align-items:flex-end; gap:4px; height:80px; }
+    .vu-bar { width:14px; border-radius:3px 3px 0 0; transition:height .12s ease, background .12s; }
+    .mic-icon { font-size:2rem; align-self:center; }
+    .vu-peak { font-size:.6rem; color:#94a3b8; text-align:center; margin-top:4px; }
+    .db-badge { background:#1e293b; border:1.5px solid #334155; border-radius:6px; padding:4px 10px; font-family:'Courier New',monospace; font-size:1.1rem; color:#e2e8f0; align-self:center; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Sound Level Meter</h1>
+      <p class="hero-sub">Sample ambient audio with a MAX4466 microphone amplifier and display a VU-meter bar graph on an LED array or OLED. Great for music visualisation and acoustic awareness.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Sound Level Meter</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="mic-icon">🎤</div>
+          <div>
+            <div class="vu-bars" id="vu-bars"></div>
+            <div class="vu-peak" id="vu-peak">Peak: 0 dB</div>
+          </div>
+          <div class="db-badge" id="db-val">--</div>
+        </div>
+        <p class="anim-stage-label">MAX4466 mic → analogRead() amplitude → VU bar graph</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+sound+level+meter+MAX4466+VU+meter" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>A raw electret microphone produces signals in the µV–mV range — far too small for Arduino's 10-bit ADC to resolve usefully. The <strong>MAX4466</strong> amplifier module boosts the microphone output by a factor of 25–125× (adjustable via an on-board gain pot), biasing the output centred at VCC/2 (2.5 V on a 5 V supply) so both positive and negative excursions of the audio waveform fall within the 0–5 V ADC range.</p>
+        <p>To detect volume (amplitude), you sample many cycles of the audio waveform rapidly, compute the peak-to-peak range of those samples, and map that to a dB-approximation. This is exactly how commercial VU meters and sound pressure level apps work.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🎙️</span><div><span class="comp-name">MAX4466 microphone amplifier</span><span class="comp-note">Electret mic + gain-adjustable amp board</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">8–10× LEDs in a row</span><span class="comp-note">VU bar display (or use OLED)</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">8–10× 220 Ω resistors</span><span class="comp-note">LED current limiting</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire MAX4466</strong> — VCC → 3.3 V (or 5 V — check module spec), GND → GND, OUT → A0. Adjust the gain pot to a mid-position to start. The module's output idles at ~VCC/2; speak near it and the signal swings above and below that midpoint.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Sample and measure amplitude</strong> — In a tight 50 ms window, take rapid samples and find the peak-to-peak range:
+              <code>unsigned long start = millis(); int lo=1023, hi=0; while(millis()-start &lt; 50){int v=analogRead(A0); if(v&lt;lo) lo=v; if(v&gt;hi) hi=v;} int pp = hi - lo;</code>
+              Values of 0–40 are ambient noise; 200–600 is conversational; &gt; 700 is loud music.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Drive the VU bar</strong> — Map peak-to-peak to number of lit LEDs: <code>int bars = map(pp, 0, 700, 0, 8);</code>. Light bars 0 to bars-1, with the top bar optionally red (clipping indicator). Add a slow-fall peak-hold pointer by tracking the maximum bars value and decaying it by 1 every 200 ms.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Add frequency bands (extension)</strong> — Sample at 8800 Hz using <code>analogRead()</code> (Arduino's max rate). Collect 64 samples into an array and run a simple 8-band filter bank using integer arithmetic (bin the magnitude of frequency groups). Update 8 columns of LEDs to create a primitive spectrum analyser — a classic advanced extension of this project.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🎵 Music visualiser VU meter</span>
+          <span class="app-tag">🔊 Noise pollution alert</span>
+          <span class="app-tag">🎤 Clap-controlled switch</span>
+          <span class="app-tag">📊 Spectrum analyser upgrade</span>
+          <span class="app-tag">🎛️ DJ level monitor</span>
+          <span class="app-tag">🤫 Quiet-zone sound alarm</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $12</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 2 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Mic module</span><span>MAX4466</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">AC signal amplitude detection</span></li>
+            <li><span class="skill-tag">Peak-to-peak sampling</span></li>
+            <li><span class="skill-tag">map() scaling to LEDs</span></li>
+            <li><span class="skill-tag">Gain pot tuning</span></li>
+            <li><span class="skill-tag">VU meter peak-hold logic</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">No libraries needed</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="clap-switch.html" class="skill-tag">Clap-Switch Light</a></li>
+            <li><a href="buzzer-piano.html" class="skill-tag">4-Key Buzzer Piano</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const NUM_BARS = 10;
+    const vuBars = document.getElementById('vu-bars');
+    const bars = [];
+    for (let i = 0; i < NUM_BARS; i++) {
+      const b = document.createElement('div');
+      b.className = 'vu-bar';
+      b.style.height = '4px';
+      b.style.background = i < 6 ? '#22c55e' : i < 8 ? '#eab308' : '#ef4444';
+      vuBars.appendChild(b);
+      bars.push(b);
+    }
+    const levels = [2,3,5,4,7,8,6,9,10,8,5,3,6,7,9,10,8,5,3,2];
+    let li = 0;
+    function updateVU() {
+      const lv = levels[li % levels.length];
+      bars.forEach((b, i) => {
+        const active = i < lv;
+        b.style.height = active ? (10 + i * 7) + 'px' : '4px';
+        b.style.opacity = active ? '1' : '0.2';
+      });
+      const db = Math.round(-60 + lv * 6);
+      document.getElementById('db-val').textContent = db + ' dB';
+      document.getElementById('vu-peak').textContent = 'Peak: ' + Math.round(-60 + Math.max(...levels.slice(Math.max(0,li-4),li+1)) * 6) + ' dB';
+      li++;
+    }
+    updateVU();
+    setInterval(updateVU, 180);
+  </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Human Fall Detection System – Advanced Project | Studgine</title>
+  <meta name="description" content="A MobileNet pose-estimation model on Raspberry Pi detects fall events from a camera and sends instant Twilio SMS alerts for elderly care." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#0a0a0a;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .pose-canvas-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .fall-info{font-family:monospace;font-size:9px;color:#ff4444;display:flex;flex-direction:column;gap:3px;}
+    .confidence-bar{width:70px;height:7px;background:#1a0000;border-radius:3px;overflow:hidden;}
+    .confidence-fill{height:100%;background:#ff4444;border-radius:3px;transition:width 0.4s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Human Fall Detection System</h1>
+      <p>A MoveNet Lightning pose-estimation model running on Raspberry Pi analyses live camera frames, detects sudden falls from keypoint velocity and body orientation changes, and instantly dispatches an SMS alert via the Twilio API — a practical elderly care safety device.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Human Fall Detection System</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="pose-canvas-wrap">
+                  <canvas id="poseCanvas" width="100" height="120"></canvas>
+                  <div style="font-family:monospace;font-size:7px;color:#888;">POSE KEYPOINTS</div>
+                </div>
+                <div class="fall-info">
+                  <div>STATE: <span id="fallState" style="color:#00ff44;">STANDING</span></div>
+                  <div>HIP_Y: <span id="hipY">0.38</span></div>
+                  <div>RATIO: <span id="bodyRatio">1.85</span></div>
+                  <div>VEL_Y: <span id="velY">0.01</span></div>
+                  <div style="margin-top:2px;">FALL CONF:</div>
+                  <div class="confidence-bar"><div class="confidence-fill" id="fallConf" style="width:5%;background:#00cc44;"></div></div>
+                  <div style="margin-top:4px;color:#ffaa00;">TWILIO SMS</div>
+                  <div id="smsStatus">STANDBY</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+MoveNet+pose+estimation+fall+detection+Twilio" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Falls are the leading cause of injury in people over 65. This project creates a camera-based fall detector running entirely on-device (no cloud required for inference). TensorFlow Lite MoveNet Lightning — a single-person pose estimator that runs at ~30fps on Pi 4 — outputs 17 body keypoints (nose, ears, shoulders, hips, knees, ankles). The fall detection algorithm analyses hip height, body aspect ratio, and keypoint vertical velocity to classify events as STANDING, SITTING, or FALLEN.</p><p>On FALLEN detection sustained for 2+ seconds, a Twilio SMS is sent to a carer's phone, including the timestamp and optionally a snapshot JPEG.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Raspberry Pi Camera Module v2</span><span class="comp-note"> — 30fps @ 640×480; picamera2 library; camera mounted at 1.5–2m height for full-body view</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — TFLite MoveNet Lightning INT8; ~30fps inference; no TPU needed; connected to home WiFi for Twilio</span></div></li>
+                <li><span class="comp-icon">📱</span><div><span class="comp-name">Twilio SMS API Account</span><span class="comp-note"> — Free tier: 1 SMS phone number + 15 credits; twilio Python library; sends alert with timestamp to carer number</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">Buzzer + LED Alert (optional)</span><span class="comp-note"> — Audible + visual local alert on GPIO in addition to SMS; 5V buzzer + red LED on GPIO 17</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>MoveNet Pose Inference</h4><p>Load INT8 TFLite model: <code>interpreter = tflite.Interpreter('movenet_lightning_int8.tflite')</code>. Capture 192×192 frame from picamera2, preprocess: <code>input_image = cv2.resize(frame, (192,192))[np.newaxis,...].astype(np.int8)</code>. Run: <code>interpreter.invoke()</code>. Extract output: <code>keypoints = interpreter.get_tensor(output_details[0]['index'])[0,0]</code> → shape [17,3] (y,x,confidence). 17 keypoints: 0=nose, 5/6=shoulders, 11/12=hips, 13/14=knees, 15/16=ankles.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Fall Detection Features</h4><p>Extract key metrics each frame: <code>hip_y = (kp[11][0] + kp[12][0]) / 2</code> (normalised 0=top, 1=bottom of frame). <code>shoulder_y = (kp[5][0] + kp[6][0]) / 2</code>. Body height ratio: <code>ratio = (shoulder_y - hip_y) / max((hip_y - ankle_y), 0.01)</code>. In standing: ratio ≈ 1.8; in fallen: ratio ≈ 0.3 (horizontal). Hip vertical velocity: <code>vel_y = abs(hip_y - prev_hip_y)</code>. Fast downward velocity + low ratio = fall event.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Fall State Machine</h4><p>Three states: STANDING (ratio&gt;1.2), TRANSITIONING (&lt;0.8 for &lt;2s), FALLEN (&lt;0.8 for &gt;2s sustained). Use a counter: <code>if ratio &lt; 0.8 and vel_y &gt; 0.1: fall_counter += 1; else fall_counter = 0</code>. Alert when <code>fall_counter &gt; 30</code> (≈2s at 15fps). One-shot alert (don't re-alert until person detected standing again). False positive reduction: require BOTH low height ratio AND high hip velocity in event window.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Twilio SMS Alert</h4><p><code>from twilio.rest import Client</code>. Credentials from environment variables (never hardcode). On fall confirmed: save snapshot JPEG (<code>cv2.imwrite('fall_snapshot.jpg', frame)</code>). Send SMS: <code>client.messages.create(body=f"FALL DETECTED at {timestamp} — location: Living Room", from_='+15551234567', to=carer_number)</code>. Limit to 1 alert per 5 minutes to prevent spam. Log all events to JSON file with timestamp + confidence.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np, cv2, time
+import tflite_runtime.interpreter as tflite
+from picamera2 import Picamera2
+from twilio.rest import Client
+import os
+
+interp = tflite.Interpreter('movenet_lightning_int8.tflite')
+interp.allocate_tensors()
+in_d = interp.get_input_details(); out_d = interp.get_output_details()
+cam = Picamera2(); cam.start()
+
+twilio = Client(os.environ['TWILIO_SID'], os.environ['TWILIO_TOKEN'])
+fall_counter = 0; last_alert = 0; prev_hip_y = 0.5
+
+def get_keypoints(frame):
+    img = cv2.resize(frame, (192,192))[np.newaxis,...].astype(np.int8)
+    interp.set_tensor(in_d[0]['index'], img)
+    interp.invoke()
+    return interp.get_tensor(out_d[0]['index'])[0,0]  # [17,3]
+
+while True:
+    frame = cam.capture_array()
+    kp = get_keypoints(frame)
+    hip_y  = (kp[11][0] + kp[12][0]) / 2
+    shl_y  = (kp[5][0]  + kp[6][0])  / 2
+    ank_y  = (kp[15][0] + kp[16][0]) / 2
+    ratio  = abs(shl_y - hip_y) / max(abs(hip_y - ank_y), 0.01)
+    vel_y  = abs(hip_y - prev_hip_y)
+    prev_hip_y = hip_y
+
+    if ratio < 0.7 and vel_y > 0.05:
+        fall_counter += 1
+    else:
+        fall_counter = max(0, fall_counter - 2)
+
+    if fall_counter > 20 and time.time() - last_alert > 300:
+        twilio.messages.create(
+            body=f"⚠️ FALL DETECTED @ {time.strftime('%H:%M:%S')}",
+            from_='+15551234567', to=os.environ['CARER_PHONE'])
+        last_alert = time.time(); fall_counter = 0
+    time.sleep(0.067)  # ~15fps</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📸 Snapshot Email Attachment</span>
+                <span class="app-tag">🔴 Coral TPU 60fps Inference</span>
+                <span class="app-tag">🏠 Multi-Room Coverage</span>
+                <span class="app-tag">📊 Weekly Fall Risk Report</span>
+                <span class="app-tag">🎙️ Voice "Are You OK?" Prompt</span>
+                <span class="app-tag">📱 Mobile App Livestream</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $90</li><li><strong>Build Time:</strong> 6 – 10 hours</li><li><strong>Inference Speed:</strong> ~30fps on Pi 4</li><li><strong>Alert Latency:</strong> &lt;3 seconds</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>TFLite MoveNet pose estimation</li><li>Keypoint velocity feature extraction</li><li>State machine fall classification</li><li>Twilio SMS API integration</li><li>picamera2 real-time capture</li><li>OpenCV keypoint overlay rendering</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">tflite-runtime</span><span class="lib-desc"> — MoveNet Lightning inference</span></li><li><span class="lib-name">picamera2</span><span class="lib-desc"> — Fast camera capture</span></li><li><span class="lib-name">twilio</span><span class="lib-desc"> — SMS alert dispatch</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const pc=document.getElementById('poseCanvas');
+    const pctx=pc.getContext('2d');
+    let pt=0,fallAnim=false;
+    const KP_COLORS=['#ff4444','#ff6666','#ff4444','#ff6666','#ff4444','#00ff88','#00ff88','#ffaa00','#ffaa00','#ff8800','#ff8800','#4488ff','#4488ff','#88aaff','#88aaff','#aaccff','#aaccff'];
+    function getPose(t,fallen){
+      const s=fallen?Math.min(1,(t%200)/80):0;
+      return fallen&&s>0.5?[
+        [0.25,0.5],[0.27,0.42],[0.27,0.58],[0.3,0.35],[0.3,0.65],[0.5,0.35],[0.5,0.65],[0.7,0.4],[0.7,0.6],[0.75,0.45],[0.75,0.55],[0.6,0.35],[0.6,0.65],[0.65,0.4],[0.65,0.6],[0.63,0.38],[0.63,0.62]
+      ]:[
+        [0.08,0.5],[0.12,0.44],[0.12,0.56],[0.15,0.38],[0.15,0.62],[0.3,0.38],[0.3,0.62],[0.5,0.38],[0.5,0.62],[0.68,0.42],[0.68,0.58],[0.55,0.4],[0.55,0.6],[0.75,0.42],[0.75,0.58],[0.9,0.42],[0.9,0.58]
+      ];
+    }
+    const SKEL=[[0,1],[0,2],[1,3],[2,4],[5,6],[5,7],[7,9],[6,8],[8,10],[5,11],[6,12],[11,12],[11,13],[13,15],[12,14],[14,16]];
+    function drawPose(){
+      pctx.clearRect(0,0,100,120);
+      pctx.fillStyle='#111'; pctx.fillRect(0,0,100,120);
+      pt++;
+      if(pt%120===0)fallAnim=!fallAnim;
+      const kps=getPose(pt,fallAnim);
+      SKEL.forEach(([a,b])=>{
+        pctx.strokeStyle='#336633';pctx.lineWidth=1.5;
+        pctx.beginPath();pctx.moveTo(kps[a][1]*100,kps[a][0]*120);pctx.lineTo(kps[b][1]*100,kps[b][0]*120);pctx.stroke();
+      });
+      kps.forEach(([y,x],i)=>{pctx.fillStyle=KP_COLORS[i];pctx.beginPath();pctx.arc(x*100,y*120,3,0,Math.PI*2);pctx.fill();});
+      const hip_y=(kps[11][0]+kps[12][0])/2;
+      const ratio=fallAnim?0.25:1.85;
+      const conf=fallAnim?95:5;
+      document.getElementById('fallState').textContent=fallAnim?'FALLEN':'STANDING';
+      document.getElementById('fallState').style.color=fallAnim?'#ff3333':'#00ff44';
+      document.getElementById('hipY').textContent=hip_y.toFixed(2);
+      document.getElementById('bodyRatio').textContent=ratio.toFixed(2);
+      document.getElementById('velY').textContent=(fallAnim?0.22:0.01).toFixed(2);
+      document.getElementById('fallConf').style.width=conf+'%';
+      document.getElementById('fallConf').style.background=fallAnim?'#ff3333':'#00cc44';
+      document.getElementById('smsStatus').textContent=fallAnim?'SENT!':'STANDBY';
+      document.getElementById('smsStatus').style.color=fallAnim?'#ff3333':'#aaa';
+      requestAnimationFrame(drawPose);
+    }
+    drawPose();
+  </script>
+</body>
+</html>

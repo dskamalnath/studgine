@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECG Monitor with Arrhythmia Alert – Advanced Project | Studgine</title>
+  <meta name="description" content="AD8232 ECG front-end on Arduino Mega with Pan-Tompkins R-peak detection, RR interval analysis, and real-time arrhythmia classification with SD logging." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000a05;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .ecg-info{font-family:monospace;font-size:9px;color:#00ff88;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>ECG Monitor with Arrhythmia Alert</h1>
+      <p>AD8232 ECG front-end digitises Lead-I cardiac signal at 360Hz via Arduino Mega. The Pan-Tompkins algorithm detects R-peaks in real-time. RR interval statistics classify three arrhythmia types: bradycardia (&lt;50 BPM), tachycardia (&gt;150 BPM), and irregular rhythm (RR SD &gt;0.1s). Waveform and diagnosis log to micro-SD with timestamps; a buzzer fires on alert.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">ECG Monitor with Arrhythmia Alert</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="ecgCanvas" width="140" height="100"></canvas>
+                <div class="ecg-info">
+                  <div>ADC: 360 Hz</div>
+                  <div>GAIN: 100×</div>
+                  <div>BANDWIDTH: 0.5–40Hz</div>
+                  <div style="margin-top:3px;">R-PEAKS</div>
+                  <div>DETECTED: <span id="ecgR">1284</span></div>
+                  <div>HR: <span id="ecgHR">72</span> BPM</div>
+                  <div>RR_SD: <span id="ecgSD">0.042</span>s</div>
+                  <div style="margin-top:3px;">DIAGNOSIS</div>
+                  <div id="ecgDx" style="color:#00ff88;">NORMAL SINUS</div>
+                  <div>ALERT: OFF</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=AD8232+ECG+Arduino+Pan+Tompkins+arrhythmia+detection" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>The 12-lead clinical ECG machine costs thousands of dollars, but the fundamental electrocardiography problem — detecting R-peaks and classifying rate/rhythm — can be solved with a $8 AD8232 module. This project implements the Pan-Tompkins QRS detection algorithm (1985, still gold-standard) on an Arduino Mega: bandpass filter → derivative → squaring → moving integration → adaptive threshold. Once R-peaks are located, RR interval statistics reveal the three most common arrhythmias detectable from single-lead ECG. This is an educational project — not a medical device — but the signal processing is production-grade.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">❤️</span><div><span class="comp-name">AD8232 ECG Module + Electrodes</span><span class="comp-note"> — Analogue Devices AD8232 single-lead heart rate monitor; 3× snap electrodes (LA/RA/RL); 0.5–40Hz instrumentation amp; LO+/LO- lead-off detection pins</span></div></li>
+                <li><span class="comp-icon">💻</span><div><span class="comp-name">Arduino Mega 2560</span><span class="comp-note"> — 10-bit ADC at 360Hz (analogRead + Timer1 ISR); 8kB SRAM buffer; Serial output to Python plotter or serial monitor</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">SD Card Module (SPI)</span><span class="comp-note"> — Log raw ADC values + RR intervals + diagnosis with millis() timestamp; saves session CSV for PC analysis in Python/MATLAB</span></div></li>
+                <li><span class="comp-icon">🔔</span><div><span class="comp-name">Piezo Buzzer + 16×2 LCD</span><span class="comp-note"> — Buzzer for alert tones; LCD shows HR, ARRHYTHMIA TYPE in large font; buttons for session start/stop and parameter configuration</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Pan-Tompkins Stage 1: Bandpass Filter</h4><p>Remove baseline wander (&lt;0.5Hz) and muscle noise (&gt;40Hz). Two-stage IIR filter: low-pass then high-pass. Low-pass: <code>y[n] = 2*y[n-1] - y[n-2] + x[n] - 2*x[n-6] + x[n-12]</code> (cutoff ~11Hz). High-pass: <code>y[n] = 32*x[n-16] - (y[n-1] + x[n] - x[n-32]) / 32</code>. These integer-coefficient filters run efficiently on 8-bit AVR without float. Result: clean QRS complex isolated from noise.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Pan-Tompkins Stage 2: Derivative + Square + Integrate</h4><p>Derivative accentuates QRS slope: <code>y[n] = (1/8)*(-x[n-2] - 2*x[n-1] + 2*x[n+1] + x[n+2])</code>. Squaring: <code>y[n] = x[n]^2</code> — makes all values positive and amplifies large slopes. Moving window integration over 150ms (54 samples at 360Hz): <code>y[n] = (1/W)*sum(x[n-W+1..n])</code>. This produces a smooth envelope with a peak at each QRS complex, used to threshold R-peak detection robustly.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Adaptive Threshold + R-Peak Detection</h4><p>Pan-Tompkins uses two adaptive thresholds tracking noise level and signal level: <code>SPK = 0.875*SPK + 0.125*peak_val (signal); NPK = 0.875*NPK + 0.125*peak_val (noise); threshold1 = NPK + 0.25*(SPK-NPK)</code>. Peak detection: find local maximum above threshold1 after 200ms refractory period. Store R-peak location, compute RR interval: <code>RR = (current_peak - last_peak) / 360.0  // seconds</code>. HR = 60/mean(RR_last8). Missed beat search-back algorithm for weak beats.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Rhythm Classification + Alert</h4><p>Maintain rolling buffer of last 8 RR intervals. Classification rules: Tachycardia: <code>HR > 150</code>; Bradycardia: <code>HR < 50</code>; Irregular: <code>std(RR) > 0.1</code>. SD calculation: <code>float rr_mean = avg(rr_buf, 8); float sd = sqrt(avg_sq_diff); if(sd > 0.1) rhythm = IRREGULAR</code>. On arrhythmia: tone buzzer (3× beeps), flash LED, scroll LCD message. Log to SD: <code>file.printf("%lu,%.3f,%d,%s\n", millis(), rr_ms, hr, diagnosis)</code>.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>// Arduino Mega — Pan-Tompkins R-peak detection
+// Timer1 ISR fires at 360Hz to read AD8232 ADC
+
+volatile int ecg_sample = 0;
+volatile bool new_sample = false;
+int bp_buf[12] = {0}; int sq_buf[54] = {0};
+float rr_buf[8] = {0}; int rr_idx = 0;
+long last_peak = 0; float SPK = 0, NPK = 0;
+
+ISR(TIMER1_COMPA_vect) {
+  ecg_sample = analogRead(A0); new_sample = true;
+}
+
+float pan_tompkins(int x) {
+  // Simplified low-pass
+  static int lp[6]={0}; float lp_out = 2*lp[0]-lp[1]+x-2*bp_buf[5]+bp_buf[11];
+  memmove(lp+1,lp,5*sizeof(int)); lp[0]=lp_out/4;
+  // Derivative (approximation)
+  static int prev[2]={0}; float deriv = (x - prev[1]) / 2.0;
+  prev[1]=prev[0]; prev[0]=x;
+  // Square
+  float sq = deriv * deriv;
+  // Moving integration
+  static float mwi = 0; mwi += sq/54.0 - sq_buf[53]/54.0;
+  memmove(sq_buf+1,sq_buf,53*sizeof(int)); sq_buf[0]=(int)sq;
+  return mwi;
+}
+
+void loop() {
+  if (!new_sample) return; new_sample = false;
+  float env = pan_tompkins(ecg_sample);
+  static long sample_count = 0; sample_count++;
+  float thresh = NPK + 0.25*(SPK-NPK);
+  if (env > thresh && sample_count - last_peak > 72) { // >200ms refractory
+    SPK = 0.875*SPK + 0.125*env;
+    rr_buf[rr_idx%8] = (sample_count - last_peak)/360.0f;
+    rr_idx++; last_peak = sample_count;
+    float hr = 60.0 / avg(rr_buf, 8);
+    Serial.printf("HR:%.0f SD:%.3f\n", hr, std_dev(rr_buf, 8));
+  } else NPK = 0.875*NPK + 0.125*env;
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📈 Python Live ECG Plotter</span>
+                <span class="app-tag">🫀 HRV (Heart Rate Variability) Analysis</span>
+                <span class="app-tag">📱 BLE Wearable ECG Patch</span>
+                <span class="app-tag">🤖 ML AF vs Normal Classifier</span>
+                <span class="app-tag">☁️ Cloud Dashboard (MQTT)</span>
+                <span class="app-tag">🩺 12-Lead Differential Measurement</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $25 – $55</li><li><strong>Build Time:</strong> 10 – 16 hours</li><li><strong>Sample Rate:</strong> 360 Hz</li><li><strong>Algorithm:</strong> Pan-Tompkins (1985)</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Biomedical signal acquisition (AD8232)</li><li>Pan-Tompkins QRS detection</li><li>IIR bandpass filtering on AVR</li><li>RR interval arrhythmia classification</li><li>Timer1 ISR at precise sample rate</li><li>SD card data logging</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">SD.h (Arduino)</span><span class="lib-desc"> — Data logging to micro-SD</span></li><li><span class="lib-name">LiquidCrystal</span><span class="lib-desc"> — LCD display output</span></li><li><span class="lib-name">TimerOne</span><span class="lib-desc"> — Precise 360Hz ADC ISR</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const ecgC=document.getElementById('ecgCanvas');const ecgCtx=ecgC.getContext('2d');
+    let ecgPhase=0,ecgBuf=[],ecgRPeaks=0;
+    function ecgWave(t){
+      // Simplified ECG morphology
+      const mod=t%1;
+      if(mod>0.5&&mod<0.55) return Math.exp(-Math.pow((mod-0.51)*200,2))*40; // P
+      if(mod>0.6&&mod<0.625) return -Math.exp(-Math.pow((mod-0.61)*300,2))*15; // Q
+      if(mod>0.625&&mod<0.645) return Math.exp(-Math.pow((mod-0.633)*350,2))*80; // R
+      if(mod>0.645&&mod<0.67) return -Math.exp(-Math.pow((mod-0.657)*300,2))*20; // S
+      if(mod>0.72&&mod<0.78) return Math.exp(-Math.pow((mod-0.75)*100,2))*25; // T
+      return 0;
+    }
+    function drawECG(){
+      ecgCtx.fillStyle='rgba(0,10,5,0.5)';ecgCtx.fillRect(0,0,140,100);
+      // Grid
+      ecgCtx.strokeStyle='rgba(0,80,30,0.4)';ecgCtx.lineWidth=0.5;
+      for(let i=0;i<140;i+=20){ecgCtx.beginPath();ecgCtx.moveTo(i,0);ecgCtx.lineTo(i,100);ecgCtx.stroke();}
+      for(let i=0;i<100;i+=20){ecgCtx.beginPath();ecgCtx.moveTo(0,i);ecgCtx.lineTo(140,i);ecgCtx.stroke();}
+      // ECG trace
+      ecgBuf.push(ecgWave(ecgPhase));if(ecgBuf.length>140)ecgBuf.shift();
+      ecgCtx.strokeStyle='#00ff88';ecgCtx.lineWidth=1.5;ecgCtx.beginPath();
+      ecgBuf.forEach((v,i)=>{
+        const y=50-v;i===0?ecgCtx.moveTo(i,y):ecgCtx.lineTo(i,y);
+      });
+      ecgCtx.stroke();
+      // R peak marker
+      const lastV=ecgBuf[ecgBuf.length-1];
+      if(lastV>60){ecgCtx.fillStyle='#ffff44';ecgCtx.beginPath();ecgCtx.arc(139,50-lastV,3,0,Math.PI*2);ecgCtx.fill();ecgRPeaks++;}
+      ecgPhase+=0.007;
+      const hr=60+12*Math.sin(ecgPhase*0.05);
+      document.getElementById('ecgR').textContent=ecgRPeaks;
+      document.getElementById('ecgHR').textContent=hr.toFixed(0);
+      document.getElementById('ecgSD').textContent=(0.04+0.01*Math.sin(ecgPhase*0.3)).toFixed(3);
+      const dx=hr>150?'TACHYCARDIA':hr<50?'BRADYCARDIA':'NORMAL SINUS';
+      document.getElementById('ecgDx').textContent=dx;
+      document.getElementById('ecgDx').style.color=dx==='NORMAL SINUS'?'#00ff88':'#ff4444';
+      requestAnimationFrame(drawECG);
+    }
+    drawECG();
+  </script>
+</body>
+</html>

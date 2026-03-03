@@ -1,0 +1,221 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reaction Timer Game – Studgine</title>
+  <meta name="description" content="Build a reaction timer game with Arduino — LED flashes at random, press the button as fast as you can and see your time on LCD." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    /* ── Reaction Timer Animation ── */
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:32px; padding:28px 16px; }
+    .rt-led { width:54px; height:54px; border-radius:50%; background:#1a1a1a; box-shadow:0 0 4px rgba(0,0,0,.4); transition:background .08s, box-shadow .08s; }
+    .rt-led.go { background:#22c55e; box-shadow:0 0 28px 10px rgba(34,197,94,.7); }
+    .rt-lcd { background:#0f4c1a; border-radius:8px; padding:12px 20px; font-family:monospace; color:#4ade80; font-size:1.1rem; box-shadow:inset 0 2px 8px rgba(0,0,0,.5); min-width:120px; text-align:center; }
+    .rt-btn { width:40px; height:40px; border-radius:50%; background:#ef4444; box-shadow:0 4px 12px rgba(239,68,68,.4); animation:btn-ready 4s ease-in-out infinite; }
+    @keyframes btn-ready { 0%,60%{transform:scale(1);} 65%{transform:scale(.88);} 70%{transform:scale(1);} 100%{transform:scale(1);} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html"    class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html"    class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Reaction Timer Game</h1>
+      <p class="hero-sub">An LED flashes at a random moment — smash the button as fast as you can and see your reaction time on the LCD. Learn <code>millis()</code>-based timing and random delays.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Reaction Timer Game</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+
+        <div class="anim-stage">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div class="rt-led" id="rtLed"></div>
+            <span style="font-size:.7rem;color:var(--color-text-muted);">WAIT… GO!</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div class="rt-lcd" id="rtDisplay">READY</div>
+            <span style="font-size:.7rem;color:var(--color-text-muted);">LCD DISPLAY</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div class="rt-btn"></div>
+            <span style="font-size:.7rem;color:var(--color-text-muted);">BUTTON</span>
+          </div>
+        </div>
+        <p class="anim-stage-label">Random delay → green flash → button press → reaction time shown</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+reaction+timer+game+LCD" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The average human reaction time is 200–300 ms. This project builds a simple game to measure yours. A green LED lights up after a random delay (2–5 seconds); the moment it turns on you press a button. The Arduino measures the precise interval between the LED turning on and the button press using <code>millis()</code>, then displays the result on a 16×2 LCD.</p>
+        <p>It's a fun project because it's immediately playable — you can compete with friends. It also teaches a core Arduino skill: non-blocking timing with <code>millis()</code> instead of <code>delay()</code>, which is essential for any multi-task sketch.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Main microcontroller</span></div></li>
+          <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 LCD (I2C preferred)</span><span class="comp-note">Displays reaction time in ms</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">Green LED + 220 Ω resistor</span><span class="comp-note">GO signal</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">Push-button</span><span class="comp-note">Player response input</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype connections</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">USB cable</span><span class="comp-note">5 V power</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Randomise the wait</strong> — At the start of each round, seed the RNG: <code>randomSeed(analogRead(A0));</code>, then calculate: <code>waitTime = random(2000, 5000);</code>. Record <code>roundStart = millis()</code>. Display "WAIT…" on the LCD.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Check for early press (cheating)</strong> — While waiting, poll the button. If pressed before the LED turns on, display "TOO EARLY!" and restart the round after 2 seconds. This prevents holding the button down.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Flash the GO signal</strong> — Once <code>millis() - roundStart &gt;= waitTime</code>, turn on the LED, record <code>ledOn = millis()</code>, and display "GO!". Now wait for the button press in a tight loop.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Calculate and display</strong> — On button press: <code>reactionTime = millis() - ledOn;</code>. Turn off LED. Display something like <code>"Time: 247 ms"</code>. If it is a new best, save to a variable and show "NEW BEST!" Pause 3 s then loop.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🏆 Multi-player scoreboard</span>
+          <span class="app-tag">🎨 Colour-coded difficulty zones</span>
+          <span class="app-tag">📊 Best/average stats on LCD</span>
+          <span class="app-tag">🔊 Buzzer false-start penalty</span>
+          <span class="app-tag">📡 BT score sharing to phone</span>
+          <span class="app-tag">🤖 Robot reflex tester</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$4 – $10</span></li>
+            <li class="fact-row"><span>Build Time</span><span>2 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Power</span><span>5 V USB</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">millis() timing</span></li>
+            <li><span class="skill-tag">random() / randomSeed()</span></li>
+            <li><span class="skill-tag">Game state machine</span></li>
+            <li><span class="skill-tag">LCD I2C display</span></li>
+            <li><span class="skill-tag">Cheat detection logic</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;"><strong>LiquidCrystal_I2C</strong> — install via Library Manager for I2C LCD.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="digital-stopwatch.html" class="skill-tag">Digital Stopwatch</a></li>
+            <li><a href="morse-code-led-flasher.html" class="skill-tag">Morse Code Flasher</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+
+  <script src="../js/main.js"></script>
+  <script>
+    const led = document.getElementById('rtLed');
+    const disp = document.getElementById('rtDisplay');
+    const times = [247, 312, 189, 423, 276, 198, 355, 221];
+    let ti = 0;
+    function runRound() {
+      led.classList.remove('go');
+      disp.textContent = 'WAIT…';
+      const wait = 2000 + Math.random() * 2000;
+      setTimeout(() => {
+        led.classList.add('go');
+        disp.textContent = 'GO!';
+        setTimeout(() => {
+          led.classList.remove('go');
+          disp.textContent = times[ti % times.length] + ' ms';
+          ti++;
+          setTimeout(runRound, 2000);
+        }, 600);
+      }, wait);
+    }
+    runRound();
+  </script>
+</body>
+</html>

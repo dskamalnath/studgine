@@ -1,0 +1,324 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solar Charge Controller – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a PWM solar charge controller with Arduino. Monitor panel voltage, battery state, load control, overcharge protection, and LCD dashboard." />
+  <meta name="keywords" content="solar charge controller Arduino, PWM MPPT Arduino, solar battery charger, overcharge protection Arduino, solar panel voltage monitor" />
+  <link rel="canonical" href="solar-charge-controller.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#060a00 0%,#0a1800 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .sun-icon{font-size:36px;animation:sun-glow 2s ease-in-out infinite;}
+    @keyframes sun-glow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
+    .solar-flow{display:flex;align-items:center;gap:10px;}
+    .flow-arrow{font-size:20px;color:#ffd700;animation:flow-pulse 1s ease-in-out infinite;}
+    @keyframes flow-pulse{0%,100%{opacity:0.3}50%{opacity:1}}
+    .panel-box{background:#1a2a0a;border:2px solid #3a5a1a;border-radius:6px;padding:6px 10px;font-family:monospace;font-size:11px;color:#a0d040;text-align:center;}
+    .batt-wrap{position:relative;width:50px;height:80px;border:3px solid #3a5a1a;border-radius:4px;overflow:hidden;}
+    .batt-term{width:20px;height:8px;background:#3a5a1a;border-radius:2px;position:absolute;top:-8px;left:50%;transform:translateX(-50%);}
+    .batt-fill{position:absolute;bottom:0;left:0;width:100%;background:#7dff40;border-radius:0 0 2px 2px;transition:height 0.8s ease;}
+    .batt-pct{position:absolute;width:100%;text-align:center;font-family:monospace;font-size:11px;font-weight:bold;top:50%;transform:translateY(-50%);color:#fff;text-shadow:0 1px 2px #000;}
+    .load-box{background:#0a1a2a;border:2px solid #1a3a5a;border-radius:6px;padding:6px 10px;font-family:monospace;font-size:11px;color:#7de0ff;text-align:center;}
+    .pwm-bar{height:8px;border-radius:4px;background:#ffd700;box-shadow:0 0 6px #ffd700;transition:width 0.6s;}
+    .pwm-bg{background:#1a2a0a;border-radius:4px;width:160px;height:8px;overflow:hidden;}
+    .stats-row{font-family:monospace;font-size:11px;color:#a0d040;display:flex;gap:12px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Solar Charge Controller</h1>
+      <p>Monitor and control a 12 V solar panel charging a lead-acid battery with PWM regulation, overcharge and deep-discharge protection, and an LCD energy dashboard.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Solar Charge Controller</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="solar-flow">
+                  <div>
+                    <div class="sun-icon">☀️</div>
+                    <div class="panel-box" id="panelVoltage">Panel<br>18.2 V<br>3.4 A</div>
+                  </div>
+                  <div class="flow-arrow" id="flowArrow">→</div>
+                  <div>
+                    <div style="display:flex;flex-direction:column;align-items:center;">
+                      <div class="batt-term"></div>
+                      <div class="batt-wrap"><div class="batt-fill" id="battFill" style="height:65%"></div><div class="batt-pct" id="battPct">65%</div></div>
+                    </div>
+                    <div class="panel-box" style="margin-top:4px;" id="battVoltage">Batt<br>12.8 V</div>
+                  </div>
+                  <div class="flow-arrow" id="loadArrow">→</div>
+                  <div>
+                    <div class="load-box" id="loadBox">LOAD<br>ON<br>2.1 A</div>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-family:monospace;font-size:10px;color:#a0d040;text-align:center;margin-bottom:4px;">PWM Duty Cycle</div>
+                  <div class="pwm-bg"><div class="pwm-bar" id="pwmBar" style="width:78%"></div></div>
+                  <div style="font-family:monospace;font-size:10px;color:#ffd700;text-align:center;margin-top:2px;" id="pwmLabel">78%</div>
+                </div>
+                <div class="stats-row" id="statsRow">
+                  <span>Pin: 58.3W</span><span>Pout: 25.2W</span><span>Eff: 87%</span>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+solar+charge+controller+PWM+12V+battery" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>A solar charge controller sits between the panel and the battery, regulating current flow to prevent overcharging (which damages cells) and deep discharge (which destroys lead-acid capacity). Commercial PWM controllers do this with a shunt switch — when battery voltage hits the bulk/absorption threshold, they reduce charge current by chopping the panel connection with a PWM signal.</p>
+              <p>This Arduino project measures panel and battery voltage through potential dividers, calculates charge current using an ACS712 Hall-effect current sensor, and drives an IRF3205 N-channel MOSFET with PWM to regulate charging. An LCD shows real-time panel wattage, battery state of charge, load current, and daily Ah throughput — a surprisingly complete energy management system for around $20.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note"> — PWM output, analog ADC for voltage/current</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">IRF3205 N-Channel MOSFET</span><span class="comp-note"> — Main PWM switch; R_DS(on) = 8 mΩ at 10 V gate</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">ACS712-20A Current Sensor</span><span class="comp-note"> — Hall-effect, 100 mV/A, measures charge current</span></div></li>
+                <li><span class="comp-icon">📏</span><div><span class="comp-name">Voltage Dividers (10kΩ + 3.3kΩ)</span><span class="comp-note"> — Scale 20 V panel down to 5 V ADC range</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">16×2 LCD with I2C</span><span class="comp-note"> — Energy dashboard display</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">12 V 7 Ah SLA Battery + 20 W Panel</span><span class="comp-note"> — Sealed lead-acid and small solar panel for testing</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Measure Voltages and Current</h4><p>Panel voltage: read A0, multiply by (R1+R2)/R2 = (10k+3.3k)/3.3k = 4.03 scaling factor. Battery voltage: read A1 similarly. Current (ACS712): read A2; voltage midpoint at 2.5 V = 0 A; <code>amps = (analogRead(A2) * 5.0/1023 - 2.5) / 0.1</code>. Average 50 readings to reduce noise.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>PWM Charging Algorithm (3-Stage)</h4><p>Implement bulk (MOSFET 100% ON until 14.4 V), absorption (PWM regulated to hold 14.4 V for 2 hours), and float (PWM pulse at low duty to maintain 13.6 V). Use PID control on battery voltage → PWM duty cycle for smooth regulation instead of bang-bang switching.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Overcharge and Deep-Discharge Protection</h4><p>If battery voltage exceeds 14.8 V, cut the PWM signal entirely (MOSFET OFF). If battery drops below 11.0 V (≈50% SoC for SLA), relay-disconnect the load output to prevent deep discharge damage. Display "BATT LOW – LOAD OFF" and sound buzzer. Reconnect load above 12.0 V.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Daily Energy Accounting</h4><p>Every second, integrate <code>Ah += current × (1/3600)</code>. At midnight (DS3231 RTC check), save daily kWh to EEPROM and reset. Display today's panel harvest and load consumption on the LCD row 2, giving a complete picture of the energy budget.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;LiquidCrystal_I2C.h&gt;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+#define MOSFET_PWM  9
+#define ACS_PIN     A2
+#define VPANEL_PIN  A0
+#define VBATT_PIN   A1
+#define LOAD_RELAY  7
+
+const float V_SCALE = 4.03;     // voltage divider ratio
+const float BULK_V  = 14.4;
+const float FLOAT_V = 13.6;
+const float LVD_V   = 11.0;     // low-voltage disconnect
+
+int pwmDuty = 255;
+
+float readVoltage(int pin) {
+  long sum = 0;
+  for(int i=0;i&lt;50;i++) sum += analogRead(pin);
+  return (sum / 50.0) * (5.0 / 1023.0) * V_SCALE;
+}
+
+float readCurrent() {
+  long sum = 0;
+  for(int i=0;i&lt;50;i++) sum += analogRead(ACS_PIN);
+  return ((sum / 50.0) * (5.0/1023.0) - 2.5) / 0.1;
+}
+
+void setup() {
+  pinMode(MOSFET_PWM, OUTPUT); pinMode(LOAD_RELAY, OUTPUT);
+  lcd.init(); lcd.backlight();
+}
+
+void loop() {
+  float vPanel = readVoltage(VPANEL_PIN);
+  float vBatt  = readVoltage(VBATT_PIN);
+  float iCharge = readCurrent();
+  // 3-Stage charging
+  if (vBatt >= BULK_V) {
+    // Absorption / Float via simple P control
+    float error = vBatt - BULK_V;
+    pwmDuty = constrain(pwmDuty - (int)(error * 50), 0, 255);
+  } else {
+    pwmDuty = 255;  // Bulk: full power
+  }
+  // Low voltage load disconnect
+  if (vBatt &lt; LVD_V) digitalWrite(LOAD_RELAY, LOW);
+  else if (vBatt > 12.0) digitalWrite(LOAD_RELAY, HIGH);
+  analogWrite(MOSFET_PWM, pwmDuty);
+  // Display
+  lcd.setCursor(0,0);
+  lcd.print("P:" + String(vPanel,1) + "V " + String(vPanel*iCharge,1) + "W");
+  lcd.setCursor(0,1);
+  lcd.print("B:" + String(vBatt,1) + "V D:" + String(pwmDuty*100/255) + "%");
+  delay(1000);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌄 Off-Grid Cabin Power</span>
+                <span class="app-tag">🚗 12V Caravan Charging</span>
+                <span class="app-tag">🌿 Solar Garden Lighting</span>
+                <span class="app-tag">📡 Remote IoT Node Power</span>
+                <span class="app-tag">🌐 IoT Energy Dashboard</span>
+                <span class="app-tag">🏕️ Camping Solar Kit</span>
+                <span class="app-tag">🔋 Li-Ion Variant (LiFePO4)</span>
+                <span class="app-tag">📊 MPPT Algorithm Upgrade</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $35</li>
+                <li><strong>Build Time:</strong> 5 – 8 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno</li>
+                <li><strong>Max Panel:</strong> 20 W / 12 V SLA</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>PWM MOSFET regulation</li>
+                <li>ACS712 current sensing</li>
+                <li>Voltage divider scaling</li>
+                <li>3-stage battery charging</li>
+                <li>Low-voltage disconnect relay</li>
+                <li>PID control basics</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — LCD dashboard driver</span></li>
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — DS3231 for daily energy reset</span></li>
+                <li><span class="lib-name">EEPROM (built-in)</span><span class="lib-desc"> — Daily kWh history storage</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="mppt-solar-tracker.html">MPPT Solar Tracker</a></li>
+                <li><a href="dual-axis-solar-tracker.html">Dual-Axis Solar Tracker (Adv)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const states = [
+      {vp:18.2, vb:12.4, ic:3.4, il:2.1, pwm:100, pct:40},
+      {vp:17.8, vb:13.2, ic:2.8, il:2.0, pwm:88, pct:55},
+      {vp:18.5, vb:13.8, ic:2.1, il:2.1, pwm:72, pct:68},
+      {vp:18.3, vb:14.2, ic:1.2, il:2.0, pwm:42, pct:80},
+      {vp:0.4,  vb:13.6, ic:0, il:1.8, pwm:8, pct:74},
+      {vp:5.2,  vb:12.1, ic:0.8, il:1.9, pwm:55, pct:45}
+    ];
+    let si = 0;
+    function updateSolar() {
+      let s = states[si++ % states.length];
+      document.getElementById('panelVoltage').innerHTML = 'Panel<br>' + s.vp.toFixed(1) + ' V<br>' + s.ic.toFixed(1) + ' A';
+      document.getElementById('battVoltage').innerHTML = 'Batt<br>' + s.vb.toFixed(1) + ' V';
+      document.getElementById('battFill').style.height = s.pct + '%';
+      document.getElementById('battPct').textContent = s.pct + '%';
+      document.getElementById('battFill').style.background = s.pct < 30 ? '#ff4040' : '#7dff40';
+      document.getElementById('loadBox').innerHTML = 'LOAD<br>' + (s.il > 0 ? 'ON' : 'OFF') + '<br>' + s.il.toFixed(1) + ' A';
+      document.getElementById('pwmBar').style.width = s.pwm + '%';
+      document.getElementById('pwmLabel').textContent = s.pwm + '%';
+      let pin = (s.vp * s.ic).toFixed(1), pout = (s.vb * s.il).toFixed(1);
+      let eff = pin > 0 ? Math.min(99, Math.round((pout/pin)*100)) : 0;
+      document.getElementById('statsRow').innerHTML = '<span>Pin: ' + pin + 'W</span><span>Pout: ' + pout + 'W</span><span>Eff: ' + eff + '%</span>';
+    }
+    setInterval(updateSolar, 2500);
+    updateSolar();
+  </script>
+</body>
+</html>

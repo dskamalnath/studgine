@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Pet Feeder – Studgine</title>
+  <meta name="description" content="A servo opens a food gate on a timed schedule stored in Arduino EEPROM. Teaches servo angles, delay scheduling, and persistent storage." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:16px; }
+    .feeder-body { width:52px; height:64px; background:#1e293b; border:2px solid #059669; border-radius:8px 8px 0 0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; position:relative; padding-bottom:4px; }
+    .feeder-top { width:30px; height:18px; background:#065f46; border-radius:4px 4px 0 0; position:absolute; top:6px; }
+    .feeder-gate { width:24px; height:10px; background:#10b981; border-radius:0 0 4px 4px; transform-origin:top center; transition:transform .6s ease; }
+    .feeder-gate.open { transform:rotate(-75deg); }
+    .pellets { display:flex; flex-wrap:wrap; width:36px; gap:2px; justify-content:center; position:absolute; bottom:20px; }
+    .pellet { width:6px; height:8px; background:#a16207; border-radius:3px; opacity:0; transition:opacity .3s; }
+    .pellet.show { opacity:1; }
+    .feeder-bowl { width:52px; height:14px; background:#374151; border-radius:0 0 18px 18px; border:2px solid #4b5563; }
+    .feeder-label { font-size:.55rem; color:#64748b; text-align:center; margin-top:4px; }
+    .servo-arm { width:4px; height:20px; background:#6b7280; border-radius:2px; position:absolute; right:-12px; top:10px; transform-origin:top center; transition:transform .6s ease; }
+    .servo-arm.open { transform:rotate(75deg); }
+    .feed-info { text-align:center; }
+    .feed-next { font-size:.7rem; color:#34d399; font-weight:700; }
+    .feed-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Automated Pet Feeder</h1>
+      <p class="hero-sub">A servo opens a food gate on a timed schedule stored in Arduino EEPROM. A rewarding practical build that teaches servo angles, delay scheduling, and persistent storage.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Automated Pet Feeder</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="feeder-body">
+              <div class="feeder-top"></div>
+              <div class="pellets" id="pellets">
+                <div class="pellet"></div><div class="pellet"></div><div class="pellet"></div>
+                <div class="pellet"></div><div class="pellet"></div><div class="pellet"></div>
+              </div>
+              <div class="feeder-gate" id="gate"></div>
+              <div class="servo-arm" id="arm"></div>
+            </div>
+            <div class="feeder-bowl"></div>
+            <div class="feeder-label" id="feed-lbl">Waiting…</div>
+          </div>
+          <div class="feed-info">
+            <div class="feed-icon">🐾</div>
+            <div class="feed-next" id="feed-next">Next: 08:00</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Timer fires → servo rotates gate open → food drops into bowl</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+automated+pet+feeder+servo+timed" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>This project combines three important concepts: <strong>servo motor control</strong> (generating 50 Hz PWM pulses to position a rotary actuator), <strong>millis()-based scheduling</strong> (firing events at set intervals without blocking), and <strong>EEPROM storage</strong> (retaining the feeding schedule across power cycles so the feeder keeps working even after unplugging).</p>
+        <p>The physical design uses a servo horn attached to a rotating disc or sliding gate that blocks a chute opening. When the servo rotates to the open position, gravity feeds a portion of kibble into the bowl below. A defined rotation window (e.g. 2 seconds) controls the portion size.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">⚙️</span><div><span class="comp-name">SG90 or MG90S servo</span><span class="comp-note">Gate actuator</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">2× Push-buttons</span><span class="comp-note">Set time / manual feed</span></div></li>
+          <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note">Schedule display</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Set up servo and schedule</strong> — Wire servo signal → D9 (with 1 kΩ in series to protect PWM pin). <code>Servo myServo; myServo.attach(9);</code>. Define feeding times as minutes-since-midnight in an array: <code>int schedule[] = {8*60, 13*60, 19*60};</code>. Write these to EEPROM on first boot or when the user adjusts them via buttons.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Software clock</strong> — Since we don't have a real-time clock module, keep a variable <code>unsigned long elapsedSec = millis() / 1000;</code> and convert to hours/minutes. Or integrate an optional DS3231 RTC for ±2 ppm accuracy. At startup, load schedule integers from EEPROM: <code>int t = EEPROM.read(i * 2) | (EEPROM.read(i*2+1) &lt;&lt; 8);</code>
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Trigger the feed cycle</strong> — Each loop: compare current minutes to each schedule entry within a ±1-minute window to avoid missing the exact second. When matched and not already fed this minute: <code>myServo.write(90); delay(2000); myServo.write(0);</code>. Set a flag to prevent re-triggering within the same minute.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Display and manual override</strong> — Show the next feeding time on the LCD. Button A triggers an immediate manual feed. Button B cycles through schedule slots on the LCD to let the user verify or adjust them. Write any change back to EEPROM instantly so it survives power loss.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🐱 Cat / dog food dispenser</span>
+          <span class="app-tag">🐟 Fish tank auto feeder</span>
+          <span class="app-tag">🌱 Automatic seed dispenser</span>
+          <span class="app-tag">💊 Medication reminder dispenser</span>
+          <span class="app-tag">☕ Coffee portion dosing</span>
+          <span class="app-tag">📅 Multi-schedule EEPROM config</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$10 – $22</span></li>
+            <li class="fact-row"><span>Build Time</span><span>2 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Actuator</span><span>SG90 servo</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Servo angle control</span></li>
+            <li><span class="skill-tag">EEPROM read/write</span></li>
+            <li><span class="skill-tag">millis() scheduling</span></li>
+            <li><span class="skill-tag">Multi-button UI</span></li>
+            <li><span class="skill-tag">Persistent config storage</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Servo (built-in)</span></li>
+            <li><span class="skill-tag">EEPROM (built-in)</span></li>
+            <li><span class="skill-tag">LiquidCrystal_I2C</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="servo-door-lock.html" class="skill-tag">Servo Door Lock</a></li>
+            <li><a href="lcd-countdown-timer.html" class="skill-tag">LCD Countdown Timer</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const gate = document.getElementById('gate');
+    const arm = document.getElementById('arm');
+    const lbl = document.getElementById('feed-lbl');
+    const pellets = document.querySelectorAll('.pellet');
+    const schedules = ['08:00', '13:00', '19:00'];
+    let si = 0;
+    function doFeed() {
+      lbl.textContent = 'Feeding!';
+      document.getElementById('feed-next').textContent = 'Now!';
+      gate.classList.add('open');
+      arm.classList.add('open');
+      pellets.forEach((p, i) => setTimeout(() => p.classList.add('show'), i * 150));
+      setTimeout(() => {
+        gate.classList.remove('open');
+        arm.classList.remove('open');
+        lbl.textContent = 'Done ✓';
+        si = (si + 1) % schedules.length;
+        document.getElementById('feed-next').textContent = 'Next: ' + schedules[si];
+        setTimeout(() => { lbl.textContent = 'Waiting…'; pellets.forEach(p => p.classList.remove('show')); }, 2000);
+      }, 2200);
+    }
+    doFeed();
+    setInterval(doFeed, 8000);
+  </script>
+</body>
+</html>

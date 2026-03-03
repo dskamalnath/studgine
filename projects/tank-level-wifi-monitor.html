@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tank Level Wi-Fi Monitor – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a water tank level monitor with HC-SR04 ultrasonic sensor and ESP8266. Upload fill percentage to Blynk gauge widget and send Telegram alerts when level is low." />
+  <meta name="keywords" content="tank level monitor ESP8266 Blynk, HC-SR04 water tank level WiFi, ESP8266 Blynk water gauge project, IoT water level Telegram alert, ultrasonic water tank sensor ESP8266" />
+  <link rel="canonical" href="tank-level-wifi-monitor.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000d18 0%,#001828 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;overflow:hidden;}
+    .tank-wrap{position:relative;width:60px;height:120px;}
+    .tank-body{position:absolute;bottom:0;left:0;right:0;top:0;border:2px solid #2060a0;border-radius:4px;overflow:hidden;background:#040c18;}
+    .tank-water{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,#0060c0,#0040a0);transition:height 0.8s;}
+    .tank-pct{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:monospace;font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 4px rgba(0,0,0,0.8);}
+    .blynk-gauge{width:90px;height:90px;position:relative;}
+    .blynk-label{font-family:monospace;font-size:8px;color:#608080;text-align:center;margin-top:4px;}
+    .telegram-alert{font-family:monospace;font-size:10px;padding:6px 12px;border-radius:6px;border:1px solid;text-align:center;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                  <div class="telegram-alert" id="tgAlert" style="border-color:#004040;color:#008080;background:#001010;">☁️ Blynk live update</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP8266+water+tank+level+HC-SR04+Blynk+Telegram+WiFi" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Overhead water tanks are common in areas with unreliable municipal supply — knowing the fill level before a morning rush prevents the embarrassing discovery of an empty tank. This project mounts an HC-SR04 ultrasonic distance sensor upside-down inside the tank lid, measuring the air gap from the sensor to the water surface. The ESP8266 converts distance to fill percentage using the known tank height, then pushes the value to a Blynk IoT dashboard accessible from anywhere.</p>
+              <p>The Blynk 2.0 platform provides a polished gauge widget, history graph, and event notifications. For SMS/messaging alerts, the Telegram Bot API requires only a simple HTTPS POST — no special IoT middleware needed. This project covers median-filtered ultrasonic sensing, Blynk virtual pins, HTTP GET/POST for Telegram, and fail-safe design for water measurement in humid environments.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">HC-SR04 Ultrasonic Sensor</span><span class="comp-note"> — 2 cm–400 cm range; triggered downward into tank; waterproof with conformal coat</span></div></li>
+                <li><span class="comp-icon">🌐</span><div><span class="comp-name">ESP8266 NodeMCU</span><span class="comp-note"> — Wi-Fi SoC; connects to home router; Blynk + Telegram over HTTPS</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">0.96″ OLED (optional)</span><span class="comp-note"> — Local level display on the tank or controller box; I2C SSD1306</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">5 V USB Power Supply</span><span class="comp-note"> — Mount in a weatherproof enclosure near the tank; 5 V micro-USB input to NodeMCU</span></div></li>
+                <li><span class="comp-icon">📦</span><div><span class="comp-name">IP65 Waterproof Enclosure</span><span class="comp-note"> — Protects electronics from tank condensation and water splash</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Ultrasonic Distance → Fill Percentage</h4><p>Mount HC-SR04 on the inside tank lid, sensor face pointing downward toward water surface. Mounting height from bottom = TANK_HEIGHT (e.g. 150 cm for a standard 1000 L tank). Measure distance to water surface: <code>distance_cm = duration_us / 58.2</code>. Calculate water level: <code>water_cm = TANK_HEIGHT - distance_cm - SENSOR_OFFSET</code>. Fill percentage: <code>fillPct = constrain(water_cm / TANK_HEIGHT * 100, 0, 100)</code>. Take 5 median-filtered readings to reject false echoes from tank ripples. Discard readings &lt;2 cm (sensor dead zone) or &gt;TANK_HEIGHT+5 (floating debris).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Blynk Virtual Pin Update</h4><p>Use Blynk 2.0 (cloud.blynk.io). Create a Gauge widget on Virtual Pin V1 (range 0–100). In firmware: <code>Blynk.virtualWrite(V1, fillPct)</code>. Set the update interval with a BlynkTimer: <code>timer.setInterval(30000L, sendData)</code>. In the Blynk app, configure the Gauge widget min=0, max=100, label "%". Add a SuperChart widget on V1 to graph the level history over 24 hours, allowing you to see daily consumption patterns. Also write to V2 for absolute water height in cm.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Telegram Low-Level Alert</h4><p>Create a Telegram bot via @BotFather (get TOKEN) and Find your chat ID with @userinfobot. When fillPct drops below 20% for 3 consecutive readings (confirms it's not a sensor glitch), send: <code>WiFiClientSecure client; client.connect("api.telegram.org",443); String msg = "Tank level CRITICAL: " + String(fillPct) + "%"; String url = "/bot" + token + "/sendMessage?chat_id=" + chatId + "&text=" + msg;</code> Implement a 4-hour alert rate limit so you're not spammed every 30 seconds while the tank stays low. Reset alert flag once fill goes above 30%.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>OTA Updates &amp; Wi-Fi Reconnect</h4><p>Add ArduinoOTA so you can update the firmware without physically accessing the watertight enclosure. Include automatic Wi-Fi reconnect with <code>if(WiFi.status() != WL_CONNECTED) WiFi.reconnect()</code> in the main loop — the ESP8266 will reconnect within 10 seconds of a router restart. Set Blynk heartbeat to 60 seconds. Add a watchdog timer (<code>ESP.wdtFeed()</code>) to auto-reboot if the main loop stalls during an HTTPS call timeout.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#define BLYNK_TEMPLATE_ID "TMPLxxxxxx"
+#define BLYNK_AUTH_TOKEN "your_token"
+#include &lt;ESP8266WiFi.h&gt;
+#include &lt;BlynkSimpleEsp8266.h&gt;
+#include &lt;WiFiClientSecure.h&gt;
+
+const int TRIG=D6, ECHO=D7;
+const float TANK_H = 150.0; // cm
+const int LOW_THRESHOLD = 20; // percent
+
+BlynkTimer timer;
+
+float readFillPct() {
+  long readings[5];
+  for(int i=0;i&lt;5;i++){
+    digitalWrite(TRIG,LOW); delayMicroseconds(2);
+    digitalWrite(TRIG,HIGH); delayMicroseconds(10); digitalWrite(TRIG,LOW);
+    readings[i] = pulseIn(ECHO, HIGH, 25000);
+    delay(60);
+  }
+  // median of 5
+  for(int i=0;i&lt;4;i++) for(int j=i+1;j&lt;5;j++) if(readings[j]&lt;readings[i]){long t=readings[i];readings[i]=readings[j];readings[j]=t;}
+  float dist = readings[2] / 58.2;
+  float wh = TANK_H - dist - 5.0; // 5cm sensor offset
+  return constrain(wh/TANK_H*100.0, 0, 100);
+}
+
+void sendData() {
+  float pct = readFillPct();
+  Blynk.virtualWrite(V1, pct);
+  if(pct &lt; LOW_THRESHOLD) sendTelegramAlert(pct);
+}
+
+void setup() {
+  pinMode(TRIG,OUTPUT); pinMode(ECHO,INPUT);
+  Blynk.begin(BLYNK_AUTH_TOKEN, "WiFi_SSID", "WiFi_Pass");
+  timer.setInterval(30000L, sendData);
+}
+
+void loop() { Blynk.run(); timer.run(); }</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Home Overhead Tank</span>
+                <span class="app-tag">🌾 Agricultural Water Reserve</span>
+                <span class="app-tag">🏭 Industrial Fluid Tank</span>
+                <span class="app-tag">📊 Blynk History Graph</span>
+                <span class="app-tag">🌡️ Float Valve Auto-Refill</span>
+                <span class="app-tag">📲 Telegram Level Alerts</span>
+                <span class="app-tag">☀️ Solar Pump Auto-Control</span>
+                <span class="app-tag">💧 Dual-Tank Monitoring</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $22</li>
+                <li><strong>Build Time:</strong> 3 – 4 hours</li>
+                <li><strong>Platform:</strong> ESP8266</li>
+                <li><strong>Update Interval:</strong> 30 s to Blynk</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>HC-SR04 median filtered sensing</li>
+                <li>Blynk 2.0 virtual pins + gauge</li>
+                <li>Telegram bot HTTP POST alerts</li>
+                <li>ArduinoOTA wireless updates</li>
+                <li>Fail-safe alert rate limiting</li>
+                <li>Wi-Fi auto-reconnect logic</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Blynk (Blynk.cc)</span><span class="lib-desc"> — ESP8266 Blynk 2.0 client; virtual pin writes</span></li>
+                <li><span class="lib-name">ESP8266WiFi (built-in)</span><span class="lib-desc"> — Wi-Fi connection + WiFiClientSecure for HTTPS</span></li>
+                <li><span class="lib-name">ArduinoOTA (built-in)</span><span class="lib-desc"> — Over-the-air firmware update for enclosed unit</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="iot-flood-sensor-alert.html">IoT Flood Sensor Alert</a></li>
+                <li><a href="smart-greenhouse-ml-climate.html">Smart Greenhouse</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let pct=65, dir=1, t=0;
+    setInterval(()=>{
+      t++;
+      pct += dir * 0.3 + (Math.random()-0.5)*0.2;
+      if(pct >= 92) dir=-1;
+      if(pct <= 12) dir=1;
+      pct = Math.max(10, Math.min(95, pct));
+      const p = Math.round(pct);
+      document.getElementById('tankWater').style.height = p+'%';
+      document.getElementById('tankPct').textContent = p+'%';
+      document.getElementById('gaugeText').textContent = p+'%';
+      // gauge arc: total arc = ~220deg -> dasharray=110, offset=110*(1-pct/100)*...
+      const dash = 110; const offset = dash*(1 - p/100);
+      document.getElementById('gaugePath').setAttribute('stroke-dashoffset', offset.toFixed(1));
+      const tg = document.getElementById('tgAlert');
+      if(p < 20) { tg.textContent='🔔 Telegram: LOW LEVEL ALERT!'; tg.style.borderColor='#aa4400'; tg.style.color='#ff8040'; tg.style.background='#1a0800'; }
+      else { tg.textContent='☁️ Blynk live update'; tg.style.borderColor='#004040'; tg.style.color='#008080'; tg.style.background='#001010'; }
+    }, 300);
+  </script>
+</body>
+</html>

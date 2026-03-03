@@ -1,0 +1,278 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Bicycle Speedometer – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a bicycle speedometer with Hall effect sensor and Arduino. Measure speed, distance, cadence, trip time, and max speed on an LCD display." />
+  <meta name="keywords" content="bicycle speedometer Arduino, Hall effect sensor speed meter, bike odometer Arduino, cycling computer DIY, speed sensor Arduino" />
+  <link rel="canonical" href="smart-bicycle-speedometer.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#00060a 0%,#00101a 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .wheel-wrap{position:relative;width:90px;height:90px;}
+    .wheel-svg{animation:spin 1s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .lcd-mock{background:#0a2a00;border:2px solid #2a6a00;border-radius:6px;padding:10px 16px;font-family:'Courier New',monospace;font-size:14px;color:#a0ff40;line-height:1.6;min-width:220px;text-align:left;}
+    .mode-btns{display:flex;gap:8px;}
+    .mode-btn{background:#1a3a0a;border:1px solid #3a6a1a;border-radius:4px;color:#a0ff40;font-size:11px;padding:3px 10px;cursor:pointer;transition:background 0.2s;}
+    .mode-btn.active{background:#2a5a0a;color:#fff;}
+    .magnet-dot{width:12px;height:12px;border-radius:50%;background:#ff4040;box-shadow:0 0 6px #ff4040;position:absolute;/*set by JS*/}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                </div>
+                <div class="lcd-mock" id="lcdDisplay">
+                  <div id="lcdRow1">SPD: 24.3 km/h  </div>
+                  <div id="lcdRow2">DST: 12.45 km   </div>
+                </div>
+                <div class="mode-btns">
+                  <button class="mode-btn active" id="btn0" onclick="setMode(0)">Speed</button>
+                  <button class="mode-btn" id="btn1" onclick="setMode(1)">Distance</button>
+                  <button class="mode-btn" id="btn2" onclick="setMode(2)">Stats</button>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+bicycle+speedometer+Hall+effect+sensor+LCD" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>A bicycle speedometer is a classic beginner-to-intermediate project that teaches interrupt-driven programming, real-world physics (circumference-to-speed math), odometer accumulation, and display multiplexing — all on a simple 16×2 LCD. The principle is identical to commercial cycling computers: a small magnet on one spoke passes a Hall effect sensor mounted on the fork once per wheel revolution, generating a clean digital pulse.</p>
+              <p>The Arduino measures the time between pulses to calculate rotation period, then uses wheel circumference to determine speed in km/h. An ISR-driven volatile counter accumulates total revolutions to compute distance. Three buttons cycle through display pages: (1) current speed, (2) trip distance and odometer, (3) max speed, average speed, and trip time — giving you a complete cycling computer for under $10.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Nano</span><span class="comp-note"> — Compact form factor ideal for handlebar mounting</span></div></li>
+                <li><span class="comp-icon">🧲</span><div><span class="comp-name">A3144 Hall Effect Sensor</span><span class="comp-note"> — Digital output; pulls LOW when neodymium magnet passes</span></div></li>
+                <li><span class="comp-icon">🔵</span><div><span class="comp-name">Neodymium Disc Magnet (8×2 mm)</span><span class="comp-note"> — Cable-tied to one spoke, facing sensor</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">16×2 LCD with I2C Backpack</span><span class="comp-note"> — Speed, distance, and stats display</span></div></li>
+                <li><span class="comp-icon">🔘</span><div><span class="comp-name">3× Tactile Buttons</span><span class="comp-note"> — Mode cycle, reset trip, backlight toggle</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">18650 Li-Ion Cell + TP4056 BMS</span><span class="comp-note"> — Compact rechargeable power supply</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Configure the Hall Sensor on an Interrupt Pin</h4><p>Connect A3144 signal to Arduino D2 (INT0). Call <code>attachInterrupt(digitalPinToInterrupt(2), onPulse, FALLING)</code>. In the ISR, record <code>pulseTime = millis()</code> and increment <code>volatile unsigned long revCount</code> and set a <code>volatile bool newPulse = true</code> flag for the main loop.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Calculate Speed from Pulse Period</h4><p>In the main loop, when <code>newPulse</code> is true, compute: <code>period = pulseTime - lastPulseTime</code>. Speed in km/h = <code>(CIRCUMFERENCE_MM / period) × 3600.0 / 1000000.0</code> where CIRCUMFERENCE_MM = π × wheel_diameter_mm (typical 700C road ≈ 2098 mm, 26″ MTB ≈ 2090 mm). Set speed to 0 if no pulse within 3 seconds (bike stopped).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Odometer and Trip Distance</h4><p>Each revolution increment: <code>tripDist_m += CIRCUMFERENCE_MM / 1000.0</code>. Total odometer stored in EEPROM as a float. Read on boot: <code>EEPROM.get(0, odometerKm)</code>. Write back every 100 m change to avoid excessive EEPROM wear (300,000 write endurance). Speed averaging: running sum over last 10 readings with circular buffer.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Button Mode Cycling and Display</h4><p>Three modes via <code>displayMode 0/1/2</code>: Mode 0 — "SPD: xx.x km/h" + spin bar. Mode 1 — "DST: xx.xx km" + "ODO: xxxx.x km". Mode 2 — "MAX: xx km/h" + "AVG: xx.x T:xx:xx". Long-press mode-button for 2 s resets trip (distance + max speed + timer). Backlight button toggles LCD backlight to save battery.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;LiquidCrystal_I2C.h&gt;
+#include &lt;EEPROM.h&gt;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+const float CIRC_MM = 2098.0; // 700C road tyre
+volatile unsigned long lastPulse = 0, period = 0;
+volatile unsigned long revCount = 0;
+volatile bool newPulse = false;
+float maxSpeed = 0, tripDist = 0, odometerKm = 0;
+unsigned long tripStart = 0;
+int displayMode = 0;
+
+void onPulse() {
+  unsigned long now = millis();
+  period = now - lastPulse;
+  lastPulse = now;
+  revCount++;
+  tripDist += CIRC_MM / 1000000.0; // convert mm to km
+  newPulse = true;
+}
+
+void setup() {
+  attachInterrupt(digitalPinToInterrupt(2), onPulse, FALLING);
+  lcd.init(); lcd.backlight();
+  EEPROM.get(0, odometerKm);
+  tripStart = millis();
+}
+
+void loop() {
+  float speed = 0;
+  if (millis() - lastPulse > 3000) {
+    speed = 0; // stopped
+  } else if (period > 0) {
+    speed = (CIRC_MM / (float)period) * 3600.0 / 1000.0; // km/h
+  }
+  if (speed > maxSpeed) maxSpeed = speed;
+
+  switch(displayMode) {
+    case 0:
+      lcd.setCursor(0,0); lcd.print("SPD: " + String(speed, 1) + " km/h    ");
+      lcd.setCursor(0,1); lcd.print("REV: " + String(revCount) + "        ");
+      break;
+    case 1:
+      lcd.setCursor(0,0); lcd.print("TRIP: " + String(tripDist, 2) + " km    ");
+      lcd.setCursor(0,1); lcd.print("ODO: " + String(odometerKm + tripDist, 1));
+      break;
+    case 2:
+      lcd.setCursor(0,0); lcd.print("MAX:" + String(maxSpeed,1) + " km/h    ");
+      unsigned long t = (millis()-tripStart)/1000;
+      lcd.setCursor(0,1); lcd.print("T:" + String(t/3600) + "h" + String((t%3600)/60) + "m");
+      break;
+  }
+  delay(200);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🚴 Personal Cycling Tracker</span>
+                <span class="app-tag">🏋️ Exercise Stationary Bike</span>
+                <span class="app-tag">🛴 e-Scooter Speedometer</span>
+                <span class="app-tag">🏎️ Go-Kart Speed Monitor</span>
+                <span class="app-tag">📡 GPS Speed Comparison</span>
+                <span class="app-tag">🎮 Toy Robot Speed Sensor</span>
+                <span class="app-tag">📱 Bluetooth App Logging</span>
+                <span class="app-tag">🌡️ Add Weather (BME280)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $8 – $18</li>
+                <li><strong>Build Time:</strong> 3 – 5 hours</li>
+                <li><strong>Platform:</strong> Arduino Nano</li>
+                <li><strong>Speed Range:</strong> 0 – 80+ km/h</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Hardware interrupt ISR design</li>
+                <li>Circumference → speed math</li>
+                <li>Volatile variable synchronization</li>
+                <li>EEPROM for persistent odometer</li>
+                <li>Multi-mode display management</li>
+                <li>Battery life optimisation</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — LCD display driver</span></li>
+                <li><span class="lib-name">EEPROM (built-in)</span><span class="lib-desc"> — Persistent odometer counter</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="gps-vehicle-tracker.html">GPS Vehicle Tracker</a></li>
+                <li><a href="ntp-smart-wall-clock.html">NTP Smart Wall Clock</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let angle = 0;
+    let rpm = 120; // default spinning speed
+    let modeNow = 0;
+    let speed = 24.3, dist = 12.45, maxSp = 31.2, tripT = 0, avgSp = 19.8;
+
+    function setMode(m) {
+      modeNow = m;
+      ['btn0','btn1','btn2'].forEach((id,i) => document.getElementById(id).classList.toggle('active', i===m));
+    }
+
+    function updateDisplay() {
+      let r1, r2;
+      tripT++;
+      speed = 18 + Math.sin(tripT * 0.07) * 8 + (Math.random()-0.5)*1.5;
+      dist += speed / 3600;
+      if(speed > maxSp) maxSp = speed;
+      rpm = speed * 1000 / 2098 * 60; // rev/min
+      if(modeNow === 0) {
+        r1 = 'SPD: ' + speed.toFixed(1) + ' km/h  ';
+        r2 = 'MAX: ' + maxSp.toFixed(1) + ' km/h  ';
+      } else if(modeNow === 1) {
+        r1 = 'TRIP: ' + dist.toFixed(2) + ' km  ';
+        r2 = 'ODO: 1247.3 km  ';
+      } else {
+        let mins = Math.floor(tripT/60), secs = tripT % 60;
+        r1 = 'MAX:' + maxSp.toFixed(1) + ' km/h  ';
+        r2 = 'T:0h' + mins + 'm' + secs + 's  ';
+      }
+      document.getElementById('lcdRow1').textContent = r1;
+      document.getElementById('lcdRow2').textContent = r2;
+
+      // spin wheel - speed proportional
+      let degPerFrame = rpm / 60 * 360 / 30; // 30 fps
+      angle = (angle + degPerFrame) % 360;
+      let rad = (angle - 90) * Math.PI / 180;
+      let cx = 45 + 40 * Math.cos(rad);
+      let cy = 45 + 40 * Math.sin(rad);
+      document.getElementById('magPt').setAttribute('cx', cx.toFixed(1));
+      document.getElementById('magPt').setAttribute('cy', cy.toFixed(1));
+      document.getElementById('wheelSvg').style.animationDuration = (60/Math.max(rpm,1)).toFixed(2) + 's';
+    }
+    setInterval(updateDisplay, 1000/30);
+  </script>
+</body>
+</html>

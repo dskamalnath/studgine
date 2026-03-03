@@ -1,0 +1,220 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swarm Robotics Platform – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a 3-robot swarm using Arduino Nano and nRF24L01 radio for formation movement, cooperative pushing, and leader-follower behaviours." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050808 0%,#08080a 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .swarm-arena{width:130px;height:100px;border:2px solid #1a2a1a;border-radius:6px;background:#060c06;position:relative;}
+    .s-robot{width:14px;height:14px;border-radius:50%;border:2px solid #00ff80;background:#002200;position:absolute;transition:all 0.5s;}
+    .swarm-log{font-family:monospace;font-size:9px;color:#40c060;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Swarm Robotics Platform</h1>
+      <p>Three Arduino Nano robots communicate over nRF24L01 radio to perform formation movement, cooperative object pushing, and leader-follower behaviours — exploring emergent collective intelligence.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Swarm Robotics Platform</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                  <div style="font-family:monospace;font-size:7px;color:#204020;">SWARM ARENA</div>
+                  <div class="swarm-arena">
+                    <div class="s-robot" id="sr0" style="background:#004400;border-color:#00ff80;top:40px;left:55px;"></div>
+                    <div class="s-robot" id="sr1" style="background:#002200;border-color:#40ff80;top:20px;left:35px;width:12px;height:12px;"></div>
+                    <div class="s-robot" id="sr2" style="background:#002200;border-color:#40ff80;top:60px;left:35px;width:12px;height:12px;"></div>
+                  </div>
+                  <div style="font-family:monospace;font-size:7px;color:#40a060;"><span style="color:#00ff80;">●</span> Leader <span style="color:#40ff80;">●</span> Follower</div>
+                </div>
+                <div class="swarm-log">
+                  <div>MODE: <span id="swarmMode">FORMATION</span></div>
+                  <div>R0 (Leader): <span id="sr0pos">OK</span></div>
+                  <div>R1: <span id="sr1pos">FOLLOWING</span></div>
+                  <div>R2: <span id="sr2pos">FOLLOWING</span></div>
+                  <div>RADIO: <span id="swarmRadio" style="color:#00ff80;">nRF24 OK</span></div>
+                  <div>LATENCY: <span id="swarmLat">8ms</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=swarm+robotics+arduino+nrf24l01+leader+follower" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Swarm robotics studies how simple individual robots following local rules can produce complex collective behaviour — like ant colonies or bird flocking. This project builds the minimum viable swarm: 3 Arduino Nano robots, each with an nRF24L01 2.4GHz radio, two DC motors, and IR sensors. Each robot broadcasts its position estimate and receives peers' positions every 20ms.</p>
+              <p>Behaviours implemented: <strong>leader-follower</strong> (two robots maintain a fixed offset behind a manual-controlled leader), <strong>triangle formation</strong> (robots self-organise into an equilateral triangle), and <strong>flocking</strong> (Reynolds rules: separation, alignment, cohesion). Emergent collective behaviour from simple rules is the core insight.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">3× Arduino Nano (or Nano 33 BLE)</span><span class="comp-note"> — One per robot; Nano 33 BLE adds built-in IMU for heading estimation</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">3× nRF24L01+ with PA+LNA</span><span class="comp-note"> — 2.4GHz; 250 kbps mode for reliability; PA+LNA version extends range to 100m; 3.3V logic</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">3× L9110 Motor Driver + 2× N20 Motors</span><span class="comp-note"> — L9110 is tiny (DIP-8); fits on small robot chassis; 800mA per channel</span></div></li>
+                <li><span class="comp-icon">👁️</span><div><span class="comp-name">3× TCRT5000 IR Sensors</span><span class="comp-note"> — Detect other robots for proximity-based separation rule; also useful for floor edge detection</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">3× 18650 Li-ion + TP4056 Charger</span><span class="comp-note"> — Per robot; 3.7V direct to motors via L9110; MT3608 boost to 5V for Arduino</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>nRF24L01 Mesh Communication</h4><p>Each robot has a unique address (pipe). Robot 0 (leader) broadcasts its position struct every 20ms on pipe 0. Robots 1 and 2 listen on pipe 0 and also broadcast on their own pipes. Use RF24 library in <code>RF24_PA_LOW</code> power mode initially for lab testing. Channel 108 (above WiFi range). Packet: <code>struct Msg { uint8_t id; float x, y, heading; }</code> — 14 bytes at 250kbps takes ~450µs to transmit.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Position Estimation</h4><p>Without GPS, use wheel odometry: encoder-counted wheel rotations → dead reckoning. <code>x += cos(heading)*dist; y += sin(heading)*dist</code>. Drift accumulates over time, but for short-range formation tasks (arena &lt;2m) it's sufficient. Optional: use a fixed camera overhead (OpenCV + ArUco markers on each robot) to provide ground-truth position over Bluetooth to demonstrate the gap between odometry and ground truth.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Leader-Follower Control Law</h4><p>Follower target = leader position + offset vector (distance d at angle α relative to leader heading). Compute error: <code>angle_err = atan2(target.y - my.y, target.x - my.x) - my_heading</code>. Turn PID on angle_err. Drive speed proportional to distance_err. Separation: if distance to any other robot &lt; min_sep (15cm), override with repulsion: steer away. This prevents collisions in tight formations.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Behaviour Selection</h4><p>Use a pushbutton (or Bluetooth command from phone) to cycle between: LEADER-FOLLOW, FORMATION, FLOCK, DISPERSE. Each mode changes the target computation but the underlying PID motor control is the same. FLOCKING uses Reynolds rules: separation force (repel if &lt;10cm), alignment force (match average heading), cohesion force (move toward centroid of visible peers). Weighted sum of forces → target heading.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;RF24.h&gt;
+RF24 radio(9, 10); // CE, CSN
+
+struct RobotState { uint8_t id; float x, y, heading; };
+RobotState my_state, peers[3];
+const byte pipes[3][6] = {"0Node","1Node","2Node"};
+const uint8_t MY_ID = 0; // change per robot
+
+void setup() {
+  radio.begin(); radio.setDataRate(RF24_250KBPS);
+  radio.openWritingPipe(pipes[MY_ID]);
+  for(int i=0;i<3;i++) if(i!=MY_ID) radio.openReadingPipe(i+1, pipes[i]);
+  radio.startListening();
+}
+
+void broadcastState() {
+  radio.stopListening();
+  radio.write(&my_state, sizeof(my_state));
+  radio.startListening();
+}
+
+void receiveAll() {
+  uint8_t pipe;
+  while(radio.available(&pipe)) {
+    RobotState msg;
+    radio.read(&msg, sizeof(msg));
+    if(msg.id < 3) peers[msg.id] = msg;
+  }
+}
+
+float leaderFollowerTarget(uint8_t follow_id, float offset_d, float offset_a) {
+  float tx = peers[follow_id].x + offset_d * cos(peers[follow_id].heading + offset_a);
+  float ty = peers[follow_id].y + offset_d * sin(peers[follow_id].heading + offset_a);
+  return atan2(ty - my_state.y, tx - my_state.x);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📷 Overhead Camera Tracking</span>
+                <span class="app-tag">🔢 Reynolds Flocking Rules</span>
+                <span class="app-tag">🗺️ Cooperative Mapping</span>
+                <span class="app-tag">📦 Object Transport</span>
+                <span class="app-tag">📡 Mesh Network 5+ Robots</span>
+                <span class="app-tag">🤖 ROS2 Swarm Integration</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $100</li><li><strong>Build Time:</strong> 10 – 15 hours</li><li><strong>Platform:</strong> 3× Arduino Nano</li><li><strong>Radio:</strong> nRF24L01 @ 250kbps</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>nRF24L01 multi-node mesh radio</li><li>Leader-follower control laws</li><li>Reynolds flocking rules</li><li>Wheel odometry dead reckoning</li><li>Behaviour selection architecture</li><li>Swarm emergence principles</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">RF24</span><span class="lib-desc"> — nRF24L01 radio communication</span></li><li><span class="lib-name">RF24Network</span><span class="lib-desc"> — Multi-hop mesh routing layer</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const modes=['FORMATION','LEADER-FOLLOW','FLOCKING','DISPERSE'];
+    let t=0,modeIdx=0;
+    const formations=[[{x:55,y:40},{x:35,y:20},{x:35,y:60}],[{x:55,y:40},{x:30,y:40},{x:20,y:40}],[{x:55,y:40},{x:40,y:25},{x:40,y:55}]];
+    setInterval(()=>{
+      t++;
+      if(t%12===0){modeIdx=(modeIdx+1)%modes.length;}
+      document.getElementById('swarmMode').textContent=modes[modeIdx];
+      const fi=modeIdx%formations.length;
+      const jitter=()=>(-3+Math.random()*6);
+      const pos=formations[fi];
+      document.getElementById('sr0').style.left=(pos[0].x+jitter())+'px';
+      document.getElementById('sr0').style.top=(pos[0].y+jitter())+'px';
+      document.getElementById('sr1').style.left=(pos[1].x+jitter())+'px';
+      document.getElementById('sr1').style.top=(pos[1].y+jitter())+'px';
+      document.getElementById('sr2').style.left=(pos[2].x+jitter())+'px';
+      document.getElementById('sr2').style.top=(pos[2].y+jitter())+'px';
+      document.getElementById('swarmLat').textContent=(6+Math.floor(Math.random()*6))+'ms';
+    },500);
+  </script>
+</body>
+</html>

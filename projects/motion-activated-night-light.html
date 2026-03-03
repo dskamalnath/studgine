@@ -1,0 +1,195 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motion-Activated Night Light – Studgine</title>
+  <meta name="description" content="A PIR sensor wakes LEDs when someone enters a dark room and auto-shuts them off after 10 seconds. Learn PIR, LDR, and millis() timing." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:18px; padding:20px; height:120px; position:relative; }
+    .room-bg { position:absolute; inset:0; border-radius:8px; background:#0f172a; animation:room-light 6s ease-in-out infinite; }
+    @keyframes room-light { 0%,30%{background:#0f172a} 40%,80%{background:#1e3a5f} 90%,100%{background:#0f172a} }
+    .pir-sensor { width:36px; height:36px; background:linear-gradient(135deg,#854d0e,#92400e); border-radius:50% 50% 8px 8px; display:flex; align-items:center; justify-content:center; color:#fde68a; font-size:.55rem; font-weight:700; position:relative; z-index:2; }
+    .person { font-size:1.8rem; position:relative; z-index:2; animation:walk-in 6s ease-in-out infinite; }
+    @keyframes walk-in { 0%{transform:translateX(60px);opacity:0} 25%{transform:translateX(0px);opacity:1} 80%{transform:translateX(0px);opacity:1} 100%{transform:translateX(-20px);opacity:0} }
+    .led-group { display:flex; gap:5px; position:relative; z-index:2; }
+    .nl { width:14px; height:14px; border-radius:50%; background:#1e293b; transition:all .5s; animation:led-night 6s ease-in-out infinite; }
+    .nl:nth-child(2){animation-delay:.1s}
+    .nl:nth-child(3){animation-delay:.2s}
+    @keyframes led-night { 0%,30%{background:#1e293b;box-shadow:none} 40%,80%{background:#fbbf24;box-shadow:0 0 10px rgba(251,191,36,.8)} 90%,100%{background:#1e293b;box-shadow:none} }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Motion-Activated Night Light</h1>
+      <p class="hero-sub">A PIR sensor wakes your LEDs the moment someone enters a dark room — the LDR ensures lights only fire at night — then they auto-shut after 10 seconds.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Motion-Activated Night Light</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="room-bg"></div>
+          <div class="pir-sensor">PIR</div>
+          <div class="person">🚶</div>
+          <div class="led-group">
+            <div class="nl"></div>
+            <div class="nl"></div>
+            <div class="nl"></div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Dark + motion detected → LEDs on → 10 s auto-off</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+motion+activated+night+light+PIR+LDR" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>This project combines two sensing techniques: a <strong>PIR (Passive Infrared) sensor</strong> that detects changes in the IR heat signature of moving objects, and an <strong>LDR</strong> that measures ambient light level. By requiring BOTH conditions — darkness AND motion — you build the same energy-saving logic used in hallway lights, bathroom sensors, and outdoor floodlights worldwide.</p>
+        <p>The key coding skill is the <strong>non-blocking timer</strong> using <code>millis()</code>. Using <code>delay(10000)</code> would freeze your entire sketch. Instead, record when the motion last happened with <code>lastMotionTime = millis()</code>, then check <code>if (millis() - lastMotionTime > 10000) turnOff();</code> in every loop iteration — execution never stops.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">👁️</span><div><span class="comp-name">HC-SR501 PIR Sensor Module</span><span class="comp-note">Motion detection</span></div></li>
+          <li><span class="comp-icon">☀️</span><div><span class="comp-name">LDR + 10 kΩ resistor</span><span class="comp-note">Ambient light sensing</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">3× White/Warm LEDs + 220 Ω resistors</span><span class="comp-note">Night light output</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire the sensors</strong> — HC-SR501: VCC → 5 V, GND → GND, OUT → D2. Turn the sensitivity and time-delay potentiometers fully counterclockwise (minimum). LDR voltage divider: 5 V → 10 kΩ → A0 → LDR → GND. LEDs in parallel from D9 via 220 Ω to GND.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Check light level</strong> — <code>int ldrVal = analogRead(A0);</code>. LDR reads low (~50–150) in a bright room and high (~750–950) in darkness. Set <code>const int DARK_THRESHOLD = 500;</code>. Only proceed to check PIR if <code>ldrVal &gt; DARK_THRESHOLD</code>.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Motion trigger</strong> — <code>if (digitalRead(PIR_PIN) == HIGH) &#123; lastMotionTime = millis(); if (!lightsOn) &#123; digitalWrite(LED_PIN, HIGH); lightsOn = true; &#125; &#125;</code>. Each new motion resets the 10-second timer.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Auto-off timer</strong> — In every <code>loop()</code> pass: <code>if (lightsOn &amp;&amp; (millis() - lastMotionTime &gt; 10000UL)) &#123; digitalWrite(LED_PIN, LOW); lightsOn = false; &#125;</code>. Because no <code>delay()</code> is used, the PIR continues to be polled every loop cycle — motion during the countdown resets the timer seamlessly.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🚶 Hallway/staircase light</span>
+          <span class="app-tag">🛁 Bathroom night light</span>
+          <span class="app-tag">🏡 Garden pathway lighting</span>
+          <span class="app-tag">🔋 Battery-saving IoT sensor</span>
+          <span class="app-tag">📸 Security camera trigger</span>
+          <span class="app-tag">⏱️ Presence-tracking system</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $12</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1.5 – 2.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Sensors</span><span>PIR + LDR</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">PIR motion sensing</span></li>
+            <li><span class="skill-tag">LDR light threshold</span></li>
+            <li><span class="skill-tag">millis() auto-off timer</span></li>
+            <li><span class="skill-tag">Multi-condition logic</span></li>
+            <li><span class="skill-tag">Non-blocking code pattern</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;">None — built-in Arduino functions only.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="pir-intruder-alarm.html" class="skill-tag">PIR Intruder Alarm</a></li>
+            <li><a href="ldr-auto-street-light.html" class="skill-tag">LDR Auto Street Light</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

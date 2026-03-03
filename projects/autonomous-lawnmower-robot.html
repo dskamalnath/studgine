@@ -1,0 +1,220 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomous Lawnmower Robot – Advanced Project | Studgine</title>
+  <meta name="description" content="A GPS-guided Raspberry Pi robot mows a pre-mapped lawn boundary with ultrasonic collision avoidance, rain detection, and auto-dock charging." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#020a02;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .mow-info{font-family:monospace;font-size:9px;color:#44ff88;display:flex;flex-direction:column;gap:3px;}
+    .stat-bar{width:60px;height:5px;background:#001400;border-radius:2px;overflow:hidden;}
+    .stat-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Autonomous Lawnmower Robot</h1>
+      <p>A GPS-guided Raspberry Pi robot navigates a pre-mapped lawn boundary using RTK-GNSS waypoints, 5× ultrasonic collision avoidance sensors, a rain detector for auto-dock return, and a brushless cutting motor — a full autonomous outdoor robotics engineering challenge with real utility.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Autonomous Lawnmower Robot</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="mowCanvas" width="140" height="110"></canvas>
+                <div class="mow-info">
+                  <div>GPS X: <span id="mowX">4.21</span>m</div>
+                  <div>GPS Y: <span id="mowY">3.56</span>m</div>
+                  <div>HEADING: <span id="mowHead">87</span>°</div>
+                  <div style="margin-top:3px;">SENSORS</div>
+                  <div>FRONT: <span id="mowFront">1.2</span>m</div>
+                  <div>RAIN: <span id="mowRain" style="color:#00ff88;">DRY ✓</span></div>
+                  <div>BATTERY:<div class="stat-bar"><div class="stat-fill" id="mowBatt" style="width:75%;background:#44ff44;"></div></div></div>
+                  <div>COVERAGE<div class="stat-bar"><div class="stat-fill" id="mowCov" style="width:62%;background:#44aaff;"></div></div></div>
+                  <div style="color:#00ff88;margin-top:2px;">MOWING...</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Raspberry+Pi+autonomous+lawnmower+GPS+robot+outdoor+navigation" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Robotic lawnmowers represent a £2B+ market dominated by Husqvarna Automower and Bosch Indego. This DIY version demonstrates all the core engineering: GPS waypoint navigation, obstacle avoidance, boundary enforcement (virtual perimeter wire or GPS polygon), and intelligent behaviours (low battery → dock, rain → dock). Built on a differential-drive robot chassis with two 100W brushed DC motors and a brushless cutting deck, controlled by a Raspberry Pi 4 with GPS module, 5× HC-SR04 range sensors, IMU compass, and a rain sensor. Coverage algorithm: boustrophedon (back-and-forth stripes).</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🛞</span><div><span class="comp-name">Differential Drive Chassis + 2× 100W DC Motors</span><span class="comp-note"> — Steel outdoor chassis; rubber wheels; L298N H-bridge or BTS7960 motor driver; 12V 18Ah SLA battery</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">U-blox NEO-M8N GPS Module</span><span class="comp-note"> — 2.5m CEP accuracy; 10Hz update rate; NMEA UART; optional RTK for 2cm accuracy with base station</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 + Arduino Mega</span><span class="comp-note"> — Pi runs navigation + state machine; Arduino handles motor PWM + sensor polling at 50Hz; UART bridge</span></div></li>
+                <li><span class="comp-icon">🌿</span><div><span class="comp-name">Brushless Cutting Deck + ESC</span><span class="comp-note"> — 30cm aluminium blade disc; 1400KV 2826 brushless motor; 30A ESC; emergency blade-stop relay GPIO</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>GPS Boundary Mapping + Waypoint Generation</h4><p>Walk the lawn perimeter once with GPS logger to record polygon vertices. Save as GeoJSON. Compute boustrophedon coverage path inside polygon: generate parallel stripes spaced 25cm (cutting width) apart using Shapely: <code>from shapely.geometry import Polygon; path = shapely_boustrophedon(lawn_polygon, stripe_width=0.25)</code>. Store waypoints list. At runtime, navigate to each waypoint in sequence: heading error → PD controller → differential drive.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>GPS Navigation PD Controller</h4><p>Current GPS position + IMU heading. Compute bearing to next waypoint: <code>bearing = atan2(sin(Δlon)*cos(lat2), cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(Δlon))</code>. Heading error: <code>err = bearing - current_heading</code>. PD controller: <code>turn = Kp*err + Kd*(err-prev_err)</code>. Motor commands: <code>left_pwm = base_speed - turn; right_pwm = base_speed + turn</code>. Waypoint reached when distance &lt; 0.15m. Advance to next waypoint.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Obstacle Avoidance + Safety</h4><p>5× HC-SR04 sonar (front, 45°L, 45°R, rear-L, rear-R) polled at 50Hz by Arduino. Emergency stop: any forward sensor &lt; 20cm. Avoidance: back up 30cm, rotate 90°, re-plan path. Blade-stop relay on any sonar &lt; 10cm (safety for pets/children). Rain sensor: <code>if rain_digital_pin == HIGH: blade_stop(); dock_return()</code>. Tilt sensor (MPU-6050): stop blade if pitch &gt;20° (lifted). Battery voltage divider → ADC → auto-dock when &lt; 11.5V.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Auto-Dock Return + Charging</h4><p>Dock location stored as GPS coordinate. When docking triggered (battery/rain/schedule): navigate to dock GPS point. Final approach: use IR beacon homing — dock transmits 38kHz IR, robot has front IR receiver, steers toward signal. Dock: slide onto spring-loaded charging contacts (12V 2A). Log session: area covered (m²), mowing time, battery usage, obstacles encountered. Send MQTT status message to home automation (Home Assistant, Node-RED).</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import math, serial, time
+from gps import *
+
+def haversine(lat1,lon1,lat2,lon2):
+    R=6371000
+    φ1,φ2=math.radians(lat1),math.radians(lat2)
+    Δφ=math.radians(lat2-lat1); Δλ=math.radians(lon2-lon1)
+    a=math.sin(Δφ/2)**2+math.cos(φ1)*math.cos(φ2)*math.sin(Δλ/2)**2
+    return R*2*math.atan2(math.sqrt(a),math.sqrt(1-a))
+
+def bearing_to(lat1,lon1,lat2,lon2):
+    Δlon=math.radians(lon2-lon1)
+    lat1,lat2=math.radians(lat1),math.radians(lat2)
+    x=math.sin(Δlon)*math.cos(lat2)
+    y=math.cos(lat1)*math.sin(lat2)-math.sin(lat1)*math.cos(lat2)*math.cos(Δlon)
+    return math.degrees(math.atan2(x,y))
+
+Kp, Kd = 1.5, 0.3
+BASE_SPEED = 60  # PWM 0-255
+arduino = serial.Serial('/dev/ttyACM0', 115200)
+gpsd = gps(mode=WATCH_ENABLE)
+
+def navigate_to(target_lat, target_lon):
+    prev_err = 0
+    while True:
+        gpsd.next(); report = gpsd.fix
+        dist = haversine(report.latitude, report.longitude, target_lat, target_lon)
+        if dist < 0.15: return  # waypoint reached
+        bearing = bearing_to(report.latitude, report.longitude, target_lat, target_lon)
+        heading = float(arduino.readline().split(b':')[1])  # compass
+        err = (bearing - heading + 180) % 360 - 180
+        turn = Kp*err + Kd*(err-prev_err); prev_err = err
+        l = int(max(0, min(255, BASE_SPEED - turn)))
+        r = int(max(0, min(255, BASE_SPEED + turn)))
+        arduino.write(f"M:{l},{r}\n".encode())</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📷 Camera Lawn Health Monitoring</span>
+                <span class="app-tag">🗺️ RTK GPS 2cm Accuracy</span>
+                <span class="app-tag">📅 Schedule + App Control</span>
+                <span class="app-tag">🐕 Pet Detection (CV)</span>
+                <span class="app-tag">☀️ Solar Panel Self-Charge</span>
+                <span class="app-tag">🌐 Multi-Zone Boundary Maps</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $80 – $150</li><li><strong>Build Time:</strong> 15 – 25 hours</li><li><strong>Coverage:</strong> ~200m²/hr</li><li><strong>Nav Accuracy:</strong> ±2.5m (GPS)</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>GPS NMEA parsing + haversine</li><li>Boustrophedon path planning</li><li>PD heading controller</li><li>Outdoor obstacle avoidance</li><li>Battery management + auto-dock</li><li>Arduino-Pi serial bridge</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">gpsd + gps (Python)</span><span class="lib-desc"> — GPS NMEA parsing</span></li><li><span class="lib-name">Shapely</span><span class="lib-desc"> — Coverage path planning</span></li><li><span class="lib-name">pyserial</span><span class="lib-desc"> — Arduino communication</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const mC=document.getElementById('mowCanvas');
+    const mCtx=mC.getContext('2d');
+    let mPhase=0,mX=20,mY=20,mDx=1.2,mDy=0.5;
+    const mowed=[];
+    function drawMow(){
+      mCtx.fillStyle='rgba(2,10,2,0.25)';mCtx.fillRect(0,0,140,110);
+      mCtx.strokeStyle='#225522';mCtx.lineWidth=1;
+      mCtx.strokeRect(10,10,120,90);
+      // Draw mowed trail
+      mCtx.strokeStyle='rgba(0,200,50,0.3)';mCtx.lineWidth=2;
+      if(mowed.length>1){mCtx.beginPath();mCtx.moveTo(mowed[0].x,mowed[0].y);mowed.forEach(p=>mCtx.lineTo(p.x,p.y));mCtx.stroke();}
+      mowed.push({x:mX,y:mY});if(mowed.length>120)mowed.shift();
+      // Boundary bounce
+      if(mX<=12||mX>=128){mDx*=-1;mY+=8;}
+      if(mY<=12||mY>=98){mDy*=-1;}
+      mX+=mDx*0.8;mY+=mDy*0.3;
+      // Robot
+      mCtx.fillStyle='#2a4a2a';mCtx.beginPath();mCtx.arc(mX,mY,7,0,Math.PI*2);mCtx.fill();
+      mCtx.fillStyle='#44ff44';mCtx.beginPath();mCtx.arc(mX,mY,3,0,Math.PI*2);mCtx.fill();
+      mPhase+=0.04;
+      document.getElementById('mowX').textContent=(mX/120*6).toFixed(2);
+      document.getElementById('mowY').textContent=(mY/90*5).toFixed(2);
+      document.getElementById('mowHead').textContent=Math.round(80+Math.atan2(mDy,mDx)*180/Math.PI);
+      document.getElementById('mowFront').textContent=(0.8+0.5*Math.abs(Math.sin(mPhase*2))).toFixed(1);
+      document.getElementById('mowCov').style.width=Math.min(95,50+mPhase/2)+'%';
+      setTimeout(drawMow,80);
+    }
+    drawMow();
+  </script>
+</body>
+</html>

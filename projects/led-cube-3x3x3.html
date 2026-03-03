@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LED Cube 3×3×3 – Studgine</title>
+  <meta name="description" content="Hand-solder 27 LEDs into a 3D cube and animate patterns via multiplexed layer scanning. A beautiful soldering and programming challenge that builds lasting circuit skills." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:140px; }
+    .cube-wrap { perspective:240px; }
+    .cube-3d { width:70px; height:70px; transform-style:preserve-3d; transform:rotateX(-25deg) rotateY(40deg); animation:cube-spin 10s linear infinite; }
+    @keyframes cube-spin { 100%{transform:rotateX(-25deg) rotateY(400deg);} }
+    .cube-layer { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; position:absolute; width:70px; }
+    .cube-layer.l0 { transform:translateZ(-30px); }
+    .cube-layer.l1 { transform:translateZ(0); }
+    .cube-layer.l2 { transform:translateZ(30px); }
+    .c-led { width:16px; height:16px; border-radius:50%; border:1.5px solid #374151; transition:background .15s, box-shadow .15s; }
+    .c-led.on { background:#fbbf24; box-shadow:0 0 6px #fbbf24; border-color:#d97706; }
+    .c-led.off { background:#1e293b; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>LED Cube 3×3×3</h1>
+      <p class="hero-sub">Hand-solder 27 LEDs into a 3D cube and animate patterns via multiplexed layer scanning. A beautiful soldering and programming challenge that builds lasting circuit skills.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>LED Cube 3×3×3</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="cube-wrap">
+            <div class="cube-3d" id="cube3d">
+              <div class="cube-layer l0" id="layer0"></div>
+              <div class="cube-layer l1" id="layer1"></div>
+              <div class="cube-layer l2" id="layer2"></div>
+            </div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Layer multiplexing → 3D pattern animations in a 3×3×3 voxel space</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+LED+cube+3x3x3+tutorial" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>A 3×3×3 LED cube is one of the most visually impressive beginner builds — 27 LEDs forming a transparent 3D lattice that can display animations like rain, propellers, spirals, and layer scans. It's also a fantastic soldering exercise and teaches you the <strong>layer-multiplexing technique</strong> used in larger LED matrices and display panels.</p>
+        <p>The cube needs only 12 Arduino pins despite having 27 LEDs: 9 column wires (3×3 grid, sharing cathodes per column) and 3 layer wires (one per horizontal plane, sharing anodes per layer). By rapidly cycling through layers at >50 Hz and enabling the right column pins for each, the human eye perceives all LEDs as simultaneously lit — that's the multiplexing principle.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">27× 5 mm LEDs</span><span class="comp-note">Any colour — amber or blue look great</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">9× 100 Ω resistors</span><span class="comp-note">One per column to limit current across 3 series LEDs</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">3× NPN transistors (2N2222)</span><span class="comp-note">Layer enable switches (each layer draws up to 270 mA)</span></div></li>
+          <li><span class="comp-icon">🪛</span><div><span class="comp-name">Soldering iron, solder, flux</span><span class="comp-note">For building the cube frame</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Stripboard / PCB base</span><span class="comp-note">Mounting the finished cube</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Build the cube structure</strong> — Bend all LED cathode (-) leads flat. Solder 9 LEDs into three 3×3 flat grids, connecting all cathodes in rows within each grid. Then stack and solder the three grids onto vertical anode (+) columns to form the cube. Each of the 9 vertical pillars shares one resistor-protected column wire. Each of the 3 horizontal layers shares one layer-enable wire to a transistor base.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Wire layers via transistors</strong> — Layer anode planes connect to collector of 2N2222. Emitters → GND. Arduino D10, D11, D12 → 1 kΩ → transistor bases. Column wires go directly to Arduino D2–D10 via 100 Ω. Driving a layer is: pull that transistor base HIGH, then set column pins LOW for the LEDs you want ON (active-low, cathodes pulled to GND through resistors).
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Layer multiplexing in code</strong> — Store cube state as a 3×9 byte array: <code>byte cube[3][9];</code>. In a fast ISR or tight loop, cycle through each layer: disable all layers, set 9 column pins according to <code>cube[layer][col]</code>, enable current layer transistor, <code>delayMicroseconds(500);</code>, then next layer. Refresh rate = 1/(3 × 500 µs) = ~667 Hz — well above the 50 Hz flicker threshold.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Create animations</strong> — Programme in the main loop using non-blocking millis() timers. Classic effects: layer sweep (enable one layer at a time, scan through), corner to corner blink, spiral outward, "rain" (random column, move top-to-bottom), propeller (rotate 3-LED line in XZ plane). Each effect simply updates the <code>cube[][]</code> array and the ISR renders it.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🎨 3D LED art display</span>
+          <span class="app-tag">🎵 Music-reactive light show</span>
+          <span class="app-tag">🕹️ 3D game space (Snake-3D)</span>
+          <span class="app-tag">🏫 Exhibition science project</span>
+          <span class="app-tag">🧊 Desk ornament trophy build</span>
+          <span class="app-tag">📡 Accelerometer-tilt visualiser</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner+</span></li>
+            <li class="fact-row"><span>Budget</span><span>$8 – $18</span></li>
+            <li class="fact-row"><span>Build Time</span><span>4 – 6 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>LEDs</span><span>27 (3×3×3)</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Layer multiplexing</span></li>
+            <li><span class="skill-tag">Transistor switching (NPN)</span></li>
+            <li><span class="skill-tag">3D coordinate addressing</span></li>
+            <li><span class="skill-tag">Soldering technique</span></li>
+            <li><span class="skill-tag">2D array data structures</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">No libraries needed</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="led-matrix-name-badge.html" class="skill-tag">8×8 LED Matrix Badge</a></li>
+            <li><a href="rgb-color-mixer.html" class="skill-tag">RGB Color Mixer</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    // Build LED divs
+    for (let l = 0; l < 3; l++) {
+      const layer = document.getElementById('layer' + l);
+      for (let i = 0; i < 9; i++) {
+        const d = document.createElement('div');
+        d.className = 'c-led off';
+        d.id = 'led-' + l + '-' + i;
+        layer.appendChild(d);
+      }
+    }
+    const patterns = [
+      // All on
+      [[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1]],
+      // Layer 0 only
+      [[1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0]],
+      // Layer 1 only
+      [[0,0,0,0,0,0,0,0,0],[1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0]],
+      // Layer 2 only
+      [[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0],[1,1,1,1,1,1,1,1,1]],
+      // Corners
+      [[1,0,1,0,0,0,1,0,1],[0,0,0,0,1,0,0,0,0],[1,0,1,0,0,0,1,0,1]],
+      // Spiral centre
+      [[0,1,0,1,1,1,0,1,0],[0,1,0,1,0,1,0,1,0],[0,1,0,1,1,1,0,1,0]],
+    ];
+    let pi = 0;
+    function showPattern(p) {
+      for (let l = 0; l < 3; l++)
+        for (let i = 0; i < 9; i++)
+          document.getElementById('led-' + l + '-' + i).className = 'c-led ' + (p[l][i] ? 'on' : 'off');
+    }
+    showPattern(patterns[0]);
+    setInterval(() => { pi = (pi + 1) % patterns.length; showPattern(patterns[pi]); }, 1500);
+  </script>
+</body>
+</html>

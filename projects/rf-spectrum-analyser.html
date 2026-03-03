@@ -1,0 +1,214 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RF Spectrum Analyser – Advanced Project | Studgine</title>
+  <meta name="description" content="A $25 RTL-SDR USB dongle feeds IQ samples to a Raspberry Pi running GNU Radio to visualise the 24–1766 MHz RF spectrum in real time." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#050005;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .rf-canvas-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .rf-info{font-family:monospace;font-size:9px;color:#cc44ff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>RF Spectrum Analyser</h1>
+      <p>A $25 RTL2832U RTL-SDR USB dongle feeds raw 8-bit IQ samples at up to 3.2 Msps to a Raspberry Pi running GNU Radio or pyrtlsdr to visualise the 24–1766 MHz RF spectrum in real time — a powerful tool for RF engineering, SDR exploration, and signal identification.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">RF Spectrum Analyser</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="rf-canvas-wrap">
+                  <canvas id="rfCanvas" width="150" height="80"></canvas>
+                  <div style="font-family:monospace;font-size:7px;color:#aa44ff;">FM BAND 88–108 MHz</div>
+                </div>
+                <div class="rf-info">
+                  <div>CF:   <span id="rfCf">98.0</span>MHz</div>
+                  <div>SPAN: <span id="rfSpan">20</span>MHz</div>
+                  <div>GAIN: <span id="rfGain">32.8</span>dB</div>
+                  <div>PEAK: <span id="rfPeak">-42</span>dBm</div>
+                  <div>RATE: <span id="rfRate">2.4</span>Msps</div>
+                  <div style="color:#00ff88;margin-top:2px;">RTL-SDR</div>
+                  <div>🔴 FM DETECTED</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=RTL-SDR+Raspberry+Pi+GNU+Radio+spectrum+analyser+pyrtlsdr" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Software Defined Radio (SDR) replaces analogue radio hardware with digital signal processing. The RTL2832U dongle (originally designed for DVB-T TV reception) exposes raw IQ samples via USB, enabling any frequency from 24 MHz to 1766 MHz to be received and processed in software. GNU Radio Companion provides a visual flow-graph IDE; pyrtlsdr enables direct Python control. This project builds a real-time spectrum display, FM radio demodulator, NOAA weather satellite decoder, and aircraft ADS-B receiver — all from one $25 dongle.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">RTL-SDR Blog V4 USB Dongle</span><span class="comp-note"> — RTL2832U + R828D tuner; 24–1766 MHz; 2.4 Msps stable; TCXO 1ppm clock; SMA antenna connector</span></div></li>
+                <li><span class="comp-icon">📻</span><div><span class="comp-name">Telescoping Antenna (SMA)</span><span class="comp-note"> — Omnidirectional; extend to quarter-wavelength for target band; 75cm = FM; 17cm = ADS-B 1090MHz</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — Ubuntu 22.04; GNU Radio 3.10; pyrtlsdr; matplotlib spectrum display; rtl_fm for audio</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">HDMI Monitor + Speakers</span><span class="comp-note"> — GNU Radio matplotlib display; FM audio via Pi 3.5mm jack; or headless with VNC remote display</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>RTL-SDR Setup + IQ Capture</h4><p>Install: <code>sudo apt install rtl-sdr python3-rtlsdr gnuradio</code>. Test: <code>rtl_test -t</code>. Python capture: <code>from rtlsdr import RtlSdr; sdr = RtlSdr()</code>. Set tuner: <code>sdr.sample_rate = 2.4e6; sdr.center_freq = 98e6; sdr.gain = 'auto'</code>. Capture IQ: <code>samples = sdr.read_samples(256*1024)</code> → complex64 numpy array. IQ = in-phase + quadrature components representing the analogue RF signal's amplitude and phase.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>FFT Spectrum Display</h4><p>Compute Power Spectral Density: <code>psd = np.abs(np.fft.fftshift(np.fft.fft(samples))) ** 2</code>. Convert to dBm: <code>psd_db = 10*np.log10(psd + 1e-10)</code>. Generate frequency axis: <code>freqs = np.fft.fftshift(np.fft.fftfreq(len(samples), 1/sdr.sample_rate)) + sdr.center_freq</code>. Plot with matplotlib: real-time update with <code>plt.ion(); plt.pause(0.01)</code>. For GNU Radio: use QT GUI Frequency Sink block for zero-code real-time waterfall + spectrum.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>FM Radio Demodulation</h4><p>WFM demodulation: low-pass filter IQ at ±75kHz bandwidth, downsample to 200kHz. Frequency discriminator: <code>demod = np.angle(samples[1:] * np.conj(samples[:-1]))</code>. De-emphasis filter (75µs): <code>scipy.signal.lfilter</code>. Resample to 48kHz audio. Play with sounddevice or pipe to aplay. GNU Radio equivalent: FM Receiver flowgraph (~6 blocks). Tune to local FM station for instant audio proof-of-concept.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Advanced Applications</h4><p>NOAA Weather Satellite: tune to 137.1/137.9 MHz, 56kHz bandwidth FM, decode APT audio to greyscale images with WXtoImg or apt-decoder. ADS-B aircraft: tune 1090MHz, run <code>dump1090</code> — decodes aircraft transponder positions, display on map in browser. ADS-B on Pi 4 decodes 1000+ aircraft/hour. DAB Radio: GNU Radio + gr-dab plugin for digital radio. RTL-SDR is the entry point to the entire SDR ecosystem.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np, matplotlib.pyplot as plt
+from rtlsdr import RtlSdr
+
+sdr = RtlSdr()
+sdr.sample_rate = 2.4e6   # 2.4 Msps
+sdr.center_freq = 98.0e6  # 98 MHz FM band centre
+sdr.gain = 'auto'
+
+plt.ion()
+fig, ax = plt.subplots()
+N = 4096
+
+while True:
+    samples = sdr.read_samples(N)
+    # Apply Hann window to reduce spectral leakage
+    window = np.hanning(N)
+    windowed = samples * window
+    
+    # FFT → Power Spectral Density in dB
+    fft_vals = np.fft.fftshift(np.fft.fft(windowed, N))
+    psd = 10 * np.log10(np.abs(fft_vals)**2 + 1e-10)
+    
+    # Frequency axis in MHz
+    freqs = np.fft.fftshift(
+        np.fft.fftfreq(N, 1/sdr.sample_rate)) + sdr.center_freq
+    
+    ax.cla()
+    ax.plot(freqs/1e6, psd, color='#aa44ff', linewidth=0.8)
+    ax.set_xlabel('Frequency (MHz)')
+    ax.set_ylabel('Power (dB)')
+    ax.set_title(f'Spectrum @ {sdr.center_freq/1e6:.1f} MHz')
+    plt.pause(0.05)
+
+sdr.close()</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">✈️ ADS-B Aircraft Tracker</span>
+                <span class="app-tag">🛰️ NOAA Weather Satellite APT</span>
+                <span class="app-tag">📻 DAB Digital Radio Decode</span>
+                <span class="app-tag">🚢 Marine AIS Ship Tracker</span>
+                <span class="app-tag">🌦️ ACARS Aircraft Messages</span>
+                <span class="app-tag">📶 GSM Signal Analyser</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $45 – $80</li><li><strong>Build Time:</strong> 4 – 8 hours</li><li><strong>Frequency Range:</strong> 24–1766 MHz</li><li><strong>Sample Rate:</strong> 2.4 Msps</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>IQ sampling and SDR fundamentals</li><li>FFT power spectral density</li><li>FM wideband demodulation</li><li>GNU Radio flow-graph design</li><li>RF signal identification</li><li>ADS-B/APT aircraft & satellite decode</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pyrtlsdr</span><span class="lib-desc"> — RTL-SDR Python driver</span></li><li><span class="lib-name">GNU Radio 3.10</span><span class="lib-desc"> — Flow-graph SDR processing</span></li><li><span class="lib-name">dump1090</span><span class="lib-desc"> — ADS-B aircraft decoder</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const rc=document.getElementById('rfCanvas');
+    const rctx=rc.getContext('2d');
+    let rphase=0;
+    const FM_STATIONS=[0.25,0.55,0.72];
+    function drawSpectrum(){
+      rctx.fillStyle='rgba(5,0,5,0.3)'; rctx.fillRect(0,0,150,80);
+      rctx.strokeStyle='#cc44ff'; rctx.lineWidth=1;
+      rctx.beginPath();
+      for(let x=0;x<150;x++){
+        let y=70;
+        FM_STATIONS.forEach(pos=>{
+          const dist=Math.abs(x/150-pos);
+          y-=30*Math.exp(-dist*dist*500)*(1+0.1*Math.sin(rphase+pos*10));
+        });
+        y+=(-2+Math.random()*4);
+        x===0?rctx.moveTo(x,y):rctx.lineTo(x,y);
+      }
+      rctx.stroke();
+      rphase+=0.1;
+      document.getElementById('rfPeak').textContent=(-42+Math.random()*3).toFixed(0);
+      requestAnimationFrame(drawSpectrum);
+    }
+    drawSpectrum();
+  </script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Twin Factory Simulator – Advanced Project | Studgine</title>
+  <meta name="description" content="Physical sensors on a conveyor-belt model publish MQTT data to a browser-based Three.js digital twin that mirrors real state and predicts production output." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#030010;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .dt-info{font-family:monospace;font-size:9px;color:#aa88ff;display:flex;flex-direction:column;gap:3px;}
+    .dt-bar{width:60px;height:5px;background:#0a0020;border-radius:2px;overflow:hidden;}
+    .dt-fill{height:100%;border-radius:2px;transition:width 0.4s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Digital Twin Factory Simulator</h1>
+      <p>Physical sensors on a miniature conveyor-belt model publish real-time state over MQTT to a Raspberry Pi that runs a Flask/WebSocket server. A browser-based Three.js 3D scene renders a digital twin that mirrors the physical system state in real time — a compelling Industry 4.0 / IoT demonstration.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Digital Twin Factory Simulator</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="dtCanvas" width="140" height="100"></canvas>
+                <div class="dt-info">
+                  <div>CONVEYOR: <span id="dtBelt" style="color:#44ff88;">RUNNING</span></div>
+                  <div>SPEED: <span id="dtSpeed">85</span>% PWM</div>
+                  <div>TEMP: <span id="dtTemp">38.4</span>°C</div>
+                  <div>ITEMS/MIN: <span id="dtItems">12</span></div>
+                  <div style="margin-top:3px;">TWIN SYNC</div>
+                  <div>LATENCY: <span id="dtLat" style="color:#00ffaa;">8ms</span></div>
+                  <div>THROUGHPUT<div class="dt-bar"><div class="dt-fill" id="dtThr" style="width:70%;background:#aa88ff;"></div></div></div>
+                  <div>TEMP WARN<div class="dt-bar"><div class="dt-fill" id="dtTw" style="width:38%;background:#ffaa44;"></div></div></div>
+                  <div style="color:#00ff88;margin-top:2px;">ONLINE ●</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Raspberry+Pi+digital+twin+MQTT+Three.js+IoT+conveyor+belt" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Digital twins are virtual replicas of physical systems that update in real time from sensor data. Major manufacturers (Siemens, GE, BMW) use them to predict failures, optimise throughput, and train operators. This project creates a miniature demonstration: a small DC motor conveyor belt with IR item-counting sensors, a temperature sensor on the motor, and a Hall-effect speed encoder. Arduino collects sensor data and publishes to Mosquitto MQTT broker on Pi. A Node.js (or Python Flask-SocketIO) server consumes MQTT and pushes via WebSocket to a browser. Three.js renders a 3D animated digital twin. Total latency: &lt;20ms physical-to-virtual.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🏭</span><div><span class="comp-name">DC Motor Conveyor Belt Model</span><span class="comp-note"> — DIY rubber-band or timing belt on 3D-printed rollers; 12V DC motor + L298N driver; Hall encoder; ~40cm working length</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">Arduino Uno + Sensor Suite</span><span class="comp-note"> — 2× IR break-beam sensors (item counting); LM35 temperature sensor; HC-SR04 for jam detection; UART to Pi</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 + Mosquitto MQTT</span><span class="comp-note"> — Receives Arduino serial; publishes MQTT topics; Flask-SocketIO WebSocket bridge; hosts Three.js digital twin web app</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">Browser (PC / Tablet)</span><span class="comp-note"> — Three.js 3D digital twin; live sensor dashboard; Chart.js live plots; WebSocket auto-reconnect; responsive design</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Physical Layer: Arduino Sensor Collection</h4><p>Arduino reads at 20Hz: encoder count (speed), IR item counters, temperature. Sends UART JSON: <code>{"belt_rpm":85,"temp_c":38.4,"items_passed":12,"jam":false,"motor_pwm":210}</code>. Python bridge on Pi: <code>import serial, json, paho.mqtt.client as mqtt; data=json.loads(ser.readline()); client.publish("factory/conveyor", json.dumps(data))</code>. MQTT topic hierarchy: <code>factory/conveyor</code>, <code>factory/temperature</code>, <code>factory/items</code>. Mosquitto broker: <code>sudo apt install mosquitto; systemctl start mosquitto</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Flask-SocketIO WebSocket Bridge</h4><p>Flask-SocketIO server subscribes to MQTT and emits to browser: <code>@mqtt.on_message(); def handle_message(client, userdata, msg): socketio.emit('sensor_update', json.loads(msg.payload))</code>. Serve static Three.js front-end: <code>@app.route('/'); return render_template('twin.html')</code>. Browser connects: <code>const socket = io('http://pi:5000'); socket.on('sensor_update', updateTwin)</code>. Achieved latency MQTT→WebSocket→render: ~12ms typical.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Three.js Digital Twin Rendering</h4><p>Three.js scene: BoxGeometry conveyor frame, CylinderGeometry rollers, animated belt texture (UV scroll). Belt animation: <code>belt_texture.offset.x += data.belt_rpm/1000 * dt</code>. Items: SphereGeometry spheres moving along belt path triggered by IR sensor events. Motor: colour changes with temperature (blue→green→red). Real-time Chart.js inset: temperature plot, item rate, motor PWM. Predictive alert: <code>if temp > 50: showAlert("Motor overheat predicted")</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Predictive Analytics + Anomaly Detection</h4><p>Store last 100 measurements. Moving average of motor temperature rise rate: <code>dT_dt = (temps[-1]-temps[-10]) / (10*dt)</code>. Linear prediction: <code>predicted_overheat_time = (50-current_temp) / dT_dt</code>. Show countdown in twin. Jam detection: belt speed drops &gt;20% → highlight jam zone in red in 3D scene; alert. Items rate anomaly: Z-score &gt;2.5 → flag defective sensor. Production OEE: <code>(actual_items / target_items) * 100%</code>. Dashboard: rate KPIs, uptime, efficiency score.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code># Raspberry Pi Bridge: Arduino→MQTT→WebSocket
+import serial, json, threading, time
+import paho.mqtt.client as mqtt
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+
+app = Flask(__name__); socketio = SocketIO(app, cors_allowed_origins='*')
+mqtt_client = mqtt.Client()
+serial_port = serial.Serial('/dev/ttyACM0', 9600)
+
+def read_arduino():
+    while True:
+        line = serial_port.readline().decode().strip()
+        try:
+            data = json.loads(line)
+            mqtt_client.publish('factory/state', json.dumps(data))
+        except: pass
+
+def on_mqtt_message(client, userdata, msg):
+    data = json.loads(msg.payload)
+    socketio.emit('sensor_update', data)
+
+mqtt_client.on_message = on_mqtt_message
+mqtt_client.connect('localhost', 1883)
+mqtt_client.subscribe('factory/state')
+mqtt_client.loop_start()
+
+threading.Thread(target=read_arduino, daemon=True).start()
+
+@app.route('/')
+def index(): return render_template('twin.html')
+
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5000)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🔮 ML Predictive Failure Model</span>
+                <span class="app-tag">🏭 Multi-Station Assembly Line</span>
+                <span class="app-tag">📊 OEE Efficiency Dashboard</span>
+                <span class="app-tag">☁️ AWS IoT / Azure IoT Hub</span>
+                <span class="app-tag">🎮 VR/AR Digital Twin View</span>
+                <span class="app-tag">🤖 Robot Arm Integration</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $60 – $110</li><li><strong>Build Time:</strong> 12 – 20 hours</li><li><strong>Twin Latency:</strong> &lt;20ms</li><li><strong>Protocol:</strong> MQTT + WebSocket</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>MQTT publish/subscribe architecture</li><li>Flask-SocketIO WebSocket bridge</li><li>Three.js 3D scene programming</li><li>Real-time sensor dashboard</li><li>Predictive analytics (linear)</li><li>Industry 4.0 IIoT patterns</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">paho-mqtt</span><span class="lib-desc"> — MQTT publish/subscribe</span></li><li><span class="lib-name">Flask-SocketIO</span><span class="lib-desc"> — WebSocket bridge</span></li><li><span class="lib-name">Three.js</span><span class="lib-desc"> — 3D digital twin render</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const dtC=document.getElementById('dtCanvas');
+    const dtCtx=dtC.getContext('2d');
+    let dtPhase=0,items=[];
+    function spawnItem(){items.push({x:0,y:52,speed:0.8});}
+    function drawDT(){
+      dtCtx.fillStyle='rgba(3,0,16,0.4)';dtCtx.fillRect(0,0,140,100);
+      // Conveyor belt
+      dtCtx.fillStyle='#1a1030';dtCtx.fillRect(5,45,130,15);
+      dtCtx.strokeStyle='#4422aa';dtCtx.lineWidth=1;dtCtx.strokeRect(5,45,130,15);
+      // Belt stripes
+      for(let i=0;i<10;i++){
+        const x=(i*15-dtPhase*8)%130+5;
+        dtCtx.strokeStyle='rgba(80,40,180,0.5)';
+        dtCtx.beginPath();dtCtx.moveTo(x,45);dtCtx.lineTo(x,60);dtCtx.stroke();
+      }
+      // Rollers
+      [5,135].forEach(rx=>{dtCtx.fillStyle='#333';dtCtx.beginPath();dtCtx.arc(rx,53,8,0,Math.PI*2);dtCtx.fill();});
+      // Items
+      items.forEach((it,i)=>{
+        dtCtx.fillStyle='#ff8800';dtCtx.beginPath();dtCtx.arc(it.x,it.y,5,0,Math.PI*2);dtCtx.fill();
+        it.x+=it.speed*2;
+      });
+      items=items.filter(it=>it.x<145);
+      // Twin indicator
+      dtCtx.fillStyle='#00ff88';dtCtx.fillRect(125,5,10,10);
+      dtCtx.fillStyle='#222';dtCtx.font='7px monospace';dtCtx.fillText('TWIN',120,25);
+      dtPhase+=0.05;
+      if(Math.floor(dtPhase)%3===0&&(items.length===0||items[items.length-1].x>25))spawnItem();
+      const speed=85+8*Math.sin(dtPhase*0.4);
+      document.getElementById('dtSpeed').textContent=speed.toFixed(0);
+      document.getElementById('dtTemp').textContent=(38+4*Math.sin(dtPhase*0.2)).toFixed(1);
+      document.getElementById('dtItems').textContent=Math.round(10+3*Math.abs(Math.sin(dtPhase*0.5)));
+      document.getElementById('dtThr').style.width=Math.round(60+15*Math.sin(dtPhase*0.3))+'%';
+      document.getElementById('dtTw').style.width=Math.round(35+10*Math.sin(dtPhase*0.2))+'%';
+      document.getElementById('dtLat').textContent=Math.round(8+4*Math.random())+'ms';
+      requestAnimationFrame(drawDT);
+    }
+    drawDT();
+  </script>
+</body>
+</html>

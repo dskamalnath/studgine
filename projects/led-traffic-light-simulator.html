@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LED Traffic Light Simulator – Beginner Project | Studgine</title>
+  <meta name="description" content="Build a 3-phase LED traffic light on Arduino Uno. Learn digital output, timing loops, and state machines in this classic beginner project." />
+  <meta name="keywords" content="LED traffic light Arduino, beginner Arduino project, state machine, digital output" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="led-traffic-light-simulator.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-traffic { display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .tl-housing { background:#222; border-radius:14px; padding:14px 20px; display:flex; flex-direction:column; gap:12px; border:3px solid #444; }
+    .tl-bulb { width:44px; height:44px; border-radius:50%; border:2px solid #555; }
+    .tl-bulb.red   { animation: tl-red   3s infinite; }
+    .tl-bulb.amber { animation: tl-amber 3s infinite; }
+    .tl-bulb.green { animation: tl-green 3s infinite; }
+    @keyframes tl-red   { 0%,30%{background:#ff2200;box-shadow:0 0 20px #ff2200;} 31%,100%{background:#3a0a00;} }
+    @keyframes tl-amber { 33%,46%{background:#ff9900;box-shadow:0 0 20px #ff9900;} 0%,32%,47%,100%{background:#3a2a00;} }
+    @keyframes tl-green { 50%,100%{background:#00cc44;box-shadow:0 0 20px #00cc44;} 0%,49%{background:#003a10;} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine"><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="obstacle-avoidance-robot.html">Obstacle Robot</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

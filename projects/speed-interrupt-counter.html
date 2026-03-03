@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speed Interrupt Counter – Studgine</title>
+  <meta name="description" content="An IR break-beam sensor on a spinning disk triggers hardware interrupts to measure RPM in real time. Hands-on intro to attachInterrupt() and rotation math with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:18px; }
+    .disk-wrap { position:relative; width:56px; height:56px; }
+    .disk { width:56px; height:56px; border-radius:50%; background:conic-gradient(#1e293b 0deg 60deg,#334155 60deg 120deg,#1e293b 120deg 180deg,#334155 180deg 240deg,#1e293b 240deg 300deg,#334155 300deg 360deg); border:2px solid #475569; animation:disk-spin 2s linear infinite; }
+    @keyframes disk-spin { 100%{transform:rotate(360deg);} }
+    .disk-center { position:absolute; top:50%;left:50%;transform:translate(-50%,-50%); width:12px; height:12px; border-radius:50%; background:#94a3b8; }
+    .ir-pair { display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .ir-tx { width:10px; height:20px; background:#dc2626; border-radius:3px; }
+    .ir-rx { width:10px; height:20px; background:#1d4ed8; border-radius:3px; }
+    .ir-beam { width:2px; height:56px; background:rgba(239,68,68,.4); }
+    .rpm-readout { background:#0f172a; border:2px solid #a78bfa; border-radius:8px; padding:6px 14px; text-align:center; }
+    .rpm-label { font-size:.55rem; color:#7c3aed; }
+    .rpm-val { font-family:'Courier New',monospace; font-size:1.6rem; font-weight:700; color:#c4b5fd; }
+    .rpm-mps { font-size:.6rem; color:#64748b; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Speed Interrupt Counter</h1>
+      <p class="hero-sub">An IR break-beam sensor on a spinning disk triggers hardware interrupts to measure RPM in real time. A hands-on intro to <code>attachInterrupt()</code> and elapsed-time rotation maths.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Speed Interrupt Counter</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="ir-pair">
+            <div class="ir-tx"></div>
+            <div class="ir-beam"></div>
+            <div class="ir-rx"></div>
+          </div>
+          <div class="disk-wrap"><div class="disk" id="spin-disk"></div><div class="disk-center"></div></div>
+          <div class="rpm-readout">
+            <div class="rpm-label">RPM</div>
+            <div class="rpm-val" id="rpm-val">300</div>
+            <div class="rpm-mps" id="rps-val">5.0 rev/s</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">IR interrupt per hole → pulse count per second → RPM calculation</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+speed+sensor+RPM+interrupt+IR+break+beam" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>Hardware interrupts let Arduino react to an external signal <em>instantly</em> — unlike polling the pin in loop() which might miss rapid pulses. When the IR receiver detects a break in the beam (the hole in the spinning disk passes), it triggers an interrupt service routine (ISR) in microseconds, incrementing a pulse counter.</p>
+        <p>By counting pulses over a known time window (typically 1 second), you can calculate RPM: <strong>RPM = (pulses / slots) × 60</strong>. With a 6-slot encoder disk and 30 pulses/second, that's 300 RPM. This technique is used in automotive ABS sensors, industrial motor drives, and 3D printer extruder encoders.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">📡</span><div><span class="comp-name">IR speed sensor module (LM393 + IR pair)</span><span class="comp-note">Break-beam slot detector</span></div></li>
+          <li><span class="comp-icon">⚙️</span><div><span class="comp-name">Motor + slotted encoder disk</span><span class="comp-note">Or a fan with tape flag</span></div></li>
+          <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note">RPM display</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Attach interrupt on sensor output</strong> — Wire sensor OUT → D2 (interrupt 0 on Uno). In setup: <code>attachInterrupt(digitalPinToInterrupt(2), countPulse, FALLING);</code>. The ISR is minimal — just increment a counter: <code>void countPulse() { volatile unsigned long pulseCount++; }</code>. The <code>volatile</code> keyword tells the compiler this variable can change outside the normal execution flow.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Calculate RPM every second</strong> — In loop, check <code>millis() - lastCalc &gt;= 1000</code>. When true: <code>noInterrupts(); unsigned long count = pulseCount; pulseCount = 0; interrupts();</code> — this atomically captures and resets the counter. Then: <code>float rpm = (count / SLOTS) * 60.0;</code> where SLOTS is the number of holes/slots in the encoder disk.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Display on LCD</strong> — <code>lcd.setCursor(0,0); lcd.print("RPM: "); lcd.print((int)rpm); lcd.print("   ");</code>. Display RPS on row 2: <code>lcd.setCursor(0,1); lcd.print(rpm/60.0, 1); lcd.print(" rev/s  ");</code>. The trailing spaces overwrite leftover characters as RPM decreases.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Convert to surface speed</strong> — If you know the wheel circumference: <code>float speedMps = (rpm / 60.0) * circumferenceMetres;</code>. Convert to km/h: <code>speedKmh = speedMps * 3.6;</code>. This is exactly what bicycle computers and go-kart speedometers compute using a single magnet and Hall-effect sensor — effectively the same system.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🚀 Motor speed controller feedback</span>
+          <span class="app-tag">🚲 Bicycle speedometer</span>
+          <span class="app-tag">🏭 Industrial conveyor RPM monitor</span>
+          <span class="app-tag">🔧 Drill speed measurement</span>
+          <span class="app-tag">🖨️ 3D printer extruder encoder</span>
+          <span class="app-tag">💨 Fan RPM health monitoring</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $12</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1.5 – 2.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Method</span><span>Hardware interrupt</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">attachInterrupt()</span></li>
+            <li><span class="skill-tag">volatile variables</span></li>
+            <li><span class="skill-tag">Atomic read / noInterrupts()</span></li>
+            <li><span class="skill-tag">RPM calculation formula</span></li>
+            <li><span class="skill-tag">Encoder disk geometry</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">LiquidCrystal_I2C</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="parking-sensor-beeper.html" class="skill-tag">Parking Sensor Beeper</a></li>
+            <li><a href="bpm-metronome.html" class="skill-tag">BPM Metronome</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const rpms = [120, 180, 240, 300, 360, 420, 360, 300, 240, 300, 360, 420, 300];
+    let ri = 0;
+    const disk = document.getElementById('spin-disk');
+    const rpmEl = document.getElementById('rpm-val');
+    const rpsEl = document.getElementById('rps-val');
+    function updateRPM() {
+      const rpm = rpms[ri % rpms.length];
+      rpmEl.textContent = rpm;
+      rpsEl.textContent = (rpm / 60).toFixed(1) + ' rev/s';
+      const dur = (60 / rpm).toFixed(2);
+      disk.style.animationDuration = dur + 's';
+      ri++;
+    }
+    updateRPM();
+    setInterval(updateRPM, 2000);
+  </script>
+</body>
+</html>

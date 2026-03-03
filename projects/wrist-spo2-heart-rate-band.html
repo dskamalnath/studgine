@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wrist SpO2 &amp; Heart Rate Band – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a wrist-worn pulse oximeter using the MAX30100 sensor and Arduino. Measure blood oxygen saturation (SpO2) and heart rate on an OLED display." />
+  <meta name="keywords" content="MAX30100 Arduino SpO2, pulse oximeter DIY, heart rate monitor wrist, blood oxygen sensor, MAX30100 OLED" />
+  <link rel="canonical" href="wrist-spo2-heart-rate-band.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#120808 0%,#260a0a 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .heart-icon{font-size:48px;animation:heartbeat 1s ease-in-out infinite;}
+    @keyframes heartbeat{0%,100%{transform:scale(1)}30%{transform:scale(1.25)}60%{transform:scale(1.1)}}
+    .oled-mock{background:#000;border:2px solid #333;border-radius:6px;padding:12px 18px;font-family:monospace;color:#fff;text-align:center;min-width:160px;}
+    .oled-hr{font-size:26px;color:#ff4040;letter-spacing:2px;}
+    .oled-spo2{font-size:20px;color:#40a0ff;letter-spacing:1px;margin-top:4px;}
+    .oled-label{font-size:10px;color:#888;margin-top:2px;}
+    .beat-bar{height:40px;width:200px;position:relative;overflow:hidden;}
+    .beat-line{position:absolute;top:0;left:0;width:400px;height:40px;}
+    .waveform-svg path{stroke:#ff4040;stroke-width:2;fill:none;animation:wave-scroll 2s linear infinite;}
+    @keyframes wave-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=MAX30100+Arduino+SpO2+heart+rate+OLED" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The MAX30100 integrates a red LED, infrared LED, and two photodetectors in a single 5.6 mm package. It measures photoplethysmography (PPG) — the variation in light absorption caused by blood volume changes in each heartbeat. By comparing red vs. IR absorption, it calculates SpO₂ (peripheral oxygen saturation) using the Beer-Lambert law.</p>
+              <p>This project wires the MAX30100 to an Arduino Nano via I2C, processes the PPG signal using a beat-detection algorithm, and displays BPM and SpO₂ on a compact SSD1306 OLED. The whole assembly fits on a wristwatch-size PCB powered by a 3.7 V Li-Po, teaching you biosignal ADC, I2C peripherals, and embedded signal filtering.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Nano</span><span class="comp-note"> — Small form factor, 3.3 V tolerant with 5 V USB</span></div></li>
+                <li><span class="comp-icon">❤️</span><div><span class="comp-name">MAX30100 Pulse Oximeter Module</span><span class="comp-note"> — Red + IR LED, photodetector, I2C @ 0x57</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">SSD1306 0.96" OLED (I2C)</span><span class="comp-note"> — 128×64 px OLED display @ 0x3C</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">3.7 V Li-Po 400 mAh + TP4056</span><span class="comp-note"> — Compact rechargeable power source</span></div></li>
+                <li><span class="comp-icon">📐</span><div><span class="comp-name">Perfboard / Custom PCB</span><span class="comp-note"> — For compact wrist-mount assembly</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">I2C Pull-up Resistors (4.7 kΩ)</span><span class="comp-note"> — SDA and SCL pull-ups to 3.3 V</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>I2C Initialisation</h4><p>The MAX30100 uses I2C address 0x57. Call <code>pox.begin()</code> — if it fails, check SDA/SCL pull-ups (4.7 kΩ to 3.3 V; the module may need the 1 kΩ SMD resistors DNP'd depending on version). Set LED current with <code>pox.setIRLedCurrent(MAX30100_LED_CURR_50MA)</code> for stable readings through skin.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Continuous PPG Sampling</h4><p>Call <code>pox.update()</code> as frequently as possible inside <code>loop()</code> — this feeds the internal FIFO. The MAX30100 samples at up to 100 Hz. Attach a beat callback with <code>pox.setOnBeatDetectedCallback(onBeat)</code> — it fires once per detected R-wave, giving you instantaneous BPM via inter-beat intervals.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Read BPM and SpO₂</h4><p>Every 500 ms, call <code>pox.getHeartRate()</code> and <code>pox.getSpO2()</code> for rolling-average values. Discard readings where BPM &lt;40 or &gt;200 — these indicate no finger contact. SpO₂ values below 94% should display a warning (clinical hypoxemia threshold).</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Render on OLED</h4><p>Use U8g2 or Adafruit_SSD1306 to draw a large BPM number, an SpO₂ value, and a scrolling PPG waveform. Animate a small heart icon on beat callbacks for visual feedback. If 10 s passes with no beat, display "No Finger" with the sensor powered down to save battery.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Wire.h&gt;
+#include &lt;MAX30100_PulseOximeter.h&gt;
+#include &lt;Adafruit_SSD1306.h&gt;
+
+PulseOximeter pox;
+Adafruit_SSD1306 oled(128, 64, &Wire, -1);
+uint32_t lastReport = 0;
+bool beatFlag = false;
+
+void onBeatDetected() { beatFlag = true; }
+
+void setup() {
+  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  oled.clearDisplay(); oled.display();
+  if (!pox.begin()) {
+    oled.print("MAX30100 FAIL"); oled.display();
+    while(1);
+  }
+  pox.setIRLedCurrent(MAX30100_LED_CURR_50MA);
+  pox.setOnBeatDetectedCallback(onBeatDetected);
+}
+
+void loop() {
+  pox.update();
+  if (millis() - lastReport > 500) {
+    lastReport = millis();
+    float bpm  = pox.getHeartRate();
+    float spo2 = pox.getSpO2();
+    oled.clearDisplay();
+    oled.setTextSize(2); oled.setCursor(0,0);
+    if (bpm < 40 || bpm > 200) {
+      oled.print("No Finger");
+    } else {
+      oled.print(String((int)bpm) + " BPM");
+      oled.setTextSize(1); oled.setCursor(0,32);
+      oled.print("SpO2: ");
+      oled.print(String((int)spo2) + "%");
+      if (spo2 < 94 && spo2 > 0) {
+        oled.setCursor(0,48); oled.print("!! LOW OXYGEN !!");
+      }
+    }
+    oled.display();
+    beatFlag = false;
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏥 Patient Monitoring</span>
+                <span class="app-tag">🏃 Fitness Tracker</span>
+                <span class="app-tag">🌐 IoT Health Dashboard</span>
+                <span class="app-tag">😴 Sleep Apnoea Screening</span>
+                <span class="app-tag">⛰️ Altitude Hypoxia Alert</span>
+                <span class="app-tag">👶 Infant Monitor</span>
+                <span class="app-tag">📊 ECG + PPG Fusion</span>
+                <span class="app-tag">🔔 Low SpO2 SMS Alert</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $22</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Nano</li>
+                <li><strong>Interface:</strong> I2C OLED Wrist Unit</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>MAX30100 I2C configuration</li>
+                <li>PPG beat detection algorithm</li>
+                <li>SpO₂ calculation fundamentals</li>
+                <li>SSD1306 OLED rendering</li>
+                <li>Li-Po battery + TP4056 charging</li>
+                <li>Biosignal noise filtering</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">MAX30100_PulseOximeter</span><span class="lib-desc"> — Oxullo Gonzalez's driver + algorithm</span></li>
+                <li><span class="lib-name">Adafruit_SSD1306</span><span class="lib-desc"> — OLED graphics driver</span></li>
+                <li><span class="lib-name">Adafruit_GFX</span><span class="lib-desc"> — Graphics primitives</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="ecg-monitor-ad8232.html">ECG Monitor (AD8232)</a></li>
+                <li><a href="cloud-heart-rate-logger.html">Cloud Heart Rate Logger</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const bpms  = [72,78,65,88,73,80];
+    const spo2s = [98,97,99,96,98,97];
+    let bi = 0;
+    function updateVitals() {
+      bi = (bi + 1) % bpms.length;
+      document.getElementById('hrValue').textContent = bpms[bi] + ' BPM';
+      document.getElementById('spo2Value').textContent = 'SpO₂: ' + spo2s[bi] + '%';
+      // Sync heartbeat animation speed
+      let period = (60 / bpms[bi]).toFixed(2) + 's';
+      document.querySelector('.heart-icon').style.animationDuration = period;
+    }
+    setInterval(updateVitals, 2500);
+    updateVitals();
+  </script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Grow Light Controller – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an automated grow light controller with RTC-scheduled photoperiods, LDR ambient light compensation, and temperature-based fan control for indoor plant cultivation." />
+  <meta name="keywords" content="automated grow light controller Arduino, RTC grow light timer Arduino, indoor plant light automation, LED grow light PWM Arduino, smart grow room controller" />
+  <link rel="canonical" href="automated-grow-light-controller.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#020804 0%,#081400 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .plant{font-size:32px;filter:drop-shadow(0 0 8px rgba(0,180,0,0.4));transition:filter 0.8s;}
+    .light-bar{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100px;height:12px;border-radius:0 0 6px 6px;transition:background 1s,box-shadow 1s;}
+    .fact-row{display:flex;gap:8px;font-family:monospace;font-size:11px;}
+    .fact-chip{background:#0a1a08;border:1px solid #2a5a20;border-radius:4px;padding:3px 8px;color:#80cc60;}
+    .spectrum-bar{display:flex;height:10px;width:200px;border-radius:5px;overflow:hidden;gap:1px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Automated Grow Light Controller</h1>
+      <p>Schedule precise light/dark photoperiods using a DS3231 RTC, compensate for ambient daylight with an LDR, and add temperature-driven fan control — giving indoor plants exactly the environment they need to thrive, automatically.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Automated Grow Light Controller</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:12px;position:relative;">
+                  <div class="light-bar" id="lightBar" style="background:#800080;box-shadow:0 4px 20px 6px rgba(180,0,255,0.3);"></div>
+                  <div style="height:20px;"></div>
+                  <div class="plant" id="plant">🌱</div>
+                  <div class="fact-row">
+                    <div class="fact-chip">💡 PWM: <span id="pwmVal">80</span>%</div>
+                    <div class="fact-chip">🌡️ <span id="tempVal">26</span>°C</div>
+                    <div class="fact-chip">🍃 Phase: <span id="growPhase">VEG</span></div>
+                  </div>
+                  <div style="font-family:monospace;font-size:10px;color:#408040;">Spectrum</div>
+                  <div class="spectrum-bar">
+                    <div id="specBlue" style="background:#4488ff;width:30px;height:100%;"></div>
+                    <div id="specRed" style="background:#ff4444;width:60px;height:100%;"></div>
+                    <div id="specFarRed" style="background:#800080;width:40px;height:100%;"></div>
+                    <div id="specWhite" style="background:#ffffff;width:25px;height:100%;"></div>
+                  </div>
+                  <div style="font-family:monospace;font-size:9px;color:#406040;" id="timeStatus">RTC: 14:22:05 — LIGHT ON (3h 38m left)</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+grow+light+controller+RTC+timer+LED+plant" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Plants respond to photoperiod — the daily ratio of light to darkness — to regulate flowering, vegetative growth, and dormancy. Getting this ratio right is critical for indoor cultivation. Too little light and plants etiolate; too much and flowering is inhibited. This project automates the grow light schedule with exact RTC-based timing, dims the light on bright sunny days (using an LDR to avoid wasting electricity), and keeps the canopy temperature in the optimal 22–28°C range by switching a cooling fan via relay.</p>
+              <p>Optional PWM dimming allows the controller to simulate dawn/dusk ramps, reducing plant stress from abrupt light transitions — a feature usually only found on commercial grow controllers.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">💡</span><div><span class="comp-name">LED Grow Light Panel (12 V, 20–45 W)</span><span class="comp-note"> — Full-spectrum or red+blue blended; supports PWM dimming via MOSFET</span></div></li>
+                <li><span class="comp-icon">⏰</span><div><span class="comp-name">DS3231 RTC Module</span><span class="comp-note"> — Battery-backed; schedules light-on and light-off times daily</span></div></li>
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">LDR (GL5528) + 10 kΩ Resistor</span><span class="comp-note"> — Ambient light sensing for daylight compensation</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT22 or DS18B20 Sensor</span><span class="comp-note"> — Canopy temperature and humidity for fan control logic</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">IRF540N MOSFET + 4-channel Relay</span><span class="comp-note"> — MOSFET for LED PWM dimming; relay for fan and water pump</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Uno + 20×4 LCD (I2C)</span><span class="comp-note"> — Controller + display showing current time, phase, light status, and temperature</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>RTC-Based Photoperiod Scheduling</h4><p>Read current time from DS3231 each second: <code>DateTime now = rtc.now();</code>. Compare current hour+minute against user-configured ON_TIME and OFF_TIME (stored in EEPROM, settable via serial menu or physical buttons). If within light window: activate grow light. Support both long-day (18h/6h for vegetative) and short-day (12h/12h for flowering) modes selectable by a switch.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Ambient Light Compensation</h4><p>Read LDR ADC value. Map to ambient lux estimate. If ambient lux > 5000 lux (bright sunny day): reduce LED PWM proportionally (<code>map(lux, 0, 15000, 255, 80)</code>) — less artificial light needed. If ambient lux > 15000 lux: turn off grow light entirely (natural light sufficient). This prevents over-lighting and saves energy during daylight hours. Override available for cloudy days via button.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Dawn/Dusk Ramp Simulation</h4><p>In the 15 minutes before scheduled light-on: gradually ramp PWM from 0% to 100% in 1% steps every 9 s. Reverse at light-off time: ramp down over 15 minutes. This mimics natural sunrise/sunset, reducing plant stress from abrupt light changes and mimicking the photo-oxidative responses that natural photoperiods trigger. Implement as a state machine: RAMP_UP → FULL → RAMP_DOWN → OFF.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Temperature &amp; Fan Control</h4><p>Read DHT22 every 30 s. If canopy temp > 28°C: activate cooling fan relay. If temp > 32°C: reduce LED brightness by 20% and trigger alarm. If temp < 20°C: turn fan off; optional heating mat relay on. Log temperature history to EEPROM ring buffer (last 24 h, 1 reading/hour) for plant health trend analysis. Display min/max daily temperature on LCD.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;RTClib.h&gt;
+#include &lt;DHT.h&gt;
+#define LED_PWM_PIN 9
+#define FAN_RELAY 7
+#define LDR_PIN A0
+
+RTC_DS3231 rtc; DHT dht(6, DHT22);
+int lightOnHour = 6, lightOffHour = 22;  // 16h vegetative
+int targetPWM = 0, currentPWM = 0;
+
+bool isLightWindow() {
+  DateTime now = rtc.now();
+  return (now.hour() >= lightOnHour && now.hour() < lightOffHour);
+}
+
+int ambientCompensation() {
+  int ldr = analogRead(LDR_PIN);
+  // ldr high = dark; map dark->full brightness
+  return map(ldr, 100, 900, 80, 255);
+}
+
+void loop() {
+  targetPWM = isLightWindow() ? ambientCompensation() : 0;
+  // smooth ramp ±2 per cycle
+  if(currentPWM &lt; targetPWM) currentPWM = min(currentPWM+2, targetPWM);
+  if(currentPWM > targetPWM) currentPWM = max(currentPWM-2, targetPWM);
+  analogWrite(LED_PWM_PIN, currentPWM);
+
+  float temp = dht.readTemperature();
+  digitalWrite(FAN_RELAY, temp > 28.0 ? HIGH : LOW);
+  delay(100);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌿 Indoor Herb Garden</span>
+                <span class="app-tag">🌸 Flowering Photoperiod</span>
+                <span class="app-tag">🌱 Seedling Propagation</span>
+                <span class="app-tag">💧 Irrigation Integration</span>
+                <span class="app-tag">📊 Blynk Grow Monitoring</span>
+                <span class="app-tag">🌡️ CO2 Level Addition</span>
+                <span class="app-tag">📅 Weekly Schedule EEPROM</span>
+                <span class="app-tag">🏭 Commercial Scale-Up</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $35</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno</li>
+                <li><strong>Timing Accuracy:</strong> ±2 ppm (DS3231)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>DS3231 RTC scheduling</li>
+                <li>PWM MOSFET LED dimming</li>
+                <li>LDR ambient compensation</li>
+                <li>Photoperiod state machines</li>
+                <li>Temperature relay control</li>
+                <li>EEPROM persistent settings</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — Adafruit DS3231 time reading</span></li>
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> — Temperature and humidity</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — 20×4 LCD status display</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="../projects/automated-greenhouse-controller.html">Automated Greenhouse Controller</a></li>
+                <li><a href="../projects/smart-greenhouse-ml-climate.html">Smart Greenhouse ML (Advanced)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let pwm = 80, phase = 'VEG', t = 0;
+    const plants = ['🌱','🌿','🌱','🪴'];
+    setInterval(() => {
+      t++;
+      pwm = 75 + Math.round(Math.sin(t * 0.05) * 15);
+      const temp = 24 + Math.round(Math.sin(t * 0.07) * 3);
+      document.getElementById('pwmVal').textContent = pwm;
+      document.getElementById('tempVal').textContent = temp;
+      const color = `hsl(${280 + Math.sin(t*0.03)*20},80%,50%)`;
+      document.getElementById('lightBar').style.background = color;
+      document.getElementById('lightBar').style.boxShadow = `0 4px 20px 6px hsla(${280 + Math.sin(t*0.03)*20},80%,50%,0.3)`;
+      document.getElementById('plant').style.filter = `drop-shadow(0 0 ${8 + pwm/10}px rgba(0,180,0,0.5))`;
+      document.getElementById('plant').textContent = plants[t % plants.length];
+    }, 1200);
+  </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Precision Agriculture Drone – Advanced Project | Studgine</title>
+  <meta name="description" content="GPS waypoint navigation and a multispectral camera on a Raspberry Pi flight controller generate NDVI crop-health maps for precision farming." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#030a03;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .ndvi-canvas-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .drone-info{font-family:monospace;font-size:9px;color:#44cc44;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Precision Agriculture Drone</h1>
+      <p>Integrate GPS waypoint navigation and a NoIR camera with 850nm bandpass filter on a Raspberry Pi companion computer to generate NDVI crop-health maps from aerial survey footage — a real-world precision farming tool using drone-based remote sensing.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Precision Agriculture Drone</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="ndvi-canvas-wrap">
+                  <canvas id="ndviCanvas" width="110" height="90"></canvas>
+                  <div style="font-family:monospace;font-size:7px;color:#44cc44;">NDVI CROP MAP</div>
+                </div>
+                <div class="drone-info">
+                  <div>ALT:  <span id="droneAlt">30.0</span>m</div>
+                  <div>SPD:  <span id="droneSpd">5.0</span>m/s</div>
+                  <div>WP:   <span id="droneWp">3</span>/12</div>
+                  <div>DIST: <span id="droneDist">84</span>m left</div>
+                  <div style="margin-top:3px;">NDVI STATS</div>
+                  <div>MEAN: <span id="ndviMean">0.62</span></div>
+                  <div>MIN:  <span id="ndviMin">0.28</span></div>
+                  <div>STRESS ZONES: <span id="stressZones" style="color:#ff4444;">2</span></div>
+                  <div style="color:#00ff44;margin-top:2px;">AUTO SURVEY</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Raspberry+Pi+drone+ArduPilot+DroneKit+NDVI+precision+agriculture" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>NDVI (Normalised Difference Vegetation Index) measures plant health using the difference in reflectance between near-infrared (NIR) and visible red light: <strong>NDVI = (NIR − R) / (NIR + R)</strong>. Healthy, chlorophyll-rich plants reflect strongly in NIR and absorb red light (NDVI 0.6–0.9). Stressed or sparse vegetation scores 0.2–0.5. A Raspberry Pi NoIR camera with an 850nm bandpass filter (allowing NIR through but blocking visible) on a drone captures geotagged images along a grid survey flight path. These are mosaicked into a field NDVI map that reveals stressed crop zones requiring targeted intervention.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🚁</span><div><span class="comp-name">F450 Quadcopter Frame + Pixhawk</span><span class="comp-note"> — F450 frame; Pixhawk 2.4.8 flight controller with ArduCopter firmware; GPS module; telemetry radio 915MHz</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Pi NoIR Camera v2 + 850nm Filter</span><span class="comp-note"> — IR pass filter blocks red; NoIR removes IR-cut glass; captures NIR in RED channel; mounted nadir (downward)</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi Zero 2W (Companion)</span><span class="comp-note"> — Connects to Pixhawk via UART MAVLink; controls survey mode; captures geotagged JPEG every 2s</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">NEO-M8N GPS Module</span><span class="comp-note"> — 10Hz update; compass; plugs into Pixhawk; ±2m accuracy; good enough for 5m overlap grid survey</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">4S 5000mAh LiPo Battery</span><span class="comp-note"> — ~20 min flight; 14.8V; 50A peak discharge; power Pi companion via BEC 5V/3A from distribution board</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>MAVLink Waypoint Upload</h4><p>Plan survey grid with Mission Planner: survey area, 30m altitude, 70% front/side overlap, grid pattern auto-generated. Upload to Pixhawk as waypoint mission. Python companion (DroneKit): <code>from dronekit import connect; vehicle = connect('/dev/ttyS0', baud=57600)</code>. Monitor mission: <code>vehicle.mode.name == 'AUTO'</code>. Read GPS position every 1s: <code>lat = vehicle.location.global_frame.lat</code>. Trigger camera at each survey grid point using MAVLink DO_DIGICAM_CONTROL command.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Geotagged NIR Image Capture</h4><p>Picamera2 captures downward-facing JPEG at each waypoint: <code>camera.capture_file(f'nir_{lat:.6f}_{lon:.6f}.jpg')</code>. Embed GPS EXIF into JPEG with piexif: <code>exif_ifd = {piexif.GPSIFD.GPSLatitude: to_deg_rational(lat), ...}</code>. Camera settings: fixed shutter 1/1000s (avoid motion blur), ISO 100, AWB locked. 850nm bandpass filter + NoIR sensor = the "red channel" of the Bayer sensor captures NIR reflectance.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>NDVI Computation</h4><p>Post-processing on laptop (or Pi 4): load each image with OpenCV, split channels: <code>B, G, R = cv2.split(img_float)</code>. NIR ≈ R channel (850nm captured in Red Bayer cells). 530nm visible green ≈ B channel (post-filter blue). Compute: <code>ndvi = (R - B) / (R + B + 1e-5)</code>. Clip to [-1,1]. Apply colour map: <code>ndvi_colour = cm.RdYlGn((ndvi+1)/2)</code>. Values &lt;0.4 flagged as stressed zones. Save georeferenced GeoTIFF with rasterio.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Mosaic + Field Map</h4><p>Stitch geotagged images into orthomosaic with OpenDroneMap (ODM) or OpenCV feature matching. ODM command: <code>docker run opendronemap/odm --project-path /odm_photos</code>. Output: georeferenced orthomosaic GeoTIFF + 3D point cloud. Compute zonal statistics: average NDVI per 5×5m cell. Overlay on field boundary polygon (uploaded as GeoJSON). Identify and GPS-mark stress zones for targeted fertiliser application. Export as PDF farm report or Google My Maps KML.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import cv2, numpy as np
+from dronekit import connect, VehicleMode
+from picamera2 import Picamera2
+import piexif, time
+
+# Connect to Pixhawk via serial MAVLink
+vehicle = connect('/dev/ttyS0', baud=57600, wait_ready=True)
+cam = Picamera2()
+cam.configure(cam.create_still_configuration(
+    main={"size": (3280,2464), "format": "BGR888"}))
+cam.start()
+
+def capture_ndvi_image(lat, lon, idx):
+    arr = cam.capture_array()
+    # Embed GPS EXIF
+    exif_bytes = build_gps_exif(lat, lon)
+    cv2.imwrite(f'nir_{idx:04d}_{lat:.5f}_{lon:.5f}.jpg',
+                arr, [cv2.IMWRITE_JPEG_QUALITY,95])
+
+# NDVI computation (post-flight)
+def compute_ndvi(img_path):
+    img = cv2.imread(img_path).astype(np.float32)
+    B, G, R = cv2.split(img)  # NIR≈R channel with 850nm filter
+    ndvi = (R - B) / (R + B + 1e-5)
+    ndvi = np.clip(ndvi, -1, 1)
+    ndvi_norm = ((ndvi + 1) / 2 * 255).astype(np.uint8)
+    ndvi_colour = cv2.applyColorMap(ndvi_norm, cv2.COLORMAP_RdYlGn)
+    return ndvi, ndvi_colour
+
+# Monitor mission and capture at waypoints
+prev_wp = -1
+while vehicle.mode.name == 'AUTO':
+    wp = vehicle.commands.next
+    if wp != prev_wp:
+        lat = vehicle.location.global_frame.lat
+        lon = vehicle.location.global_frame.lon
+        capture_ndvi_image(lat, lon, wp)
+        prev_wp = wp
+    time.sleep(0.5)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌾 RGB + NIR Dual-Camera Rig</span>
+                <span class="app-tag">💧 Irrigation Zone Identification</span>
+                <span class="app-tag">🦟 Pest Hot-Spot Mapping</span>
+                <span class="app-tag">📊 Season-Over-Season NDVI Trend</span>
+                <span class="app-tag">🗺️ Google Earth Pro KML Export</span>
+                <span class="app-tag">🤖 Autonomous Variable Rate Sprayer</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $150 – $300</li><li><strong>Build Time:</strong> 15 – 25 hours</li><li><strong>Survey Area:</strong> ~5 ha/flight</li><li><strong>NDVI Range:</strong> -1 to +1</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>MAVLink DroneKit mission control</li><li>NoIR + 850nm multispectral imaging</li><li>NDVI calculation with OpenCV</li><li>EXIF GPS geotagging</li><li>GeoTIFF georeferenced output</li><li>OpenDroneMap orthomosaic stitching</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">dronekit-python</span><span class="lib-desc"> — MAVLink vehicle control</span></li><li><span class="lib-name">OpenCV + numpy</span><span class="lib-desc"> — NDVI image processing</span></li><li><span class="lib-name">rasterio</span><span class="lib-desc"> — GeoTIFF georeferenced output</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const nc=document.getElementById('ndviCanvas');
+    const nctx=nc.getContext('2d');
+    let nphase=0;
+    // Pre-generate NDVI field pattern
+    const FIELD=[];
+    for(let r=0;r<9;r++){FIELD[r]=[];for(let c=0;c<11;c++){FIELD[r][c]=Math.random();}}
+    const STRESS=[[2,3],[5,7]]; // stress zones
+    STRESS.forEach(([r,c])=>FIELD[r][c]=0.2+Math.random()*0.15);
+    function ndviColour(v){
+      const r=Math.round(v<0.5?255:255*(1-v)*2);
+      const g=Math.round(v>0.5?255:255*v*2);
+      return `rgb(${r},${g},0)`;
+    }
+    function drawNDVI(){
+      nctx.clearRect(0,0,110,90);
+      const cw=10,ch=10;
+      for(let r=0;r<9;r++)for(let c=0;c<11;c++){
+        const ndvi=FIELD[r][c]*(0.97+0.06*Math.sin(nphase+r*0.3+c*0.2));
+        nctx.fillStyle=ndviColour(Math.max(0,Math.min(1,ndvi)));
+        nctx.fillRect(c*cw,r*ch,cw-1,ch-1);
+      }
+      // Drone position
+      const dx=((nphase*5)%110);
+      const dy=((nphase*2)%90);
+      nctx.fillStyle='#ffffff';
+      nctx.beginPath();nctx.arc(dx,dy,3,0,Math.PI*2);nctx.fill();
+      nphase+=0.03;
+      document.getElementById('droneAlt').textContent=(30+1.5*Math.sin(nphase)).toFixed(1);
+      document.getElementById('droneSpd').textContent=(5+0.5*Math.cos(nphase*1.3)).toFixed(1);
+      document.getElementById('droneWp').textContent=Math.min(12,Math.floor(nphase*2)+1);
+      document.getElementById('droneDist').textContent=Math.max(0,Math.round(150-nphase*15));
+      setTimeout(drawNDVI,80);
+    }
+    drawNDVI();
+  </script>
+</body>
+</html>

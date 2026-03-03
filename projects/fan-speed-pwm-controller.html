@@ -1,0 +1,211 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fan Speed PWM Controller – Studgine</title>
+  <meta name="description" content="Smoothly vary DC fan speed with a potentiometer and PWM on Arduino. Learn analogRead, map(), and analogWrite." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    /* ── Fan PWM Animation ── */
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:36px; padding:28px 16px; }
+    .pot-visual { display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .pot-body { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#374151,#1f2937); border:3px solid #4b5563; position:relative; }
+    .pot-knob { width:16px; height:16px; background:#f59e0b; border-radius:50%; position:absolute; top:2px; left:50%; transform:translateX(-50%); }
+    .fan-visual { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .fan-circle { width:80px; height:80px; border-radius:50%; border:3px solid #1e3a8a; background:rgba(14,165,233,.08); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+    .fan-blade { position:absolute; width:30px; height:10px; background:linear-gradient(90deg,#0ea5e9,#60a5fa); border-radius:10px 2px 2px 10px; transform-origin:40px 5px; animation:fan-spin 0.5s linear infinite; }
+    .fan-blade:nth-child(2){transform:rotate(120deg); animation-delay:0s;}
+    .fan-blade:nth-child(3){transform:rotate(240deg); animation-delay:0s;}
+    @keyframes fan-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    .fan-blade:nth-child(1){ animation-duration: var(--fan-speed, 0.5s); }
+    .fan-blade:nth-child(2){ animation-duration: var(--fan-speed, 0.5s); }
+    .fan-blade:nth-child(3){ animation-duration: var(--fan-speed, 0.5s); }
+    .speed-bar { width:80px; height:8px; background:#1f2937; border-radius:4px; overflow:hidden; }
+    .speed-fill { height:100%; background:linear-gradient(90deg,#22c55e,#0ea5e9); border-radius:4px; animation:speed-change 3s ease-in-out infinite; }
+    @keyframes speed-change { 0%{width:20%} 50%{width:90%} 100%{width:20%} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html"    class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html"    class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Fan Speed PWM Controller</h1>
+      <p class="hero-sub">Turn a potentiometer to smoothly vary 5 V fan speed via PWM — master <code>analogRead()</code>, <code>map()</code>, and <code>analogWrite()</code> in a tangible build.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Fan Speed PWM Controller</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+
+        <div class="anim-stage">
+          <div class="pot-visual">
+            <div class="pot-body"><div class="pot-knob"></div></div>
+            <span style="font-size:.7rem;color:var(--color-text-muted);">POTENTIOMETER</span>
+          </div>
+          <div style="font-size:1.4rem;color:var(--color-text-muted);">→</div>
+          <div class="fan-visual">
+            <div class="fan-circle">
+              <div class="fan-blade"></div>
+              <div class="fan-blade"></div>
+              <div class="fan-blade"></div>
+            </div>
+            <div class="speed-bar"><div class="speed-fill"></div></div>
+            <span style="font-size:.7rem;color:var(--color-text-muted);">FAN SPEED</span>
+          </div>
+        </div>
+        <p class="anim-stage-label">Pot rotation → PWM duty cycle → smooth fan speed</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+PWM+fan+speed+control+potentiometer" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p><strong>Pulse Width Modulation (PWM)</strong> is how a microcontroller "pretends" to output an analog voltage using a digital pin. By toggling the pin on and off very rapidly, the average voltage seen by the load is proportional to the duty cycle — 50% duty = ~2.5 V equivalent, 100% duty = 5 V. Fans, LEDs, and motors all respond smoothly to PWM control.</p>
+        <p>A 10 kΩ potentiometer gives a 0–1023 analog reading on the ADC. The Arduino's built-in <code>map()</code> function re-scales that to 0–255, which is then written to a PWM pin. The result: a fully analog-feel fan speed knob built with digital hardware.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Main microcontroller</span></div></li>
+          <li><span class="comp-icon">🌀</span><div><span class="comp-name">5 V DC brushless mini fan</span><span class="comp-note">Target load (e.g. 5 V PC case fan)</span></div></li>
+          <li><span class="comp-icon">🎚️</span><div><span class="comp-name">10 kΩ potentiometer</span><span class="comp-note">Speed control knob</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">NPN transistor (2N2222 / TIP120)</span><span class="comp-note">Fan driver — Arduino can't source enough current directly</span></div></li>
+          <li><span class="comp-icon">🟫</span><div><span class="comp-name">1 kΩ base resistor + flyback diode</span><span class="comp-note">Transistor drive + motor spike protection</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype connections</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Read the pot</strong> — Connect the pot wiper to <code>A0</code>. In <code>loop()</code>: <code>int potVal = analogRead(A0);</code> — returns 0–1023, representing 0–5 V.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Map to PWM range</strong> — <code>int pwmVal = map(potVal, 0, 1023, 0, 255);</code> — scales linearly. Most fans need a minimum ~80 PWM to spin; you can clamp: <code>if(pwmVal &lt; 80 &amp;&amp; pwmVal &gt; 0) pwmVal = 80;</code>
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Drive the fan transistor</strong> — Connect Arduino pin 9 (PWM) through a 1 kΩ resistor to the base of an NPN transistor (2N2222 or TIP120). Fan positive → 5 V rail; fan negative → transistor collector; emitter → GND. Place a 1N4007 flyback diode across the fan terminals.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Write PWM</strong> — <code>analogWrite(9, pwmVal);</code> sets the duty cycle. Add a <code>delay(20);</code> to reduce ADC noise jitter. Optionally print to Serial Monitor: <code>Serial.println(pwmVal);</code> to visualise the mapping live.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🌡️ Temperature-controlled fan</span>
+          <span class="app-tag">💡 LED brightness dimmer</span>
+          <span class="app-tag">🚗 Motor speed controller</span>
+          <span class="app-tag">🎚️ Audio amplifier volume</span>
+          <span class="app-tag">🖥️ PC fan curve emulator</span>
+          <span class="app-tag">📊 PWM duty on OLED display</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $12</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 2 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Power</span><span>5 V USB</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">analogRead()</span></li>
+            <li><span class="skill-tag">analogWrite() / PWM</span></li>
+            <li><span class="skill-tag">map() function</span></li>
+            <li><span class="skill-tag">Transistor as switch</span></li>
+            <li><span class="skill-tag">Flyback diode protection</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;">None — built-in Arduino functions only.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="thermostat-fan-controller.html" class="skill-tag">Thermostat Fan Controller</a></li>
+            <li><a href="rgb-color-mixer.html" class="skill-tag">RGB Color Mixer</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

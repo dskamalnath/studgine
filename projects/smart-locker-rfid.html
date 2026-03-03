@@ -1,0 +1,323 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Locker with RFID – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a secure RFID smart locker with Arduino: enroll authorized cards, control a solenoid lock, log access events to SD card with RTC timestamps." />
+  <meta name="keywords" content="RFID smart locker Arduino, MFRC522 door lock Arduino, RFID access control project, solenoid lock Arduino, RFID card reader Arduino" />
+  <link rel="canonical" href="smart-locker-rfid.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000810 0%,#001020 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .locker-wrap{display:flex;align-items:center;gap:16px;}
+    .locker-body{width:70px;height:90px;background:#1a2a4a;border:3px solid #2a4a8a;border-radius:6px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .locker-handle{width:12px;height:30px;background:#8a6a00;border:2px solid #c4a000;border-radius:3px;position:absolute;right:-8px;top:50%;transform:translateY(-50%);}
+    .locker-lock{font-size:22px;transition:transform 0.5s;}
+    .locker-label{font-family:monospace;font-size:10px;color:#60a0ff;text-align:center;margin-top:4px;}
+    .rfid-card{width:50px;height:34px;background:linear-gradient(135deg,#1a6a3a,#3a8a5a);border-radius:4px;border:1px solid #4a9a6a;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:transform 0.3s;}
+    .rfid-card:hover{transform:scale(1.05);}
+    .scan-ring{width:60px;height:44px;border:2px solid #00ff88;border-radius:8px;opacity:0;transition:opacity 0.3s;position:absolute;}
+    .status-display{background:#0a1a0a;border:2px solid #1a4a1a;border-radius:6px;padding:6px 14px;font-family:monospace;font-size:13px;text-align:center;min-width:180px;}
+    .log-line{font-family:monospace;font-size:10px;color:#60a0ff;}
+    .log-line.grant{color:#00ff88;}
+    .log-line.deny{color:#ff4040;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Smart Locker with RFID</h1>
+      <p>Enroll authorized MIFARE cards with an MFRC522 reader, control a 12 V solenoid lock via relay, and log every access attempt to an SD card with DS3231 timestamps.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Smart Locker with RFID</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="locker-wrap">
+                  <div>
+                    <div class="rfid-card" id="rfidCard">💳</div>
+                    <div style="font-family:monospace;font-size:9px;color:#60a0ff;text-align:center;margin-top:4px;" id="uidLabel">UID: --</div>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;color:#3a6aaa;font-family:monospace;">→ scan →</div>
+                  </div>
+                  <div style="position:relative;">
+                    <div class="scan-ring" id="scanRing"></div>
+                    <div style="background:#1a2a4a;border:2px solid #2a4a8a;border-radius:6px;padding:8px 10px;font-size:9px;font-family:monospace;color:#60a0ff;text-align:center;">MFRC522<br>📡</div>
+                  </div>
+                  <div>→</div>
+                  <div>
+                    <div class="locker-body">
+                      <div class="locker-lock" id="lockIcon">🔒</div>
+                      <div class="locker-handle"></div>
+                    </div>
+                    <div class="locker-label" id="lockState">LOCKED</div>
+                  </div>
+                </div>
+                <div class="status-display" id="statusDisp" style="color:#60a0ff;">Waiting for card...</div>
+                <div id="logArea" style="width:100%;max-width:300px;">
+                  <div class="log-line grant">GRANT  A4:2B:C1:08 · 09:14:02</div>
+                  <div class="log-line deny">DENY   FF:A1:22:B9 · 09:18:44</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+RFID+smart+locker+MFRC522+solenoid+lock" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>RFID (Radio Frequency Identification) access control is everywhere — from hotel key cards to office doors. The MFRC522 is a 13.56 MHz SPI RFID reader that can read ISO/IEC 14443 Type A cards (MIFARE Classic 1K) at up to 10 cm range. It outputs a unique 4-byte UID per card, which is all you need to implement a whitelist-based access system.</p>
+              <p>This project stores up to 10 authorized card UIDs in EEPROM, drives a 12 V solenoid latch bolt via a relay, gives visual/audible feedback (green/red LED + buzzer), and logs every scan attempt to a microSD card with a DS3231 timestamp. An enroll mode (activated by holding a master card for 3 seconds) adds new cards to the EEPROM whitelist without reprogramming.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — SPI host for MFRC522 and SD module simultaneously</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">MFRC522 RFID Reader Module</span><span class="comp-note"> — 13.56 MHz SPI reader; SS→D10, SCK→D13, MOSI→D11, MISO→D12, RST→D9</span></div></li>
+                <li><span class="comp-icon">🔐</span><div><span class="comp-name">12 V Solenoid Bolt Lock</span><span class="comp-note"> — NC solenoid; energize to unlock, spring-return to lock</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">5 V Relay Module</span><span class="comp-note"> — Switches 12 V solenoid from Arduino 5 V logic; 1N4007 flyback included</span></div></li>
+                <li><span class="comp-icon">🕐</span><div><span class="comp-name">DS3231 RTC + MicroSD Module</span><span class="comp-note"> — Timestamp and event logging; SD CS→D4 (separate SPI CS)</span></div></li>
+                <li><span class="comp-icon">💳</span><div><span class="comp-name">MIFARE Classic 1K Cards (5-pack)</span><span class="comp-note"> — Standard 13.56 MHz ISO cards; key fobs also compatible</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Enroll Master Card and Whitelist</h4><p>On first boot (EEPROM byte 0 ≠ 0xAA), enter setup mode. The first card scanned becomes the master card — its UID stored at EEPROM addr 10–13. To add a user card: hold master card for 3+ seconds → green LED blinks → scan new card → UID written to next slot (EEPROM addr 20, 24, 28...). Up to 10 user cards (40 bytes).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Scan → UID Comparison → Unlock</h4><p>In normal operation, poll RFID every 100 ms with <code>mfrc522.PICC_IsNewCardPresent()</code> and <code>mfrc522.PICC_ReadCardSerial()</code>. Extract the 4-byte UID from <code>mfrc522.uid.uidByte[]</code> and compare against all EEPROM whitelist entries. If match: <code>relay HIGH</code> for 3 seconds, green LED, 1 beep. If no match: <code>relay LOW</code>, red LED, 3 rapid beeps.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>SD Card Event Logging</h4><p>After every scan, open <code>ACCESS.CSV</code> on the SD card and append a row: <code>timestamp, UID_hex, GRANTED/DENIED, user_slot</code>. Use SD in SPIFFS mode with CS on D4 (separate from RFID CS on D10). Flush after every write. On SD failure, print to Serial and flash onboard LED but don't block — access control must remain functional even without logging.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Fail-Safe Design</h4><p>Use a normally-closed solenoid so the door stays locked when power fails (security-positive mode). Add a 1000 µF capacitor across the relay coil to handle inrush. An indoor emergency release button bypasses the solenoid relay directly. 3 consecutive DENY scans within 30 seconds triggers a tamper alert (rapid buzzer + Serial message).</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;SPI.h&gt;
+#include &lt;MFRC522.h&gt;
+#include &lt;EEPROM.h&gt;
+
+#define SS_PIN  10
+#define RST_PIN  9
+#define RELAY    6
+#define BUZZER   7
+
+MFRC522 rfid(SS_PIN, RST_PIN);
+
+bool uidInWhitelist(byte *uid, byte len) {
+  for(int slot = 0; slot &lt; 10; slot++) {
+    int addr = 20 + slot * 4;
+    bool match = true;
+    for(int i = 0; i &lt; 4; i++) {
+      if(EEPROM.read(addr + i) != uid[i]) { match = false; break; }
+    }
+    if(match) return true;
+  }
+  return false;
+}
+
+void addToWhitelist(byte *uid) {
+  for(int slot = 0; slot &lt; 10; slot++) {
+    int addr = 20 + slot * 4;
+    if(EEPROM.read(addr) == 0xFF) {  // empty slot
+      for(int i = 0; i &lt; 4; i++) EEPROM.write(addr + i, uid[i]);
+      break;
+    }
+  }
+}
+
+void setup() {
+  SPI.begin(); rfid.PCD_Init();
+  pinMode(RELAY, OUTPUT); pinMode(BUZZER, OUTPUT);
+}
+
+void loop() {
+  if(!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) return;
+  byte *uid = rfid.uid.uidByte;
+  if(uidInWhitelist(uid, rfid.uid.size)) {
+    digitalWrite(RELAY, HIGH);
+    tone(BUZZER, 1000, 200);
+    delay(3000);
+    digitalWrite(RELAY, LOW);
+  } else {
+    tone(BUZZER, 300, 100); delay(150);
+    tone(BUZZER, 300, 100); delay(150);
+    tone(BUZZER, 300, 100);
+  }
+  rfid.PICC_HaltA();
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Home Safe Access</span>
+                <span class="app-tag">🎒 School Locker System</span>
+                <span class="app-tag">🏭 Workshop Tool Cabinet</span>
+                <span class="app-tag">🚗 Garage Door Controller</span>
+                <span class="app-tag">📱 NFC Smartphone Unlock</span>
+                <span class="app-tag">🌐 IoT Cloud Access Log</span>
+                <span class="app-tag">👁️ Add Fingerprint (FPM10A)</span>
+                <span class="app-tag">⌨️ PIN Keypad Fallback</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $35</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno / Nano</li>
+                <li><strong>Cards Supported:</strong> Up to 10 UIDs in EEPROM</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>SPI RFID communication</li>
+                <li>EEPROM whitelist management</li>
+                <li>Relay solenoid lock driving</li>
+                <li>SD card access log</li>
+                <li>Enroll/delete card mode FSM</li>
+                <li>Fail-safe hardware design</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">MFRC522</span><span class="lib-desc"> — RFID reader card UID driver</span></li>
+                <li><span class="lib-name">SD (built-in)</span><span class="lib-desc"> — MicroSD access log file I/O</span></li>
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — DS3231 for event timestamps</span></li>
+                <li><span class="lib-name">EEPROM (built-in)</span><span class="lib-desc"> — Persistent UID whitelist storage</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="fingerprint-door-lock.html">Fingerprint Door Lock</a></li>
+                <li><a href="nfc-business-card-scanner.html">NFC Business Card Scanner</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const uids = ['A4:2B:C1:08','F3:88:DD:21','60:AA:3C:7F','FF:A1:22:B9'];
+    const authorized = [true, true, true, false];
+    let scanTimer = 0;
+    function doScan(idx) {
+      const uid = uids[idx]; const ok = authorized[idx];
+      document.getElementById('uidLabel').textContent = 'UID: ' + uid;
+      document.getElementById('scanRing').style.opacity = '1';
+      setTimeout(()=>document.getElementById('scanRing').style.opacity='0', 600);
+      const statusDisp = document.getElementById('statusDisp');
+      const lockIcon = document.getElementById('lockIcon');
+      const lockState = document.getElementById('lockState');
+      if(ok) {
+        statusDisp.textContent = '✅ ACCESS GRANTED'; statusDisp.style.color='#00ff88';
+        lockIcon.textContent = '🔓'; lockState.textContent = 'UNLOCKED'; lockState.style.color='#00ff88';
+        setTimeout(()=>{lockIcon.textContent='🔒';lockState.textContent='LOCKED';lockState.style.color='#60a0ff';statusDisp.textContent='Waiting for card...';statusDisp.style.color='#60a0ff';},3000);
+      } else {
+        statusDisp.textContent = '❌ ACCESS DENIED'; statusDisp.style.color='#ff4040';
+        setTimeout(()=>{statusDisp.textContent='Waiting for card...';statusDisp.style.color='#60a0ff';},2000);
+      }
+      const logArea = document.getElementById('logArea');
+      const line = document.createElement('div');
+      line.className = 'log-line ' + (ok?'grant':'deny');
+      line.textContent = (ok?'GRANT  ':'DENY   ') + uid + ' · ' + new Date().toLocaleTimeString();
+      logArea.prepend(line);
+      if(logArea.children.length > 4) logArea.removeChild(logArea.lastChild);
+    }
+    let scanIdx = 0;
+    setInterval(()=>{ doScan(scanIdx++ % uids.length); }, 3500);
+  </script>
+</body>
+</html>

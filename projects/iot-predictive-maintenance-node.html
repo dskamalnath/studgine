@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IoT Predictive Maintenance Node – Advanced Project | Studgine</title>
+  <meta name="description" content="Mount an ADXL345 on a motor and train an anomaly detection model on Raspberry Pi to predict bearing failure before it happens — a real Industry 4.0 prototype." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#0f0a00;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .vib-canvas-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .pm-info{font-family:monospace;font-size:9px;color:#ffaa00;display:flex;flex-direction:column;gap:4px;}
+    .health-bar{width:70px;height:8px;background:#200;border-radius:4px;overflow:hidden;}
+    .health-fill{height:100%;border-radius:4px;transition:width 0.5s,background 0.5s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>IoT Predictive Maintenance Node</h1>
+      <p>Mount an ADXL345 vibration accelerometer on a DC motor bearing, collect normal and fault-state vibration data, train a one-class SVM anomaly detector on Raspberry Pi, and publish real-time health scores to an MQTT + Grafana monitoring dashboard — a genuine Industry 4.0 prototype.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">IoT Predictive Maintenance Node</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div class="vib-canvas-wrap">
+                  <canvas id="vibCanvas" width="120" height="70"></canvas>
+                  <div style="font-family:monospace;font-size:7px;color:#888;">VIBRATION (g)</div>
+                </div>
+                <div class="pm-info">
+                  <div>RMS:  <span id="pmRms">0.12g</span></div>
+                  <div>PEAK: <span id="pmPeak">0.31g</span></div>
+                  <div>KURT: <span id="pmKurt">3.1</span></div>
+                  <div>SCORE:<span id="pmScore">98%</span></div>
+                  <div style="margin-top:3px;color:#aaa;">HEALTH</div>
+                  <div class="health-bar"><div class="health-fill" id="healthFill" style="width:98%;background:#00cc44;"></div></div>
+                  <div id="pmStatus" style="color:#00ff88;margin-top:3px;">NORMAL</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+ADXL345+vibration+anomaly+detection+predictive+maintenance" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Predictive maintenance (PdM) uses continuous sensor monitoring to detect early signs of equipment failure — preventing costly unplanned downtime. Bearing defects produce characteristic vibration signatures: increased RMS amplitude, elevated kurtosis (impulsive spikes), and spectral components at bearing defect frequencies (BPFI, BPFO, BSF). This project trains a scikit-learn Isolation Forest (one-class novelty detector) on normal operating vibration to define a healthy baseline. Any deviation triggers a Grafana alert before failure occurs.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📳</span><div><span class="comp-name">ADXL345 3-Axis MEMS Accelerometer</span><span class="comp-note"> — ±16g range; SPI/I²C; 3200Hz max ODR; FIFO buffer; interrupt on activity; I²C address 0x53</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">DC Motor with Bearing + Mount</span><span class="comp-note"> — ADXL345 epoxy-mounted on bearing housing; connect motor to regulated 5–12V supply at constant RPM</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (2 GB)</span><span class="comp-note"> — I²C read at 400kHz; Python data pipeline; scikit-learn inference; Paho MQTT publisher</span></div></li>
+                <li><span class="comp-icon">📊</span><div><span class="comp-name">MQTT + InfluxDB + Grafana Stack</span><span class="comp-note"> — Mosquitto broker; InfluxDB 2 time-series storage; Grafana alert rules + dashboard panels</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>High-Rate Vibration Data Capture</h4><p>Configure ADXL345 for maximum output rate: write <code>0x0C</code> to BW_RATE register (3200Hz). Read FIFO burst: <code>i2c.read_i2c_block_data(0x53, 0x32, 6)</code> → 6 bytes = X_low, X_high, Y_low, Y_high, Z_low, Z_high. Scale: <code>g_value = (int16_t / 256)</code> for ±2g range. Collect 1024 samples per measurement window (≈0.32s). Store in numpy array for feature extraction.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Feature Engineering</h4><p>Time-domain features: RMS = <code>sqrt(mean(x²+y²+z²))</code>, peak = max(|a|), crest factor = peak/RMS, kurtosis = <code>scipy.stats.kurtosis(samples)</code> (healthy bearing ≈3, defective &gt;5). Frequency-domain (FFT): compute <code>freqs, psd = scipy.signal.welch(samples, fs=3200)</code>. Power in bearing defect frequency bands (BPFO ≈ 0.4×RPM×ball_count). Assemble feature vector of 12 values per window.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Isolation Forest Training + Inference</h4><p>Collect 1000 windows of normal operation → assemble 1000×12 feature matrix. Train: <code>from sklearn.ensemble import IsolationForest; model = IsolationForest(contamination=0.01).fit(X_normal)</code>. Save: <code>joblib.dump(model, 'bearing_model.pkl')</code>. Runtime: score = <code>model.score_samples(features)[0]</code>. Scores near 0 = normal; strongly negative = anomaly. Convert to health % = <code>min(100, max(0, (score + 0.5)*200))</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Alerting + Dashboard</h4><p>Publish JSON via MQTT every 5s: <code>{"health":95.2,"rms_g":0.12,"kurtosis":3.2,"status":"NORMAL"}</code>. InfluxDB Telegraf consumes → time-series storage. Grafana: health score gauge (red &lt;70%, yellow 70–90%, green &gt;90%), kurtosis trend chart, RMS alert when &gt;2× baseline. Email/Telegram alert when health &lt; 70% for 3 consecutive minutes → schedule maintenance before catastrophic failure.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import smbus2, numpy as np, scipy.stats, joblib, json
+import paho.mqtt.client as mqtt
+
+bus = smbus2.SMBus(1)
+ADDR = 0x53
+# Set 3200Hz data rate, measurement mode
+bus.write_byte_data(ADDR, 0x2C, 0x0C)  # BW_RATE
+bus.write_byte_data(ADDR, 0x31, 0x00)  # DATA_FORMAT ±2g
+bus.write_byte_data(ADDR, 0x2D, 0x08)  # POWER_CTL measure
+
+model = joblib.load('bearing_model.pkl')
+client = mqtt.Client(); client.connect("localhost")
+
+def read_accel():
+    data = bus.read_i2c_block_data(ADDR, 0x32, 6)
+    x = np.int16((data[1]<<8)|data[0])
+    y = np.int16((data[3]<<8)|data[2])
+    z = np.int16((data[5]<<8)|data[4])
+    return np.array([x,y,z]) / 256.0  # convert to g
+
+import time
+while True:
+    samples = np.array([read_accel() for _ in range(256)])
+    mag = np.sqrt((samples**2).sum(axis=1))
+    rms = float(np.sqrt(np.mean(mag**2)))
+    kurt = float(scipy.stats.kurtosis(mag))
+    peak = float(np.max(np.abs(mag)))
+    
+    features = [[rms, peak, peak/max(rms,0.001), kurt,
+                 0,0,0,0,0,0,0,0]]
+    score = model.score_samples(features)[0]
+    health = min(100, max(0, (score+0.5)*200))
+    
+    payload = json.dumps({"health":round(health,1),
+                          "rms_g":round(rms,3),
+                          "kurtosis":round(kurt,2),
+                          "status":"NORMAL" if health>70 else "ALERT"})
+    client.publish("factory/bearing/node1", payload)
+    time.sleep(5)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🌡️ Temperature Monitoring</span>
+                <span class="app-tag">🔊 Acoustic Emission Sensor</span>
+                <span class="app-tag">📅 RUL Estimation Model</span>
+                <span class="app-tag">☁️ Azure IoT Hub Integration</span>
+                <span class="app-tag">📱 Telegram Alert Bot</span>
+                <span class="app-tag">🏭 Multi-Asset Fleet Monitor</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $55 – $100</li><li><strong>Build Time:</strong> 7 – 12 hours</li><li><strong>ADC Rate:</strong> 3200 Hz</li><li><strong>Latency:</strong> &lt;5s alert response</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>MEMS accelerometer I²C interface</li><li>Vibration signal feature extraction</li><li>Kurtosis + RMS analysis</li><li>Isolation Forest anomaly detection</li><li>MQTT IoT telemetry pipeline</li><li>Grafana alert rules setup</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">smbus2</span><span class="lib-desc"> — ADXL345 I²C driver</span></li><li><span class="lib-name">scikit-learn</span><span class="lib-desc"> — Isolation Forest model</span></li><li><span class="lib-name">scipy</span><span class="lib-desc"> — Kurtosis + Welch PSD</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const vc=document.getElementById('vibCanvas');
+    const vctx=vc.getContext('2d');
+    let vphase=0,health=98;
+    function animVib(){
+      vctx.fillStyle='rgba(15,10,0,0.3)';vctx.fillRect(0,0,120,70);
+      vctx.strokeStyle='#ffaa00';vctx.lineWidth=1.5;
+      vctx.beginPath();
+      for(let x=0;x<120;x++){
+        const noise=(Math.random()-0.5)*4;
+        const wave=20*Math.sin(2*Math.PI*x/20+vphase)+noise;
+        x===0?vctx.moveTo(x,35+wave*0.5):vctx.lineTo(x,35+wave*0.5);
+      }
+      vctx.stroke();
+      vphase+=0.2;
+      const rms=(0.12+Math.random()*0.02).toFixed(2);
+      document.getElementById('pmRms').textContent=rms+'g';
+      document.getElementById('pmPeak').textContent=(+rms*2.5).toFixed(2)+'g';
+      document.getElementById('pmKurt').textContent=(3.0+Math.random()*0.4).toFixed(1);
+      health=95+Math.random()*4;
+      document.getElementById('pmScore').textContent=health.toFixed(0)+'%';
+      document.getElementById('healthFill').style.width=health+'%';
+      requestAnimationFrame(animVib);
+    }
+    animVib();
+  </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facial Recognition Door Lock – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a facial recognition door lock using face_recognition library, OpenCV, Raspberry Pi 4, and Pi Camera. Servo-controlled bolt with face encoding database." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050810 0%,#080a18 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;overflow:hidden;}
+    .camera-frame{width:90px;height:70px;border:3px solid #204080;border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative;background:#0a0a18;}
+    .face-box{width:44px;height:44px;border:2px solid #00ccff;border-radius:4px;transition:border-color 0.4s,box-shadow 0.4s;}
+    .face-dots{display:flex;flex-wrap:wrap;gap:3px;width:32px;height:32px;opacity:0.5;}
+    .face-dot{width:4px;height:4px;border-radius:50%;background:#40a0ff;}
+    .lock-sym{font-size:36px;transition:all 0.4s;}
+    .face-log{font-family:monospace;font-size:8px;color:#4090c0;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Facial Recognition Door Lock</h1>
+      <p>Secure a door using face recognition — a Raspberry Pi 4 with Pi Camera continuously detects faces, compares encodings against a known-persons database, and actuates a servo bolt for authorised individuals.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Facial Recognition Door Lock</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <div class="camera-frame">
+                    <div class="face-box" id="faceBox">
+                      <div class="face-dots" id="faceDots">
+                        <div class="face-dot"></div><div class="face-dot"></div><div class="face-dot"></div>
+                        <div class="face-dot"></div><div class="face-dot"></div><div class="face-dot"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="font-family:monospace;font-size:9px;" id="faceLabel">SCANNING...</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div class="lock-sym" id="lockSym">🔒</div>
+                  <div style="font-family:monospace;font-size:8px;color:#406080;" id="lockStatus">LOCKED</div>
+                </div>
+                <div class="face-log">
+                  <div>DIST: <span id="faceConf">---</span></div>
+                  <div>MATCH: <span id="faceMatch">---</span></div>
+                  <div>SERVO: <span id="servoPos">90°</span></div>
+                  <div>LOG: <span id="accessLog" style="color:#80ff80;">---</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=facial+recognition+door+lock+raspberry+pi+face_recognition+opencv" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The <code>face_recognition</code> Python library (built on dlib's ResNet) makes facial recognition accessible: it generates a 128-dimension face encoding from any photo, and compares new encodings with Euclidean distance (threshold ≈ 0.6). On Raspberry Pi 4, face detection runs at ~3–5 FPS with a 640×480 frame — fast enough for a door lock application.</p>
+              <p>You'll learn how computer vision pipelines are structured: capture → detect faces → extract encodings → compare → decide → actuate. You'll also handle the real-world complications: varying lighting, faces at angles, and preventing spoofing with printed photos.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4GB RAM)</span><span class="comp-note"> — 4GB recommended; dlib encoding is CPU-intensive; enable OpenCV ARM NEON optimisations</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Raspberry Pi Camera v2 (or v3)</span><span class="comp-note"> — Pi Camera v3 has better low-light; connect via CSI ribbon; use picamera2 library for capture</span></div></li>
+                <li><span class="comp-icon">🔒</span><div><span class="comp-name">MG996R Servo + Door Bolt</span><span class="comp-note"> — 0° = locked (bolt extended), 90° = unlocked (bolt retracted); 3D-print bolt bracket; servo powered from 5V 3A supply, NOT Pi GPIO</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">Active Buzzer + RGB LED</span><span class="comp-note"> — Green LED + short beep = access granted; Red LED + long beep = denied; visual/audio feedback</span></div></li>
+                <li><span class="comp-icon">💡</span><div><span class="comp-name">IR LED Strip (850nm)</span><span class="comp-note"> — Illuminate face in low light for consistent recognition; Pi NoIR Camera v2 pairs perfectly with IR illumination</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Build the Known-Faces Database</h4><p>For each authorised person: take 5–10 photos under varied lighting and angles. Compute encoding for each: <code>enc = face_recognition.face_encodings(image)[0]</code>. Average the 128-dim vectors or store all individually. Pickle the list: <code>pickle.dump({"name": name, "encodings": enc_list}, f)</code>. Load at startup. Adding a new person: run an enrolment mode that captures 10 photos live and adds to the pickle file.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Live Detection Pipeline</h4><p>Capture frame with picamera2: <code>frame = picam2.capture_array()</code>. Resize to 320×240 for speed. Detect face locations: <code>face_locs = face_recognition.face_locations(small_frame, model="hog")</code>. Extract encodings: <code>face_encs = face_recognition.face_encodings(small_frame, face_locs)</code>. For each detected face: compare with all known encodings using <code>face_recognition.compare_faces(known_encs, face_enc, tolerance=0.55)</code> and <code>face_recognition.face_distance(known_encs, face_enc)</code>. Best match = lowest distance below threshold.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Servo Bolt Actuation</h4><p>Use RPi.GPIO PWM: <code>servo = GPIO.PWM(18, 50)</code>. Locked position: 2.5% duty cycle (0°, bolt extended). Unlocked: 7.5% duty (90°, bolt retracted). Stop PWM after movement to prevent servo jitter: <code>servo.ChangeDutyCycle(0)</code> 0.5s after move. Auto-relock after 5 seconds: use threading.Timer for non-blocking delay. Log all access events to SQLite: timestamp, name, confidence, granted/denied.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Anti-Spoofing (Liveness Detection)</h4><p>Basic: require two consecutive positive matches 1 second apart (photo won't change between frames, real face will have micro-movement). Better: blink detection using facial landmarks — <code>face_recognition.face_landmarks()</code> returns eye points; compute eye aspect ratio (EAR); require EAR change (blink) within 3-second window for access. Advanced: use a depth camera (Intel RealSense) or structured light sensor to reject 2D photos.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import face_recognition, pickle, cv2
+from picamera2 import Picamera2
+import RPi.GPIO as GPIO, time, threading
+
+# Load known faces
+with open("encodings.pkl","rb") as f: db = pickle.load(f)
+known_encs = [e for person in db for e in person["encodings"]]
+known_names = [person["name"] for person in db for _ in person["encodings"]]
+
+GPIO.setmode(GPIO.BCM); GPIO.setup(18, GPIO.OUT)
+servo = GPIO.PWM(18, 50); servo.start(2.5)  # locked
+
+def unlock():
+    servo.ChangeDutyCycle(7.5); time.sleep(0.3)
+    servo.ChangeDutyCycle(0)
+    threading.Timer(5.0, lock).start()
+
+def lock():
+    servo.ChangeDutyCycle(2.5); time.sleep(0.3)
+    servo.ChangeDutyCycle(0)
+
+picam2 = Picamera2()
+picam2.configure(picam2.create_preview_configuration(main={"size":(640,480)}))
+picam2.start()
+
+while True:
+    frame = picam2.capture_array()
+    small = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
+    rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
+    locs = face_recognition.face_locations(rgb, model="hog")
+    encs = face_recognition.face_encodings(rgb, locs)
+    for enc in encs:
+        dists = face_recognition.face_distance(known_encs, enc)
+        best = dists.argmin()
+        if dists[best] < 0.55:
+            print(f"ACCESS GRANTED: {known_names[best]} ({dists[best]:.3f})")
+            unlock()
+        else:
+            print(f"ACCESS DENIED ({dists[best]:.3f})")
+    time.sleep(0.3)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📱 Telegram Access Notifications</span>
+                <span class="app-tag">🗄️ SQLite Access Log</span>
+                <span class="app-tag">😐 Liveness Detection</span>
+                <span class="app-tag">🌐 Flask Web Admin Panel</span>
+                <span class="app-tag">🔦 IR Night Vision</span>
+                <span class="app-tag">📲 Mobile App Remote Unlock</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $55 – $95</li><li><strong>Build Time:</strong> 6 – 10 hours</li><li><strong>Platform:</strong> Raspberry Pi 4</li><li><strong>Recognition:</strong> 3–5 FPS live</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>face_recognition / dlib encoding</li><li>OpenCV frame processing pipeline</li><li>picamera2 capture API</li><li>Servo GPIO PWM control</li><li>Liveness / anti-spoofing logic</li><li>SQLite access logging</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">face_recognition</span><span class="lib-desc"> — dlib-backed 128-dim face encodings</span></li><li><span class="lib-name">picamera2</span><span class="lib-desc"> — Raspberry Pi Camera v2/v3 capture</span></li><li><span class="lib-name">opencv-python</span><span class="lib-desc"> — Frame resize, color convert, draw bounding boxes</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let t=0, locked=true, timer=0;
+    const names=["Alice","Bob","Carol","Unknown","Unknown"];
+    setInterval(()=>{
+      t++;
+      const roll=Math.floor(t/8)%names.length;
+      const name=names[roll];
+      const dist=(0.35+Math.random()*0.4).toFixed(3);
+      const granted=name!=="Unknown"&&Number(dist)<0.55;
+      document.getElementById('faceBox').style.borderColor=granted?'#00ff80':(name==="Unknown"?'#ff4040':'#00ccff');
+      document.getElementById('faceLabel').textContent=name==="Unknown"?'SCANNING...':`FACE: ${name}`;
+      document.getElementById('faceConf').textContent=dist;
+      document.getElementById('faceMatch').textContent=granted?name:'---';
+      if(granted&&locked){locked=false;timer=10;}
+      if(!locked){timer--;if(timer<=0){locked=true;}}
+      document.getElementById('lockSym').textContent=locked?'🔒':'🔓';
+      document.getElementById('lockStatus').textContent=locked?'LOCKED':'UNLOCKED';
+      document.getElementById('servoPos').textContent=locked?'0°':'90°';
+      document.getElementById('accessLog').textContent=granted?'GRANTED':'---';
+    }, 600);
+  </script>
+</body>
+</html>

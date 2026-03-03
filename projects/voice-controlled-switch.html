@@ -1,0 +1,312 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice-Controlled Switch – Studgine</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage {
+      background: linear-gradient(160deg, #0d1020 0%, #1a1535 100%);
+      border-radius: 12px;
+      height: 230px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+    }
+    /* Microphone */
+    .mic-body {
+      display: flex; flex-direction:column; align-items:center; gap:6px;
+    }
+    .mic-icon {
+      font-size: 2.8rem;
+      filter: drop-shadow(0 0 8px #7b2d8b);
+      transition: filter 0.3s;
+    }
+    .mic-icon.active { filter: drop-shadow(0 0 16px #c47ecf) brightness(1.3); }
+    /* Sound waves */
+    .wave-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(150,80,200,0.5);
+      animation: ripple 1.4s ease-out infinite;
+      opacity: 0;
+    }
+    @keyframes ripple {
+      0%   { width:30px; height:30px; opacity:0.8; }
+      100% { width:90px; height:90px; opacity:0; }
+    }
+    .wave-ring.r2 { animation-delay: 0.5s; }
+    /* Word bubble */
+    .word-bubble {
+      position: absolute;
+      top: 14px;
+      background: rgba(150,80,200,0.25);
+      border: 1px solid #9650c8;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.75rem;
+      color: #d4aaff;
+      font-family: monospace;
+      font-weight: 700;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+    /* Arduino Nano BLE */
+    .nano-board {
+      background: #1a3a1a;
+      border: 1px solid #2a8a2a;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.6rem;
+      color: #5aff5a;
+      font-family: monospace;
+      line-height: 1.8;
+      min-width: 110px;
+    }
+    .nano-board .title { color: #aaffaa; font-weight: 700; }
+    /* Relay output */
+    .relay-group {
+      display: flex; flex-direction:column; gap:8px;
+    }
+    .relay-btn {
+      width: 80px; height: 26px;
+      border-radius: 13px;
+      border: 2px solid #555;
+      background: #222;
+      position: relative;
+      transition: background 0.3s, border-color 0.3s;
+      cursor: default;
+    }
+    .relay-btn .knob {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #555;
+      transition: left 0.3s, background 0.3s;
+    }
+    .relay-btn.on { background: rgba(90,200,90,0.2); border-color: #5ac85a; }
+    .relay-btn.on .knob { left: 56px; background: #5ac85a; }
+    .relay-label { font-size: 0.58rem; color: #aaa; text-align:center; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="navbar container">
+      <a href="../index.html" class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="16" fill="#FF6B35"/>
+          <path d="M8 22 L16 10 L24 22" stroke="white" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+          <circle cx="16" cy="10" r="2" fill="white"/>
+        </svg>
+        <span>Studgine</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html" class="active">Projects</a></li>
+        <li><a href="../resources.html">Resources</a></li>
+        <li><a href="../about.html">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟡 Intermediate Project</p>
+      <h1>Voice-Controlled Switch</h1>
+      <p>Recognise simple voice commands with an Edge Impulse TinyML model on an Arduino Nano BLE and toggle relay-controlled appliances hands-free — no cloud required.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb">
+      <a href="../projects.html">← Back to Projects</a>
+      <span>/</span>
+      <span>Voice-Controlled Switch</span>
+    </nav>
+
+    <div class="detail-layout">
+      <div class="detail-main">
+
+        <div class="anim-stage" id="vcStage">
+          <!-- Mic -->
+          <div class="mic-body" style="position:relative;">
+            <div class="wave-ring" id="wr1" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+            <div class="wave-ring r2" id="wr2" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+            <div class="mic-icon" id="micIcon">🎙️</div>
+            <div style="font-size:0.6rem;color:#9650c8;">PDM Mic</div>
+          </div>
+          <div class="word-bubble" id="wordBubble">"lights on"</div>
+          <!-- Nano BLE board -->
+          <div class="nano-board">
+            <div class="title">Arduino Nano BLE</div>
+            <div>Model: Edge Impulse</div>
+            <div id="nanoConf">Conf: 0%</div>
+            <div id="nanoLabel">Label: listening…</div>
+            <div>SRAM: 256 KB</div>
+          </div>
+          <!-- Relay switches -->
+          <div class="relay-group">
+            <div>
+              <div class="relay-btn" id="r0"><div class="knob"></div></div>
+              <div class="relay-label" id="rl0">Lights</div>
+            </div>
+            <div>
+              <div class="relay-btn" id="r1"><div class="knob"></div></div>
+              <div class="relay-label" id="rl1">Fan</div>
+            </div>
+            <div>
+              <div class="relay-btn" id="r2"><div class="knob"></div></div>
+              <div class="relay-label" id="rl2">Heater</div>
+            </div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Simulated on-device inference — voice command recognised, relay toggled</p>
+
+        <div class="video-links">
+          <strong>🎬 Video References:</strong>
+          <a href="https://www.youtube.com/results?search_query=Arduino+Nano+BLE+Edge+Impulse+voice+recognition" target="_blank" rel="noopener">Edge Impulse TinyML Tutorial</a>
+          <a href="https://www.youtube.com/results?search_query=TinyML+keyword+spotting+Arduino" target="_blank" rel="noopener">Keyword Spotting on Arduino</a>
+        </div>
+
+        <h2>What You'll Build</h2>
+        <p>An entirely offline voice-controlled relay system. You record ~50 samples each of short commands ("lights on", "lights off", "fan on", "fan off") using Edge Impulse Studio's browser-based data collector. A DSP block computes MFCC features from 1-second audio windows; a small neural network (Dense, 20 neurons) is trained and quantised to an INT8 TFLite model that fits in the Nano BLE's 256 KB SRAM. The exported Arduino library is included in the sketch; inference runs every 200 ms with no Wi-Fi or cloud dependency.</p>
+
+        <h2>Components Required</h2>
+        <ul class="component-list">
+          <li><span>Arduino Nano BLE Sense (Rev 1 or 2)</span><span>×1</span></li>
+          <li><span>2-Channel Relay Module (5 V)</span><span>×1</span></li>
+          <li><span>5 V External Power Adapter</span><span>×1</span></li>
+          <li><span>110/220 V AC Lamp Socket (demo appliance)</span><span>×1</span></li>
+          <li><span>3.3 V to 5 V Level Shifter</span><span>×1</span></li>
+          <li><span>Jumper Wires &amp; Breadboard</span><span>—</span></li>
+        </ul>
+
+        <h2>How It Works</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h3>Collect Training Data</h3>
+            <p>In Edge Impulse Studio, create a project, connect the Nano BLE, and record 50+ 1-second samples for each keyword ("lights on", "lights off", "fan on", "fan off", "unknown", "noise") using the built-in PDM microphone.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h3>Train TFLite Model</h3>
+            <p>Set an MFCC DSP block (13 coefficients, 0.02 s frame, 0.02 s stride) then an INT8-quantised Dense NN. Train for 100 epochs; target &gt;93 % accuracy. Export as an Arduino library ZIP.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h3>Run Inference</h3>
+            <p>In the Arduino sketch, call <code>ei_microphone_inference_start()</code>, fill the buffer, then <code>run_classifier()</code>. The highest-probability label above <code>CONFIDENCE_THRESHOLD = 0.85</code> triggers a relay action.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <h3>Drive Relay</h3>
+            <p>Map each confirmed label to a relay pin action: toggle state on "on/off" commands. A confirmed-count debounce (require 2 consecutive positive detections) prevents false triggers from noise.</p>
+          </div>
+        </div>
+
+        <h2>Real-World Applications</h2>
+        <div class="applications-grid">
+          <div class="app-card">🏠<br>Smart Home</div>
+          <div class="app-card">♿<br>Accessibility Aid</div>
+          <div class="app-card">🏥<br>Hands-Free Medical</div>
+          <div class="app-card">🏭<br>Industrial HMI</div>
+          <div class="app-card">🎤<br>TinyML Research</div>
+          <div class="app-card">🔌<br>Energy Saving</div>
+        </div>
+      </div>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card quick-facts">
+          <h3>Quick Facts</h3>
+          <dl>
+            <dt>Difficulty</dt><dd>🟡 Intermediate</dd>
+            <dt>Build Time</dt><dd>5–7 hours</dd>
+            <dt>Budget</dt><dd>$15 – $30</dd>
+            <dt>MCU</dt><dd>Arduino Nano BLE</dd>
+            <dt>AI Platform</dt><dd>Edge Impulse</dd>
+          </dl>
+        </div>
+        <div class="sidebar-card">
+          <h3>Skills You'll Learn</h3>
+          <ul>
+            <li>MFCC audio feature extraction</li>
+            <li>TinyML model training</li>
+            <li>INT8 quantisation</li>
+            <li>On-device inference</li>
+            <li>Relay switching logic</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Libraries Needed</h3>
+          <ul>
+            <li><strong>Edge Impulse SDK</strong> – exported zip</li>
+            <li><strong>PDM.h</strong> – built-in mic driver</li>
+            <li><strong>Arduino_TensorFlowLite</strong> – runtime</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Try Next</h3>
+          <ul>
+            <li><a href="wifi-scrolling-notice-board.html">Wi-Fi Scrolling Notice Board</a></li>
+            <li><a href="home-automation-system.html">Home Automation System</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="btn btn-secondary back-btn">← All Projects</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer-bottom">
+    <div class="container">
+      <p>© 2025 Studgine. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script>
+    const commands = [
+      { word: '"lights on"',  relay: 0, state: true,  conf: 96 },
+      { word: '"fan on"',     relay: 1, state: true,  conf: 91 },
+      { word: '"lights off"', relay: 0, state: false, conf: 94 },
+      { word: '"fan on"',     relay: 1, state: true,  conf: 88 },
+      { word: '"heater on"',  relay: 2, state: true,  conf: 90 },
+      { word: '"fan off"',    relay: 1, state: false, conf: 93 },
+      { word: '"heater off"', relay: 2, state: false, conf: 87 },
+    ];
+    let ci = 0;
+    const bubble = document.getElementById('wordBubble');
+    const micIcon = document.getElementById('micIcon');
+    const wr1 = document.getElementById('wr1');
+    const wr2 = document.getElementById('wr2');
+
+    function runCmd() {
+      const cmd = commands[ci % commands.length];
+      ci++;
+      // mic flash
+      micIcon.classList.add('active');
+      bubble.style.opacity = '1';
+      bubble.textContent = cmd.word;
+      wr1.style.animationPlayState = 'running';
+      wr2.style.animationPlayState = 'running';
+      document.getElementById('nanoConf').textContent = 'Conf: ' + cmd.conf + '%';
+      document.getElementById('nanoLabel').textContent = 'Label: ' + cmd.word;
+      // toggle relay
+      const r = document.getElementById('r' + cmd.relay);
+      if (cmd.state) { r.classList.add('on'); } else { r.classList.remove('on'); }
+      setTimeout(() => {
+        micIcon.classList.remove('active');
+        bubble.style.opacity = '0';
+        document.getElementById('nanoLabel').textContent = 'Label: listening…';
+        document.getElementById('nanoConf').textContent = 'Conf: —';
+      }, 2000);
+    }
+    setInterval(runCmd, 4000);
+  </script>
+</body>
+</html>

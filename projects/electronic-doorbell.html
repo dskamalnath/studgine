@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Electronic Doorbell – Studgine</title>
+  <meta name="description" content="Press a button to play a custom melody through a passive buzzer. Learn tone frequency arrays, tempo control, and song personalisation with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; gap:20px; }
+    .db-button { width:36px; height:36px; border-radius:50%; background:radial-gradient(circle at 40% 35%, #fca5a5, #dc2626); border:3px solid #7f1d1d; box-shadow:0 0 0 0 rgba(220,38,38,.6); cursor:pointer; }
+    .db-button.pressed { animation:btn-press .15s ease; }
+    @keyframes btn-press { 50%{transform:scale(.85);} }
+    .db-wire { width:22px; height:3px; background:#6b7280; border-radius:2px; }
+    .db-buzzer { width:38px; height:38px; border-radius:50%; background:radial-gradient(circle, #374151, #1f2937); border:2px solid #4b5563; display:flex; align-items:center; justify-content:center; position:relative; }
+    .db-buzzer-dot { width:12px; height:12px; border-radius:50%; background:#6b7280; }
+    .note { position:absolute; font-size:1.1rem; opacity:0; color:#fbbf24; animation:none; }
+    .note.n1 { top:-22px; left:0; }
+    .note.n2 { top:-28px; left:12px; }
+    .note.n3 { top:-18px; left:26px; }
+    .note.playing { animation:note-float .6s ease forwards; }
+    @keyframes note-float { 0%{opacity:1;transform:translateY(0);} 100%{opacity:0;transform:translateY(-20px);} }
+    .note2 { top:-22px; left:4px; }
+    .note3 { top:-28px; left:18px; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Electronic Doorbell</h1>
+      <p class="hero-sub">Press a button to play a custom melody through a passive buzzer. Experiment with tone frequencies, note durations, and song arrays to personalise your doorbell chime.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Electronic Doorbell</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="db-button" id="door-btn" title="Click to ring!"></div>
+          <div class="db-wire"></div>
+          <div class="db-buzzer" id="buzzer-vis">
+            <div class="db-buzzer-dot"></div>
+            <div class="note n1" id="n1">♩</div>
+            <div class="note n2" id="n2">♪</div>
+            <div class="note n3" id="n3">♫</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Click the button to hear the doorbell ring (visual only)</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+doorbell+passive+buzzer+melody+tone" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>A passive buzzer has no internal oscillator — unlike an active buzzer, it requires a <strong>varying frequency signal</strong> to produce sound. This makes it ideal for songs, since you control pitch by changing the frequency you supply. Arduino's <code>tone(pin, frequency, duration)</code> function does exactly this — it uses a hardware timer to generate a square wave at the requested frequency.</p>
+        <p>Musical notes map directly to frequencies: middle C (C4) = 261 Hz, D4 = 294 Hz, E4 = 330 Hz, and so on. By storing a melody as an array of note macros and a corresponding array of durations, the loop plays through each note sequentially, creating a recognisable tune.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive buzzer</span><span class="comp-note">5 V, 42 mm or 12 mm disc</span></div></li>
+          <li><span class="comp-icon">🔘</span><div><span class="comp-name">Push-button</span><span class="comp-note">Door trigger</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">100 Ω resistor</span><span class="comp-note">In series with buzzer to limit current</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Define note frequencies</strong> — At the top of your sketch include or define the standard pitches: <code>#define NOTE_C4 262</code>, <code>#define NOTE_D4 294</code>, etc. (Arduino IDE ships with a <em>pitches.h</em> header you can include: <code>#include &lt;pitches.h&gt;</code>). Then declare your melody and duration arrays:
+              <code>int melody[] = {NOTE_C4, NOTE_E4, NOTE_G4, NOTE_C5};</code>
+              <code>int noteDur[] = {4, 4, 4, 2}; // 4=quarter, 2=half</code>
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Wire buzzer and button</strong> — Buzzer – leg → GND, + leg → 100 Ω → D9. Button: one leg → 5 V, other leg → D2 and via 10 kΩ to GND. Configure D2 as <code>INPUT</code>.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Play melody on button press</strong> — In <code>loop()</code>: if <code>digitalRead(btnPin) == HIGH</code> (button pressed) iterate through the melody array. For each note: calculate beat duration as <code>int beatDur = 1000 / noteDur[i];</code> then call <code>tone(BUZZER_PIN, melody[i], beatDur * 0.9);</code> then <code>delay(beatDur);</code>. The 10% gap between notes avoids notes blurring together.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Customise your chime</strong> — Change the <code>melody[]</code> and <code>noteDur[]</code> arrays to programme any song. Classic starters: the first 4 bars of Für Elise, Jingle Bells, or a 2-note "ding-dong". Add a second button on D3 to cycle through multiple melody modes stored in a 2D array.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🔔 Home entrance doorbell</span>
+          <span class="app-tag">🎵 Musical greeting card</span>
+          <span class="app-tag">🏪 Shop entry alert chime</span>
+          <span class="app-tag">🕹️ Game win/fail jingle</span>
+          <span class="app-tag">⏰ Melody-based alarm clock</span>
+          <span class="app-tag">📯 Announcer for school bell</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$3 – $8</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 1.5 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Output</span><span>Passive buzzer</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">tone() function</span></li>
+            <li><span class="skill-tag">Frequency–pitch mapping</span></li>
+            <li><span class="skill-tag">Melody arrays</span></li>
+            <li><span class="skill-tag">Note duration maths</span></li>
+            <li><span class="skill-tag">Passive vs active buzzer</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">pitches.h (built-in header)</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="buzzer-piano.html" class="skill-tag">4-Key Buzzer Piano</a></li>
+            <li><a href="reaction-timer-game.html" class="skill-tag">Reaction Timer Game</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    const btn = document.getElementById('door-btn');
+    const n1 = document.getElementById('n1');
+    const n2 = document.getElementById('n2');
+    const n3 = document.getElementById('n3');
+    let ringing = false;
+    btn.addEventListener('click', () => {
+      if (ringing) return;
+      ringing = true;
+      btn.classList.add('pressed');
+      const notes = [n1, n2, n3];
+      notes.forEach((n, i) => {
+        setTimeout(() => {
+          n.classList.remove('playing');
+          void n.offsetWidth;
+          n.classList.add('playing');
+        }, i * 220);
+      });
+      setTimeout(() => {
+        btn.classList.remove('pressed');
+        notes.forEach(n => n.classList.remove('playing'));
+        ringing = false;
+      }, 900);
+    });
+  </script>
+</body>
+</html>

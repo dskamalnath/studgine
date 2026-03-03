@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hand Gesture Robot Control – Advanced Project | Studgine</title>
+  <meta name="description" content="Control a wheeled robot with hand gestures using MediaPipe gesture classifier, Raspberry Pi, and Bluetooth HC-05 serial communication." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#050810 0%,#0a0a18 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .gesture-box{width:80px;height:80px;border:2px solid #306080;border-radius:8px;background:#060e18;display:flex;align-items:center;justify-content:center;font-size:2rem;}
+    .robot-top{width:50px;height:50px;border:2px solid #4080a0;background:#0a1820;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;transition:transform 0.3s;}
+    .cmd-log{font-family:monospace;font-size:9px;color:#4090b0;display:flex;flex-direction:column;gap:3px;}
+    .bt-indicator{width:10px;height:10px;border-radius:50%;background:#0040ff;animation:btBlink 1s infinite;}
+    @keyframes btBlink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Hand Gesture Robot Control</h1>
+      <p>Control a wheeled robot wirelessly using hand gestures — MediaPipe classifies wrist/finger gestures on Raspberry Pi, sends commands via Bluetooth HC-05 to an Arduino-based robot chassis.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Hand Gesture Robot Control</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div style="font-family:monospace;font-size:7px;color:#305060;">GESTURE INPUT</div>
+                  <div class="gesture-box" id="gestureBox">✋</div>
+                  <div style="font-family:monospace;font-size:8px;color:#4080a0;" id="gestureName">OPEN HAND</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                  <div class="bt-indicator"></div>
+                  <div style="font-family:monospace;font-size:7px;color:#0040ff;">BT</div>
+                  <div style="font-size:1.2rem;">→</div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div style="font-family:monospace;font-size:7px;color:#305060;">ROBOT</div>
+                  <div class="robot-top" id="robotIcon">🤖</div>
+                  <div style="font-family:monospace;font-size:8px;color:#40a0c0;" id="robotCmd">STOP</div>
+                </div>
+                <div class="cmd-log">
+                  <div>CMD: <span id="cmdCode">S</span></div>
+                  <div>SPEED: <span id="cmdSpeed">0</span></div>
+                  <div>CONF: <span id="cmdConf">---</span></div>
+                  <div>LATENCY: <span id="cmdLatency">--ms</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=hand+gesture+robot+control+mediapipe+raspberry+pi+bluetooth" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>This project merges computer vision with wireless robotics: a Raspberry Pi running MediaPipe Hands translates intuitive gestures (open hand = stop, fist = forward, pointing left/right = turn) into serial commands sent via Bluetooth to an Arduino-controlled robot chassis. No joystick or phone app required — just your hand.</p>
+              <p>The split-architecture design (Pi for CV, Arduino for motor control) is an important embedded pattern: offload computationally expensive tasks to a more capable processor while keeping safety-critical real-time motor control on dedicated microcontrollers.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (Controller)</span><span class="comp-note"> — Runs MediaPipe + gesture classifier; connects to HC-05 Bluetooth master via UART (/dev/ttyS0)</span></div></li>
+                <li><span class="comp-icon">🤖</span><div><span class="comp-name">Arduino Uno + L298N (Robot)</span><span class="comp-note"> — Receives single-byte commands ('F','B','L','R','S') via HC-05 slave Bluetooth; drives 2 DC motors</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">2× HC-05 Bluetooth Modules</span><span class="comp-note"> — One master on Pi (AT mode: set as master, pair with slave), one slave on Arduino; UART 9600 baud</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">USB Webcam or Pi Camera</span><span class="comp-note"> — 30 FPS sufficient; position facing user at waist height for unobstructed hand view</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">2× 18650 Battery Pack (Robot)</span><span class="comp-note"> — 7.4V for motors; separate 5V powerbank for Raspberry Pi; keeps power systems isolated</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Gesture Classification with MediaPipe</h4><p>MediaPipe Hands provides 21 3D landmarks. Engineer geometric features from landmarks: finger extension (tip-to-MCP distances), wrist tilt (y-gradient of landmarks). Define gesture rules: <strong>Fist</strong>: all 5 fingertips below MCP joints → command 'F' (forward). <strong>Open hand</strong>: all tips above MCP → 'S' (stop). <strong>Point left</strong>: only index finger extended, wrist tilted left → 'L'. <strong>Point right</strong>: index extended, tilted right → 'R'. <strong>Thumbs up</strong>: thumb extended upward → 'B' (back). Add smoothing: command must be stable for 5 consecutive frames before sending.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Bluetooth Serial Communication</h4><p>On Raspberry Pi: configure HC-05 as master via AT commands (<code>AT+ROLE=1</code>, <code>AT+CMODE=0</code>, <code>AT+BIND=slave_address</code>). In Python: <code>ser = serial.Serial('/dev/ttyS0', 9600)</code>. Send command: <code>ser.write(b'F')</code>. On Arduino: <code>char cmd = Serial.read()</code>. Map to motor actions: 'F'→both forward, 'B'→both reverse, 'L'→left motor stop, 'R'→right motor stop, 'S'→all stop. Add watchdog: if no command received for 500ms, auto-stop (safety for Bluetooth dropout).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Speed Control via Finger Count</h4><p>Extend the gesture vocabulary: map finger count (1–4 fingers extended while hand tilts forward) to speed levels 25%, 50%, 75%, 100% PWM. Send speed as a second byte after command byte. Arduino reads two bytes: command + speed. Motor PWM: <code>analogWrite(ENA, speed); analogWrite(ENB, speed)</code>. Gradual speed ramp: interpolate between current and target speed over 0.1s to prevent motor current spikes.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Live Overlay + Debugging</h4><p>Draw MediaPipe landmark skeleton on frame with <code>mp.solutions.drawing_utils.draw_landmarks()</code>. Add text overlays: current gesture name, confidence, command sent, Bluetooth status. Record a video of gesture sequences for demo purposes: <code>VideoWriter</code> to mp4. Display on HDMI monitor or stream via Flask + MJPEG for remote viewing on phone browser during robot control.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippets</h2>
+              <pre><code># Pi side: gesture_controller.py
+import cv2, mediapipe as mp, serial, time
+
+ser = serial.Serial('/dev/ttyS0', 9600, timeout=1)
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(max_num_hands=1, min_detection_confidence=0.75)
+cap = cv2.VideoCapture(0)
+prev_cmd = b'S'; stable = 0; STABLE_THRESH = 5
+
+def get_gesture(lm):
+    tips = [8, 12, 16, 20]; mcps = [5, 9, 13, 17]
+    extended = sum(lm[t].y < lm[m].y for t,m in zip(tips,mcps))
+    tilt = lm[0].x - lm[9].x
+    if extended == 0: return b'F'
+    if extended == 4: return b'S'
+    if extended == 1:
+        return b'L' if tilt > 0.1 else (b'R' if tilt < -0.1 else b'F')
+    return b'S'
+
+while True:
+    ret, frame = cap.read()
+    results = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    cmd = b'S'
+    if results.multi_hand_landmarks:
+        lm = results.multi_hand_landmarks[0].landmark
+        cmd = get_gesture(lm)
+    if cmd == prev_cmd: stable += 1
+    else: stable = 0; prev_cmd = cmd
+    if stable >= STABLE_THRESH:
+        ser.write(cmd); stable = 0
+
+# ----- Arduino robot side -----
+# void loop() {
+#   if (Serial.available()) {
+#     char c = Serial.read();
+#     if (c=='F') { setMotors(200,200); }
+#     else if (c=='B') { setMotors(-200,-200); }
+#     else if (c=='L') { setMotors(0,200); }
+#     else if (c=='R') { setMotors(200,0); }
+#     else { setMotors(0,0); }
+#     lastCmd = millis();
+#   }
+#   if (millis()-lastCmd > 500) setMotors(0,0); // watchdog
+# }</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🎮 Speed via Finger Count</span>
+                <span class="app-tag">📸 FPV Camera on Robot</span>
+                <span class="app-tag">📡 WiFi WebSocket Alternative</span>
+                <span class="app-tag">🤲 Two-Hand Dual Control</span>
+                <span class="app-tag">🗺️ Path Recording + Replay</span>
+                <span class="app-tag">🤖 ROS Node Integration</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $45 – $85</li><li><strong>Build Time:</strong> 6 – 9 hours</li><li><strong>Platform:</strong> RPi 4 + Arduino Uno</li><li><strong>Wireless:</strong> Bluetooth HC-05</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>MediaPipe hand landmark features</li><li>Rule-based gesture classifier</li><li>HC-05 Bluetooth AT configuration</li><li>pyserial UART communication</li><li>Motor watchdog safety logic</li><li>Split-architecture design</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">mediapipe</span><span class="lib-desc"> — Hand landmark detection</span></li><li><span class="lib-name">pyserial</span><span class="lib-desc"> — UART/Bluetooth serial on Pi</span></li><li><span class="lib-name">opencv-python</span><span class="lib-desc"> — Frame capture + overlay drawing</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const gestures=[{icon:'✊',name:'FIST',cmd:'F (FORWARD)',speed:150},{icon:'☝️',name:'POINT LEFT',cmd:'L (LEFT TURN)',speed:100},{icon:'👉',name:'POINT RIGHT',cmd:'R (RIGHT TURN)',speed:100},{icon:'✋',name:'OPEN HAND',cmd:'S (STOP)',speed:0},{icon:'👍',name:'THUMBS UP',cmd:'B (BACKWARD)',speed:120}];
+    let t=0;
+    const rotations={F:'',B:'',L:'rotate(-30deg)',R:'rotate(30deg)',S:''};
+    setInterval(()=>{
+      t++;
+      const gi=Math.floor(t/6)%gestures.length;
+      const g=gestures[gi];
+      document.getElementById('gestureBox').textContent=g.icon;
+      document.getElementById('gestureName').textContent=g.name;
+      document.getElementById('robotCmd').textContent=g.cmd;
+      document.getElementById('cmdCode').textContent=g.cmd[0];
+      document.getElementById('cmdSpeed').textContent=g.speed;
+      document.getElementById('cmdConf').textContent=(0.88+Math.random()*0.1).toFixed(2);
+      document.getElementById('cmdLatency').textContent=(18+Math.floor(Math.random()*15))+'ms';
+      document.getElementById('robotIcon').style.transform=rotations[g.cmd[0]]||'';
+    },700);
+  </script>
+</body>
+</html>

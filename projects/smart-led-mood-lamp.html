@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart LED Mood Lamp &ndash; Beginner Project | Studgine</title>
+  <meta name="description" content="Build a colour-changing Smart LED Mood Lamp with an Arduino Uno and 12 WS2812B NeoPixels. Step-by-step guide, full code, and component list." />
+  <meta name="keywords" content="smart LED lamp, Arduino WS2812B, NeoPixel mood lamp, beginner Arduino project" />
+  <link rel="canonical" href="smart-led-mood-lamp.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .lamp-ring { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; max-width:200px; }
+    .led-dot   { width:22px; height:22px; border-radius:50%; transition:background .5s,box-shadow .5s; }
+    .lamp-info { font-family:monospace; font-size:10px; color:#aaa; display:flex; flex-direction:column; gap:4px; min-width:88px; }
+    .lamp-info span { color:#fff; font-weight:bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+        </a>
+        <ul class="navbar-nav">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </nav>
+    <div class="mobile-menu">
+      <a href="../index.html" class="nav-link">Home</a>
+      <a href="../projects.html" class="nav-link">Projects</a>
+      <a href="../budget-electronics.html" class="nav-link">Electronics</a>
+      <a href="../resources.html" class="nav-link">Resources</a>
+      <a href="../about.html" class="nav-link">About</a>
+    </div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">&#127823; Beginner Project</span>
+      <h1>Smart LED Mood Lamp</h1>
+      <p>Build a colour-changing ambient lamp with 12 WS2812B NeoPixels and an Arduino Uno. Cycle through seven mood presets &mdash; Sunset, Ocean, Forest, Party, Relax, Focus &amp; Night &mdash; with a single button press.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a>
+          <span class="sep">&rsaquo;</span>
+          <a href="../projects.html">Projects</a>
+          <span class="sep">&rsaquo;</span>
+          <span class="current">Smart LED Mood Lamp</span>
+        </nav>
+
+        <div class="detail-layout">
+
+          <!--  Main  -->
+          <div class="detail-main">
+
+            <div class="detail-block">
+              <h2>&#127916; Live Preview</h2>
+              <div class="anim-stage">
+                <div class="lamp-ring" id="lampRing"></div>
+                <div class="lamp-info">
+                  <div>MODE: <span id="lmpMode">Sunset</span></div>
+                  <div>HUE: &nbsp;<span id="lmpHue">5&deg;</span></div>
+                  <div>SAT:  <span id="lmpSat">90%</span></div>
+                  <div>BRI:  <span id="lmpBri">78%</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualisation</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+WS2812B+NeoPixel+mood+lamp" target="_blank" rel="noopener" class="video-link-yt">&#9654; Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#128214; Introduction</h2>
+              <p>WS2812B LEDs integrate the LED chip and PWM driver into a single 5 mm package. Each pixel is individually addressable over one data wire at 800 kHz. The FastLED library manages timing automatically, so you can set any colour using HSV (hue, saturation, value) with a single function call.</p>
+              <p>A tactile button on hardware-interrupt pin D2 advances the mode counter. A debounce timer in the ISR prevents double-triggers. Modes store their palette as a small PROGMEM array, then a blend loop fades each LED from its current colour to the target over 30 frames, producing a polished 500 ms crossfade.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#129313; Components Required</h2>
+              <ul class="components-list">
+                <li>
+                  <span class="comp-icon">&#129504;</span>
+                  <div>
+                    <span class="comp-name">Arduino Uno R3</span>
+                    <span class="comp-note"> &mdash; Any clone (~$4). Data output on digital pin D6.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128161;</span>
+                  <div>
+                    <span class="comp-name">WS2812B LED Ring (12 pixels)</span>
+                    <span class="comp-note"> &mdash; 5V addressable (~$2). Add 470 &ohm; resistor in series on data line.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128267;</span>
+                  <div>
+                    <span class="comp-name">5V 2A USB Power Adapter</span>
+                    <span class="comp-note"> &mdash; 12 LEDs full-white draw ~720 mA. Power ring from adapter 5V, not Arduino pin.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128280;</span>
+                  <div>
+                    <span class="comp-name">Tactile Push Button + 10 k&ohm; pull-down</span>
+                    <span class="comp-note"> &mdash; D2 hardware interrupt. Optional: 100 nF ceramic cap across button pins.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128743;</span>
+                  <div>
+                    <span class="comp-name">1000 &micro;F / 6.3V Electrolytic Capacitor</span>
+                    <span class="comp-note"> &mdash; Across 5V and GND close to the ring to absorb power-on current spike.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128295;</span>
+                  <div>
+                    <span class="comp-name">Breadboard, jumper wires, USB-A cable</span>
+                    <span class="comp-note"> &mdash; Optional: frosted acrylic dome (~$3) as diffuser for soft lamp glow.</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#9881; How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>Interrupt Service Routine &amp; Mode Counter</h4>
+                    <p>An ISR attached to D2 (FALLING edge) increments <code>currentMode</code>. A <code>if (millis() - lastPress &gt; 200)</code> guard inside the ISR provides software debounce. Mode number wraps with <code>% NUM_MODES</code> so it cycles back to Sunset after Night.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>Palette Crossfade</h4>
+                    <p>Each of the 7 modes stores a 3-byte <code>{hue, sat, val}</code> tuple in PROGMEM. On mode change the loop uses FastLED&#8217;s <code>blend()</code> to interpolate every LED over 30 render frames (~500 ms at 60 fps), giving smooth colour transitions without blocking.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Breathing Effect</h4>
+                    <p>Relax and Focus modes modulate global brightness with a sine wave: <code>setBrightness(128 + 127 * sin(millis() / 1500.0))</code>. This creates a slow, organic 3-second inhale&ndash;exhale without changing hue or saturation.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <h4>Party &amp; Sparkle Mode</h4>
+                    <p>Every 80 ms each pixel receives a new <code>random8()</code> hue at full saturation. Roughly 10 % of pixels are randomly set to <code>CRGB::White</code> for one frame to simulate sparkle. <code>FastLED.delay(20)</code> caps updates at 50 fps.</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#128187; Core Code Snippet</h2>
+              <pre><code>#include &lt;FastLED.h&gt;
+
+#define LED_PIN   6
+#define NUM_LEDS  12
+#define BTN_PIN   2
+#define NUM_MODES 7
+
+CRGB leds[NUM_LEDS];
+volatile uint8_t currentMode = 0;
+volatile unsigned long lastPress = 0;
+
+// {hue, saturation, value} per mode
+const uint8_t pal[NUM_MODES][3] PROGMEM = {
+  {5,   230, 200},  // Sunset
+  {140, 200, 180},  // Ocean
+  {96,  220, 160},  // Forest
+  {0,   0,   255},  // Party (handled separately)
+  {190, 180, 140},  // Relax
+  {64,  200, 200},  // Focus
+  {0,   0,    20},  // Night
+};
+
+void IRAM_ATTR onBtn() {
+  if (millis() - lastPress &gt; 200) {
+    currentMode = (currentMode + 1) % NUM_MODES;
+    lastPress = millis();
+  }
+}
+
+void setup() {
+  FastLED.addLeds&lt;WS2812B, LED_PIN, GRB&gt;(leds, NUM_LEDS);
+  FastLED.setBrightness(200);
+  pinMode(BTN_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(BTN_PIN), onBtn, FALLING);
+}
+
+void loop() {
+  uint8_t m = currentMode;
+  if (m == 3) {                           // Party
+    for (int i = 0; i &lt; NUM_LEDS; i++)
+      leds[i] = CHSV(random8(), 255, 255);
+  } else {
+    uint8_t bri = (m == 4 || m == 5)     // Relax / Focus breathing
+      ? 128 + 127 * sin(millis() / 1500.0)
+      : pgm_read_byte(&amp;pal[m][2]);
+    for (int i = 0; i &lt; NUM_LEDS; i++)
+      leds[i] = CHSV(pgm_read_byte(&amp;pal[m][0]) + i * 10,
+                     pgm_read_byte(&amp;pal[m][1]), bri);
+  }
+  FastLED.show();
+  FastLED.delay(20);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#127758; Extensions &amp; Applications</h2>
+              <div class="applications-grid">
+                <span class="app-tag">&#128241; Bluetooth App Control</span>
+                <span class="app-tag">&#127925; Music Reactive Mode</span>
+                <span class="app-tag">&#9200; Sunrise Alarm Clock</span>
+                <span class="app-tag">&#127777; Temperature Colour Map</span>
+                <span class="app-tag">&#128225; Wi-Fi MQTT Control</span>
+                <span class="app-tag">&#127912; Custom Palette Editor</span>
+              </div>
+            </div>
+
+          </div><!-- /.detail-main -->
+
+          <!--  Sidebar  -->
+          <aside class="detail-sidebar">
+
+            <div class="sidebar-block quick-facts">
+              <h3>&#9889; Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Beginner</li>
+                <li><strong>Budget:</strong> $5 &ndash; $15</li>
+                <li><strong>Build Time:</strong> 1 &ndash; 2 hours</li>
+                <li><strong>LEDs:</strong> 12 &times; WS2812B</li>
+                <li><strong>Library:</strong> FastLED 3.6+</li>
+                <li><strong>Power:</strong> 5V 2A USB</li>
+              </ul>
+            </div>
+
+            <div class="sidebar-block">
+              <h3>&#128296; Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Addressable LED (WS2812B) control</li>
+                <li>Hardware interrupts &amp; debounce</li>
+                <li>HSV colour model</li>
+                <li>FastLED animation &amp; blending</li>
+                <li>PROGMEM data storage</li>
+                <li>Sine-wave brightness breathing</li>
+              </ul>
+            </div>
+
+            <div class="sidebar-block">
+              <h3>&#128218; Libraries &amp; Tools</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">FastLED 3.6+</span><span class="lib-desc"> &mdash; Addressable LED control</span></li>
+                <li><span class="lib-name">Arduino IDE 2</span><span class="lib-desc"> &mdash; Free IDE, cross-platform</span></li>
+                <li><span class="lib-name">Tinkercad Circuits</span><span class="lib-desc"> &mdash; Free online simulator</span></li>
+              </ul>
+            </div>
+
+            <a href="../projects.html" class="btn btn-secondary back-btn">&larr; Back to Projects</a>
+
+          </aside>
+
+        </div><!-- /.detail-layout -->
+      </div><!-- /.container -->
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Categories</h4>
+          <ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+  (function(){
+    var ring=document.getElementById('lampRing');
+    var modeEl=document.getElementById('lmpMode');
+    var hueEl=document.getElementById('lmpHue');
+    var satEl=document.getElementById('lmpSat');
+    var briEl=document.getElementById('lmpBri');
+    var modes=[
+      {name:'Sunset',hue:5,sat:230,val:200},
+      {name:'Ocean',hue:140,sat:200,val:180},
+      {name:'Forest',hue:96,sat:220,val:160},
+      {name:'Party',hue:-1,sat:255,val:255},
+      {name:'Relax',hue:190,sat:180,val:140},
+      {name:'Focus',hue:64,sat:200,val:200},
+      {name:'Night',hue:0,sat:0,val:20}
+    ];
+    var dots=[];
+    for(var i=0;i<12;i++){var d=document.createElement('div');d.className='led-dot';ring.appendChild(d);dots.push(d);}
+    function hsv2rgb(h,s,v){
+      h=(h%256)/255*360; s/=255; v/=255;
+      var c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+      var r=0,g=0,b=0;
+      if(h<60){r=c;g=x;}else if(h<120){r=x;g=c;}else if(h<180){g=c;b=x;}
+      else if(h<240){g=x;b=c;}else if(h<300){r=x;b=c;}else{r=c;b=x;}
+      return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
+    }
+    var mIdx=0,frame=0;
+    setInterval(function(){mIdx=(mIdx+1)%modes.length;},3000);
+    function animate(){
+      frame++;
+      var m=modes[mIdx];
+      var bri=(m.name==='Relax'||m.name==='Focus')
+        ? Math.round(128+127*Math.sin(frame/40)) : m.val;
+      for(var i=0;i<dots.length;i++){
+        var hue=m.hue<0?Math.floor(Math.random()*256):(m.hue+i*20)%256;
+        var rgb=hsv2rgb(hue,m.sat,bri);
+        dots[i].style.background='rgb('+rgb[0]+','+rgb[1]+','+rgb[2]+')';
+        dots[i].style.boxShadow='0 0 8px rgb('+rgb[0]+','+rgb[1]+','+rgb[2]+')';
+      }
+      modeEl.textContent=m.name;
+      hueEl.textContent=(m.hue<0?'rnd':m.hue+'°');
+      satEl.textContent=Math.round(m.sat/255*100)+'%';
+      briEl.textContent=Math.round(bri/255*100)+'%';
+      requestAnimationFrame(animate);
+    }
+    animate();
+  })();
+  </script>
+</body>
+</html>

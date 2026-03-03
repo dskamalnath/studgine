@@ -1,0 +1,322 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wi-Fi Oscilloscope – Intermediate Project | Studgine</title>
+  <meta name="description" content="Turn an ESP32 into a Wi-Fi oscilloscope using its 12-bit ADC and WebSocket. View live waveforms in any browser via an HTML5 canvas — up to 15 kHz bandwidth." />
+  <meta name="keywords" content="ESP32 oscilloscope WiFi, WebSocket oscilloscope, ESP32 ADC waveform, DIY oscilloscope browser, HTML5 canvas oscilloscope Arduino" />
+  <link rel="canonical" href="wifi-oscilloscope.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#000a00 0%,#041204 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .scope-screen{background:#000;border:3px solid #2a3a2a;border-radius:6px;width:300px;height:140px;position:relative;overflow:hidden;}
+    .scope-grid line{stroke:#1a2a1a;stroke-width:0.5;}
+    .scope-trace{fill:none;stroke:#00ff66;stroke-width:1.8;}
+    .scope-label{font-family:monospace;font-size:10px;color:#00ff66;position:absolute;}
+    .scope-label.top{top:4px;left:6px;}
+    .scope-label.btm{bottom:4px;right:6px;}
+    .scope-controls{display:flex;gap:10px;align-items:center;}
+    .ctrl-badge{background:#1a2a1a;border:1px solid #2a4a2a;border-radius:4px;padding:3px 8px;font-family:monospace;font-size:10px;color:#7dff40;}
+    .ws-badge{background:#0a1a2a;border:1px solid #1e90ff;border-radius:4px;padding:3px 8px;font-family:monospace;font-size:10px;color:#7de0ff;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Wi-Fi Oscilloscope</h1>
+      <p>Stream live ADC samples from an ESP32 over WebSocket to an HTML5 canvas in any browser — up to ~15 kHz analog bandwidth for audio and slow-signal debugging.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Wi-Fi Oscilloscope</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="scope-screen">
+                  <canvas id="scopeCanvas" width="300" height="140"></canvas>
+                  <span class="scope-label top" id="freqLabel">~1.0 kHz | 200mV/div</span>
+                  <span class="scope-label btm" id="vppLabel">Vpp: 3.3 V | Vavg: 1.6 V</span>
+                </div>
+                <div class="scope-controls">
+                  <span class="ctrl-badge" id="sampleRate">10 kSps</span>
+                  <span class="ctrl-badge" id="waveType">Sine</span>
+                  <span class="ws-badge">WS: 192.168.4.1:81</span>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP32+WiFi+oscilloscope+WebSocket+ADC+browser" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The ESP32's SAR ADC can sample at up to ~1 Msps in theory, though Wi-Fi overhead limits practical streaming to around 10–50 kSps. Still, that's enough to observe audio signals (up to ~15 kHz), PWM ripple, sensor outputs, and low-frequency AC signals — far better than just a Serial Plotter.</p>
+              <p>The ESP32 runs a WebSocket server (AsyncWebServer + AsyncWebSocket). The firmware collects 256-sample ADC bursts on pin 34 (input-only, best ADC linearity) and serialises them as JSON or binary blobs over the WebSocket. A tiny HTML/JavaScript client served from SPIFFS renders the data on a canvas element, mimicking a real oscilloscope display complete with grid, voltage scale, and frequency estimate.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">ESP32 DevKit (30-pin)</span><span class="comp-note"> — Dual-core, built-in Wi-Fi, 12-bit ADC on GPIO34</span></div></li>
+                <li><span class="comp-icon">🛡️</span><div><span class="comp-name">100 kΩ + 100 kΩ Voltage Divider</span><span class="comp-note"> — Shifts 0–5 V signals into 0–3.3 V ADC safe range</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">0.1 µF Capacitor (input decoupling)</span><span class="comp-note"> — Reduces high-frequency noise at ADC input</span></div></li>
+                <li><span class="comp-icon">🧱</span><div><span class="comp-name">Breadboard + Probe Clips</span><span class="comp-note"> — For connecting signal source under test</span></div></li>
+                <li><span class="comp-icon">💾</span><div><span class="comp-name">MicroUSB Cable + PC/Phone Browser</span><span class="comp-note"> — No extra hardware for display — browser is the UI</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Serve HTML from SPIFFS</h4><p>Upload the oscilloscope HTML/JS page to ESP32 SPIFFS (Flash File System) using the Arduino IDE SPIFFS uploader. The root GET handler serves this file so any browser connecting to the ESP32's IP gets the scope UI immediately — no app installation needed.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Collect ADC Burst with Timer ISR</h4><p>Use ESP32's hardware timer to trigger ADC readings at a precise rate (e.g., 10 kHz = 100 µs interval). Fill a double-buffer: while buffer A is being read, the ISR fills buffer B. This minimises sample jitter — crucial for correct waveform timing.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Send Binary Frame over WebSocket</h4><p>Once a 256-sample buffer is ready, pack as a binary message: 2 bytes per sample (little-endian uint16) → 512 bytes total. Call <code>ws.binaryAll(buffer, 512)</code>. Binary frames are ~6× faster than JSON strings and easier for JavaScript to decode with <code>Int16Array</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Render Waveform on Canvas</h4><p>In the browser JS, <code>ws.onmessage</code> receives an ArrayBuffer. Create a <code>Uint16Array</code> view, scale each sample to canvas Y-coordinates (<code>y = canvasH - (sample / 4095) * canvasH</code>), then draw a polyline using <code>ctx.lineTo()</code>. Compute frequency by counting zero-crossings; display Vpp from min/max samples.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>// ESP32 Firmware — WebSocket Oscilloscope
+#include &lt;WiFi.h&gt;
+#include &lt;ESPAsyncWebServer.h&gt;
+#include &lt;SPIFFS.h&gt;
+
+AsyncWebServer  server(80);
+AsyncWebSocket  ws("/ws");
+
+#define ADC_PIN   34
+#define BUF_SIZE  256
+uint16_t adcBuf[BUF_SIZE];
+hw_timer_t* timer = NULL;
+volatile int sampleIdx = 0;
+volatile bool bufReady = false;
+
+void IRAM_ATTR onTimer() {
+  if (!bufReady) {
+    adcBuf[sampleIdx++] = analogRead(ADC_PIN);
+    if (sampleIdx >= BUF_SIZE) {
+      sampleIdx = 0; bufReady = true;
+    }
+  }
+}
+
+void setup() {
+  SPIFFS.begin(true);
+  WiFi.softAP("ESP32-Scope","12345678");
+  ws.onEvent([](AsyncWebSocket* s, AsyncWebSocketClient* c,
+                AwsEventType t, void* a, uint8_t* d, size_t l){});
+  server.addHandler(&ws);
+  server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
+  server.begin();
+  // 10 kHz timer
+  timer = timerBegin(0, 80, true);  // 80 prescaler = 1 µs tick
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 100, true);  // 100 µs = 10 kHz
+  timerAlarmEnable(timer);
+}
+
+void loop() {
+  if (bufReady) {
+    ws.binaryAll((uint8_t*)adcBuf, BUF_SIZE * 2);
+    bufReady = false;
+  }
+  ws.cleanupClients();
+}
+
+// === Browser JS (index.html in SPIFFS) ===
+// const ws = new WebSocket('ws://' + location.hostname + '/ws');
+// ws.binaryType = 'arraybuffer';
+// ws.onmessage = e => {
+//   const samples = new Uint16Array(e.data);
+//   ctx.clearRect(0,0,W,H);
+//   ctx.beginPath();
+//   samples.forEach((v,i) => {
+//     const x = (i/255)*W, y = H - (v/4095)*H;
+//     i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+//   }); ctx.stroke();
+// };</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🎵 Audio Signal Analysis</span>
+                <span class="app-tag">🔋 Battery Ripple Monitor</span>
+                <span class="app-tag">📡 PWM Signal Debug</span>
+                <span class="app-tag">🌡️ Sensor Noise Floor Check</span>
+                <span class="app-tag">⚡ Power Supply Testing</span>
+                <span class="app-tag">📊 FFT Frequency Spectrum</span>
+                <span class="app-tag">🔬 Lab Signal Generator Test</span>
+                <span class="app-tag">📱 Mobile Browser Scope</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $10 – $18</li>
+                <li><strong>Build Time:</strong> 4 – 7 hours</li>
+                <li><strong>Platform:</strong> ESP32</li>
+                <li><strong>Interface:</strong> Any Web Browser</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>ESP32 hardware timer ISR</li>
+                <li>Double-buffer ADC sampling</li>
+                <li>AsyncWebSocket binary frames</li>
+                <li>SPIFFS file serving</li>
+                <li>JavaScript ArrayBuffer + canvas</li>
+                <li>Zero-crossing frequency detection</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">ESPAsyncWebServer</span><span class="lib-desc"> — Async HTTP + WebSocket server</span></li>
+                <li><span class="lib-name">AsyncTCP</span><span class="lib-desc"> — Required TCP layer for ESPAsyncWebServer</span></li>
+                <li><span class="lib-name">SPIFFS (built-in)</span><span class="lib-desc"> — ESP32 flash file system</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="digital-storage-oscilloscope.html">Digital Storage Oscilloscope (Adv)</a></li>
+                <li><a href="rf-spectrum-analyser.html">RF Spectrum Analyser (Adv)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const canvas = document.getElementById('scopeCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = 300, H = 140;
+    let phase = 0, waveIdx = 0;
+    const waveTypes = ['Sine','Square','Triangle','Sawtooth'];
+    const freqs = [1.0, 2.5, 0.5, 4.0];
+    function drawGrid() {
+      ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle = '#1a2a1a'; ctx.lineWidth = 0.5;
+      for (let x = 0; x <= W; x += 30) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      for (let y = 0; y <= H; y += 28) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    }
+    function genSample(t, type) {
+      switch(type) {
+        case 0: return Math.sin(t);
+        case 1: return Math.sin(t) >= 0 ? 0.9 : -0.9;
+        case 2: return (2/Math.PI)*Math.asin(Math.sin(t));
+        case 3: return ((t % (2*Math.PI))/(Math.PI)) - 1;
+      }
+    }
+    function drawWave() {
+      drawGrid();
+      ctx.strokeStyle = '#00ff66'; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      let freq = freqs[waveIdx] * 0.08;
+      let minV = 1, maxV = -1;
+      for (let i = 0; i < W; i++) {
+        let t = phase + i * freq;
+        let v = genSample(t, waveIdx);
+        minV = Math.min(minV, v); maxV = Math.max(maxV, v);
+        let y = H/2 - v * (H/2 - 8);
+        if (i===0) ctx.moveTo(i, y); else ctx.lineTo(i, y);
+      }
+      ctx.stroke();
+      phase += 0.18;
+      let vpp = ((maxV - minV) * 1.65).toFixed(2);
+      document.getElementById('freqLabel').textContent = '~' + freqs[waveIdx].toFixed(1) + ' kHz | 200mV/div';
+      document.getElementById('vppLabel').textContent = 'Vpp: ' + vpp + ' V | ' + waveTypes[waveIdx];
+    }
+    setInterval(() => { waveIdx = (waveIdx+1)%4; document.getElementById('waveType').textContent = waveTypes[waveIdx]; }, 4000);
+    setInterval(drawWave, 50);
+    drawGrid();
+  </script>
+</body>
+</html>

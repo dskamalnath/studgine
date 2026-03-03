@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8×8 LED Matrix Name Badge – Studgine</title>
+  <meta name="description" content="Scroll your name across an 8×8 LED matrix driven by MAX7219. Learn SPI communication, font arrays, and sprite scrolling with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; padding:16px; height:120px; }
+    .matrix-wrap { position:relative; overflow:hidden; width:140px; }
+    .matrix-grid { display:grid; grid-template-columns:repeat(8,14px); gap:2px; }
+    .dot { width:12px; height:12px; border-radius:2px; background:#1e293b; transition:background .1s; }
+    .dot.on { background:#f59e0b; box-shadow:0 0 5px rgba(245,158,11,.7); }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>8×8 LED Matrix Name Badge</h1>
+      <p class="hero-sub">Scroll your name or any message across an 8×8 LED matrix driven by a MAX7219 chip via SPI. Learn font arrays, sprite shifting, and serial peripheral control.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>8×8 LED Matrix Name Badge</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="matrix-wrap">
+            <div class="matrix-grid" id="matrix"></div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Font byte arrays → SPI to MAX7219 → 8×8 LED column scanning</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+MAX7219+8x8+LED+matrix+scrolling+text" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>An 8×8 LED matrix has 64 LEDs wired in a row-column grid — driving them all independently would need 16 Arduino pins. The <strong>MAX7219</strong> driver IC solves this: it accepts data over 3-wire <strong>SPI</strong> (MOSI, CLK, CS) and handles column multiplexing internally, requiring only 3 Arduino pins and reducing flicker to imperceptible levels.</p>
+        <p>The scrolling effect works by building a wide <em>sprite buffer</em> — a 2D array of all the character bitmaps concatenated — then displaying an 8-column window that shifts left by 1 each frame. This is exactly how classic arcade marquees and sports scoreboards work.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">🔲</span><div><span class="comp-name">MAX7219 8×8 LED Matrix Module</span><span class="comp-note">Pre-soldered module</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">5× Jumper wires</span><span class="comp-note">VCC, GND, DIN, CLK, CS</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>SPI wiring</strong> — Module: VCC → 5 V, GND → GND, DIN → D11 (MOSI), CLK → D13, CS → D10. The module includes its own current-limiting resistors. Chain multiple modules by daisy-chaining DOUT of one into DIN of the next.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Install MD_Parola library</strong> — In Arduino IDE: Sketch → Include Library → Manage Libraries → search "MD_Parola". Also install MD_MAX72XX. These provide high-level scrolling APIs. <code>P.begin(); P.displayScroll("HELLO ENGINEER", PA_LEFT, PA_SCROLL_LEFT, 50);</code> — just 3 lines for scrolling text.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Custom font or sprite</strong> — Define your own 5-column character bytes: <code>const byte letterH[] = &#123;0x7F, 0x08, 0x08, 0x08, 0x7F&#125;;</code>. Each byte is a column bitmask for rows 0–7. Build a sprite buffer by appending character arrays and shift the display window by 1 column per frame using <code>md.setColumn()</code>.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Adjust brightness</strong> — <code>mx.control(MD_MAX72XX::INTENSITY, 4);</code> sets brightness 0–15. Use a potentiometer on A0 mapped to 0–15 for a live brightness knob: cool for a badge where you adjust for dim or bright environments.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🏷️ Wearable name tag</span>
+          <span class="app-tag">📢 Scrolling info banner</span>
+          <span class="app-tag">🎮 Retro game display</span>
+          <span class="app-tag">🏆 Scoreboard panel</span>
+          <span class="app-tag">🎵 Audio VU meter</span>
+          <span class="app-tag">📺 Pixel art animation</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $14</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1.5 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Protocol</span><span>SPI</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">SPI communication</span></li>
+            <li><span class="skill-tag">MAX7219 driver</span></li>
+            <li><span class="skill-tag">Font byte arrays</span></li>
+            <li><span class="skill-tag">Sprite scrolling logic</span></li>
+            <li><span class="skill-tag">LED multiplexing</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">MD_Parola by MajicDesigns</span></li>
+            <li><span class="skill-tag">MD_MAX72XX</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="4-digit-event-counter.html" class="skill-tag">4-Digit Event Counter</a></li>
+            <li><a href="digital-stopwatch.html" class="skill-tag">Digital Stopwatch</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+    // Simple scrolling "Hi" sprite on 8x8 grid
+    const msg = [
+      [0,1,1,0,0,0,1,1],
+      [0,1,1,0,0,0,1,1],
+      [0,1,1,0,0,0,1,1],
+      [0,1,1,1,1,0,1,1],
+      [0,1,1,0,0,0,1,1],
+      [0,1,1,0,0,0,1,1],
+      [0,1,1,0,0,0,1,1],
+      [0,0,0,0,0,0,0,0]
+    ];
+    const grid = document.getElementById('matrix');
+    const dots = [];
+    for(let r=0;r<8;r++){for(let c=0;c<8;c++){const d=document.createElement('div');d.className='dot';grid.appendChild(d);dots.push(d);}}
+    let offset=0;
+    function renderMatrix(){
+      for(let r=0;r<8;r++){for(let c=0;c<8;c++){const col=(c+offset)%8;dots[r*8+c].className='dot'+(msg[r][col]?' on':'');}}
+      offset=(offset+1)%8;
+    }
+    setInterval(renderMatrix,200);
+  </script>
+</body>
+</html>

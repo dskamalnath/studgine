@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adaptive MPPT Solar Controller (FPGA) – Advanced Project | Studgine</title>
+  <meta name="description" content="Implement Perturb-and-Observe MPPT in VHDL on a Lattice iCE40 FPGA at 1MHz, measuring solar panel P-V curves with INA219 to maximise power into a sync buck converter." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#020500;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .mppt-info{font-family:monospace;font-size:9px;color:#aaff44;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Adaptive MPPT Solar Controller (FPGA)</h1>
+      <p>Implement Maximum Power Point Tracking entirely in VHDL on a Lattice iCE40UP5k FPGA. The Perturb-and-Observe algorithm runs at 1MHz, reading solar panel voltage and current from an INA219 over I²C. It adjusts PWM duty cycle of a synchronous buck converter to keep the panel at its peak power point — using fully open-source tools: Yosys, nextpnr, icepack, and iceprog.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Adaptive MPPT Solar Controller (FPGA)</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="mpptCanvas" width="140" height="110"></canvas>
+                <div class="mppt-info">
+                  <div>FPGA: iCE40UP5k</div>
+                  <div>TOOLCHAIN: Yosys</div>
+                  <div>UPDATE: 1 MHz</div>
+                  <div style="margin-top:3px;">SOLAR PANEL</div>
+                  <div>VOC: <span id="mpptVoc">21.2</span>V</div>
+                  <div>ISC: <span id="mpptIsc">3.8</span>A</div>
+                  <div>VMPP: <span id="mpptVmpp">17.6</span>V</div>
+                  <div>PMPP: <span id="mpptP">48.3</span>W</div>
+                  <div style="margin-top:3px;">CONVERTER</div>
+                  <div>DUTY: <span id="mpptD">83.1</span>%</div>
+                  <div>VOUT: <span id="mpptVout">12.1</span>V</div>
+                  <div id="mpptState" style="color:#aaff44;">TRACKING ✓</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=FPGA+iCE40+MPPT+solar+controller+VHDL+Yosys+open+source" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Maximum Power Point Tracking is the algorithm inside every solar charge controller. A solar panel's P-V (Power-Voltage) curve has a unique maximum power point that moves with irradiance and temperature. MPPT tracks this peak by continuously perturbing the operating voltage and observing if power increases or decreases — adjusting duty cycle accordingly. Implementing this in VHDL on an FPGA is a classic digital design exercise: you learn synchronous state machines, fixed-point arithmetic, SPI/I²C bus masters, and PWM generation — all in hardware with deterministic 1MHz timing unachievable on a microcontroller with interrupt latency.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">Lattice iCE40UP5k-B-EVN Board</span><span class="comp-note"> — 5280 LUTs; 1MHz MPPT update loop; open-source toolchain (Yosys synthesis + nextpnr place-and-route + icepack + iceprog); $49 from Lattice</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">INA219 I²C Power Monitor</span><span class="comp-note"> — 12-bit I²C voltage + current sensor; shunt resistor 0.1Ω; 0–26V range; 3.2A max; measures solar panel V and I simultaneously; FPGA drives I²C master</span></div></li>
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">5W–20W Solar Panel (6V or 12V nominal)</span><span class="comp-note"> — 12V nominal (Voc ~21V); connect to buck converter input; load: 12V lead-acid battery or LED resistor bank; test with desk lamp for indoor demo</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Sync Buck Converter (LM2596 or TPS40057)</span><span class="comp-note"> — External PWM input; MOSFET switch; inductor 47μH; 100μF output cap; FPGA GPIO drives gate via logic-level MOSFET buffer (3.3V→5V level shift)</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>FPGA PWM Generation Module</h4><p>VHDL entity with configurable duty cycle register. 12-bit PWM at 244kHz switching frequency (48MHz clock / 196 counter): <code>process(clk) begin if rising_edge(clk) then if counter < duty then pwm_out <= '1'; else pwm_out <= '0'; end if; counter <= counter + 1; end if; end process;</code>. Duty cycle register updated by MPPT controller every 1ms (1kHz MPPT loop, 244kHz PWM — independent clock domains). Minimum duty step: 1/4096 = 0.024% for fine-grained tracking.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>I²C Master for INA219</h4><p>Implement I²C master state machine in VHDL: states IDLE → START → ADDR → ACK_ADDR → DATA_MSB → ACK_DATA → DATA_LSB → STOP. Clock: 400kHz I²C from 48MHz system clock (divide by 120). INA219 register 0x01 = shunt voltage (current), register 0x02 = bus voltage. Fixed-point conversion: <code>voltage = bus_reg * 4mV; current = shunt_reg * 10μV / 0.1Ω</code>. Power computed in FPGA: <code>power = voltage * current</code> (16×16 multiplier).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Perturb-and-Observe Algorithm in VHDL</h4><p>Synchronous state machine: PERTURB → MEASURE → OBSERVE → ADJUST. PERTURB: duty_cycle += step (+/-). MEASURE: wait 1ms for transient to settle; read INA219 power. OBSERVE: compare new_power vs prev_power. ADJUST: if new_power &gt; prev_power: perturb in same direction; else: reverse direction. VHDL: <code>if new_power > prev_power then direction <= direction; else direction <= not direction; end if; prev_power <= new_power; duty_cycle <= duty_cycle + (step when direction='1' else -step);</code>. Typical step size: 32/4096 = 0.78% duty cycle.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Open-Source Toolchain Build</h4><p>Synthesis: <code>yosys -p "synth_ice40 -top mppt_top -json mppt.json" mppt_top.vhd i2c_master.vhd pwm_gen.vhd</code>. Place-and-route: <code>nextpnr-ice40 --up5k --package sg48 --json mppt.json --asc mppt.asc --pcf pins.pcf</code>. Bitstream pack: <code>icepack mppt.asc mppt.bin</code>. Program FPGA: <code>iceprog mppt.bin</code>. Pin constraint file (up5k pins): map I²C SDA/SCL, PWM_OUT, LED indicators to physical package pins. Simulation: GHDL + GTKWave to verify MPPT FSM logic before hardware.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>-- VHDL: Perturb-and-Observe MPPT Controller (simplified)
+library ieee; use ieee.std_logic_1164.all; use ieee.numeric_std.all;
+
+entity mppt_controller is
+  port (
+    clk      : in  std_logic;
+    rst_n    : in  std_logic;
+    power    : in  unsigned(23 downto 0);   -- from INA219 (mW)
+    duty_out : out unsigned(11 downto 0)    -- 12-bit PWM duty
+  );
+end entity;
+
+architecture rtl of mppt_controller is
+  constant STEP      : unsigned(11 downto 0) := to_unsigned(32, 12);
+  signal duty        : unsigned(11 downto 0) := to_unsigned(2048, 12);
+  signal prev_power  : unsigned(23 downto 0) := (others => '0');
+  signal direction   : std_logic := '1';
+  signal timer       : unsigned(15 downto 0) := (others => '0');
+begin
+  duty_out <= duty;
+
+  process(clk, rst_n) begin
+    if rst_n = '0' then duty <= to_unsigned(2048,12); prev_power <= (others=>'0');
+    elsif rising_edge(clk) then
+      timer <= timer + 1;
+      if timer = 0 then  -- 1kHz update (48000 cycles at 48MHz)
+        if power > prev_power then
+          -- P increased: continue same direction
+          if direction = '1' then duty <= duty + STEP; else duty <= duty - STEP; end if;
+        else
+          -- P decreased: reverse direction
+          direction <= not direction;
+          if direction = '0' then duty <= duty + STEP; else duty <= duty - STEP; end if;
+        end if;
+        prev_power <= power;
+      end if;
+    end if;
+  end process;
+end architecture;</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📈 P-V Curve Sweep + Plot</span>
+                <span class="app-tag">⚡ Incremental Conductance Algorithm</span>
+                <span class="app-tag">🔋 Li-Ion Battery Charger Profile</span>
+                <span class="app-tag">🌡️ Temperature-Compensated MPPT</span>
+                <span class="app-tag">🌐 UART → Raspberry Pi Dashboard</span>
+                <span class="app-tag">🏗️ Multi-Panel String Optimiser</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $80 – $140</li><li><strong>Build Time:</strong> 20 – 35 hours</li><li><strong>Update Rate:</strong> 1 MHz capable</li><li><strong>Toolchain:</strong> 100% open source</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>VHDL synchronous design</li><li>FSM implementation on FPGA</li><li>I²C master in hardware</li><li>Fixed-point arithmetic VHDL</li><li>Yosys + nextpnr toolchain</li><li>PWM power conversion basics</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">Yosys</span><span class="lib-desc"> — Open-source synthesis</span></li><li><span class="lib-name">nextpnr</span><span class="lib-desc"> — Place-and-route iCE40</span></li><li><span class="lib-name">GHDL + GTKWave</span><span class="lib-desc"> — VHDL simulation</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const mpptC=document.getElementById('mpptCanvas');const mpptCtx=mpptC.getContext('2d');
+    let mpptPhase=0,mpptVmpp=17.6;
+    function pvCurve(v){return Math.max(0,3.8*(1-Math.exp((v-21.2)/0.5))*0.95);}
+    function drawMPPT(){
+      mpptCtx.fillStyle='rgba(2,5,0,0.4)';mpptCtx.fillRect(0,0,140,110);
+      // P-V curve
+      mpptCtx.strokeStyle='rgba(100,200,50,0.7)';mpptCtx.lineWidth=1.5;mpptCtx.beginPath();
+      for(let px=0;px<120;px++){
+        const v=px/120*22;const p=v*pvCurve(v);
+        const x=10+px;const y=105-p/60*85;
+        px===0?mpptCtx.moveTo(x,y):mpptCtx.lineTo(x,y);
+      }
+      mpptCtx.stroke();
+      // MPP tracking dot
+      mpptVmpp=17.5+0.5*Math.sin(mpptPhase*0.15);
+      const impp=pvCurve(mpptVmpp);const pmpp=mpptVmpp*impp;
+      const mpx=10+mpptVmpp/22*120;const mpy=105-pmpp/60*85;
+      mpptCtx.fillStyle='#ffff44';mpptCtx.beginPath();mpptCtx.arc(mpx,mpy,4,0,Math.PI*2);mpptCtx.fill();
+      // Axis labels
+      mpptCtx.fillStyle='#aaff44';mpptCtx.font='7px monospace';
+      mpptCtx.fillText('P',0,8);mpptCtx.fillText('V →',118,110);
+      mpptCtx.fillStyle='rgba(100,200,50,0.5)';
+      mpptCtx.fillText('MPP',mpx-8,mpy-8);
+      mpptPhase+=0.04;
+      document.getElementById('mpptVmpp').textContent=mpptVmpp.toFixed(1);
+      document.getElementById('mpptP').textContent=pmpp.toFixed(1);
+      document.getElementById('mpptVoc').textContent=(21.2+0.1*Math.sin(mpptPhase*0.05)).toFixed(1);
+      document.getElementById('mpptIsc').textContent=(3.8+0.05*Math.sin(mpptPhase*0.07)).toFixed(1);
+      const duty=mpptVmpp/21.2*100;
+      document.getElementById('mpptD').textContent=duty.toFixed(1);
+      document.getElementById('mpptVout').textContent=(12.1+0.05*Math.sin(mpptPhase*0.1)).toFixed(1);
+      requestAnimationFrame(drawMPPT);
+    }
+    drawMPPT();
+  </script>
+</body>
+</html>

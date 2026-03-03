@@ -1,0 +1,293 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Wi-Fi Power Strip – Intermediate Project | Studgine</title>
+  <meta name="description" content="Control four AC outlets independently from a web browser using ESP8266 and relay module. Full guide with HTML web server and safe relay wiring, $18–$35 budget." />
+  <meta name="keywords" content="smart power strip, ESP8266 relay, web server, home automation, AC outlet control, IoT power strip" />
+  <link rel="canonical" href="smart-wifi-power-strip.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a0a14 0%,#1a1a28 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+    .power-strip{background:#2a2a3a;border:2px solid #444;border-radius:10px;padding:12px 20px;display:flex;gap:16px;align-items:center;}
+    .outlet{width:38px;height:44px;background:#1a1a2a;border:2px solid #555;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;cursor:pointer;transition:border-color 0.3s,background 0.3s;}
+    .outlet.on{border-color:#2ecc71;background:#1a2a1a;box-shadow:0 0 8px rgba(46,204,113,0.3);}
+    .outlet-hole{width:6px;height:10px;background:#000;border-radius:2px;}
+    .outlet-indicator{width:8px;height:8px;border-radius:50%;background:#555;position:absolute;top:4px;transition:background 0.3s,box-shadow 0.3s;}
+    .outlet.on .outlet-indicator{background:#2ecc71;box-shadow:0 0 6px #2ecc71;}
+    .outlet-label{font-family:monospace;font-size:10px;color:#aaa;margin-top:4px;}
+    .browser-mock{background:#1a1a28;border:1px solid #444;border-radius:8px;padding:12px 18px;font-family:monospace;font-size:12px;width:260px;}
+    .url-bar{background:#111;border:1px solid #555;border-radius:4px;padding:3px 8px;color:#7de0a0;font-size:11px;margin-bottom:8px;}
+    .ctrl-row{display:flex;align-items:center;gap:8px;border-bottom:1px solid #222;padding:5px 0;}
+    .ctrl-label{color:#aaa;flex:1;}
+    .toggle-btn{background:#2a2a4a;border:1px solid #555;border-radius:4px;padding:3px 10px;color:#7de0a0;font-size:11px;cursor:pointer;transition:background 0.3s;}
+    .toggle-btn.on-state{background:#1a4a1a;border-color:#2ecc71;color:#2ecc71;}
+    .power-dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px;}
+    .power-dot.on{background:#2ecc71;box-shadow:0 0 4px #2ecc71;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Smart Wi-Fi Power Strip</h1>
+      <p>Control four AC outlets independently from any web browser using an ESP8266 and relay module — building skills in HTML web servers, URL routing, and safe relay wiring.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Smart Wi-Fi Power Strip</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="power-strip" id="powerStrip"></div>
+                <div class="browser-mock" id="browserMock">
+                  <div class="url-bar">192.168.1.100/</div>
+                  <!-- rows injected by JS -->
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP8266+smart+power+strip+relay+web+server+HTML" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The Smart Wi-Fi Power Strip turns a standard extension board into a browser-controlled smart home device. The ESP8266 serves a mobile-friendly HTML dashboard over your home Wi-Fi. Clicking a button sends an HTTP GET request (<code>/relay1/on</code>) and the ESP8266 toggles the corresponding relay output — no app download required.</p>
+              <p>You'll learn how to build an embedded HTTP server, parse URL routes, generate dynamic HTML with relay state, and safely wire a relay module to 230/110 VAC power — one of the most demanded IoT skills in product development.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">NodeMCU ESP8266 (v3)</span><span class="comp-note"> — Built-in Wi-Fi web server</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">4-Channel 5 V Relay Module</span><span class="comp-note"> — Opto-isolated, active LOW trigger</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">AC Extension Box / Power Strip</span><span class="comp-note"> — Modified to interrupt live wire per outlet</span></div></li>
+                <li><span class="comp-icon">🔴</span><div><span class="comp-name">Status LEDs ×4</span><span class="comp-note"> — Visual ON/OFF indicator per relay</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">5 V / 2 A Hi-Link AC-DC Module</span><span class="comp-note"> — Powers ESP8266 from mains safely</span></div></li>
+                <li><span class="comp-icon">⚠️</span><div><span class="comp-name">Heat-shrink Tubing + Enclosure</span><span class="comp-note"> — Safe mains AC isolation — mandatory!</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Connect to Home Wi-Fi</h4><p>Use <code>WiFi.begin(ssid, pass)</code> and wait for IP assignment. Print the IP to Serial Monitor — use it as the browser address. Use <code>MDNS.begin("powerstrip")</code> so users can navigate to <code>powerstrip.local</code> instead of the raw IP.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Handle Route Requests</h4><p>Register handlers: <code>server.on("/relay1/on", [](){relay1=LOW; redirect();})</code> and <code>server.on("/relay1/off", [](){relay1=HIGH; redirect();})</code>. Use a redirect response (HTTP 303) back to "/" so the page reloads with updated state.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Serve Dynamic HTML Dashboard</h4><p>The root handler builds an HTML string containing a toggle button per relay. If <code>relayState[i] == LOW</code>, the button shows "Turn OFF" in red; otherwise "Turn ON" in green. This dynamic HTML pattern avoids WebSockets for a simpler beginner-friendly design.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>⚠️ Safe AC Wiring</h4><p>The relay interrupts only the LIVE (brown/black) wire — never the neutral. Use a commercially-rated relay module with opto-isolation. Enclose all exposed AC connections in heat-shrink. The Hi-Link module eliminates exposed transformer windings. Test at 12 V DC first, then AC last.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+
+ESP8266WebServer server(80);
+const int relayPins[4] = {D1, D2, D3, D4};
+bool relayState[4] = {HIGH, HIGH, HIGH, HIGH}; // HIGH = relay OFF (active LOW)
+
+void handleRoot() {
+  String html = "&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;"
+    "&lt;meta name='viewport' content='width=device-width,initial-scale=1'&gt;"
+    "&lt;style&gt;body{font-family:sans-serif;text-align:center;background:#111;color:#fff}"
+    "a.on{background:#e07070;padding:8px 20px;border-radius:8px;text-decoration:none;color:#fff}"
+    "a.off{background:#70c070;padding:8px 20px;border-radius:8px;text-decoration:none;color:#fff}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;"
+    "&lt;h2&gt;Smart Power Strip&lt;/h2&gt;";
+  String names[4] = {"Fan","Lamp","Charger","Monitor"};
+  for (int i = 0; i &lt; 4; i++) {
+    bool on = (relayState[i] == LOW);
+    html += "&lt;p&gt;" + names[i] + ": &lt;a href='/r" + i + "/" + (on?"off":"on") +
+            "' class='" + (on?"on":"off") + "'&gt;" + (on?"Turn OFF":"Turn ON") + "&lt;/a&gt;&lt;/p&gt;";
+  }
+  html += "&lt;/body&gt;&lt;/html&gt;";
+  server.send(200, "text/html", html);
+}
+
+void setup() {
+  for (int i = 0; i &lt; 4; i++) { pinMode(relayPins[i], OUTPUT); digitalWrite(relayPins[i], HIGH); }
+  WiFi.begin("YourSSID", "YourPass");
+  while (WiFi.status() != WL_CONNECTED) delay(100);
+  server.on("/", handleRoot);
+  // Register relay toggle routes
+  for (int i = 0; i &lt; 4; i++) {
+    int idx = i;
+    server.on("/r" + String(i) + "/on",  [idx](){ relayState[idx]=LOW;  digitalWrite(relayPins[idx],LOW);  server.sendHeader("Location","/"); server.send(303); });
+    server.on("/r" + String(i) + "/off", [idx](){ relayState[idx]=HIGH; digitalWrite(relayPins[idx],HIGH); server.sendHeader("Location","/"); server.send(303); });
+  }
+  server.begin();
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏠 Dorm Room Automation</span>
+                <span class="app-tag">💡 Remote Lamp Control</span>
+                <span class="app-tag">⏰ Cron Job Scheduling</span>
+                <span class="app-tag">🌡️ Temperature-Based Trigger</span>
+                <span class="app-tag">📊 Energy Usage Meter</span>
+                <span class="app-tag">🔔 Telegram Toggle Bot</span>
+                <span class="app-tag">📱 Alexa / Google Home</span>
+                <span class="app-tag">🔒 Password-Protected UI</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $35</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> ESP8266</li>
+                <li><strong>Interface:</strong> Mobile Web Browser</li>
+                <li><strong>⚠️ Warning:</strong> Involves mains AC voltage</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>ESP8266 HTTP web server</li>
+                <li>URL route handling</li>
+                <li>Dynamic HTML state page</li>
+                <li>Active-LOW relay logic</li>
+                <li>Safe AC relay wiring</li>
+                <li>MDNS hostname setup</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">ESP8266WebServer</span><span class="lib-desc"> — HTTP server &amp; routing</span></li>
+                <li><span class="lib-name">ESP8266mDNS</span><span class="lib-desc"> — Hostname resolution</span></li>
+                <li><span class="lib-name">WiFi (built-in)</span><span class="lib-desc"> — Wi-Fi stack</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="home-automation-system.html">Home Automation System</a></li>
+                <li><a href="wifi-weather-station.html">Wi-Fi Weather Station</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const relayNames = ['Fan','Lamp','Charger','Monitor'];
+    const relayState = [false, true, false, true];
+    const strip = document.getElementById('powerStrip');
+    const mock  = document.getElementById('browserMock');
+    const urlBar = mock.querySelector('.url-bar');
+
+    function rebuild() {
+      strip.innerHTML = '';
+      // clear old controls in mock (keep url-bar)
+      Array.from(mock.querySelectorAll('.ctrl-row')).forEach(r => r.remove());
+      relayNames.forEach((name, i) => {
+        const out = document.createElement('div');
+        out.className = 'outlet' + (relayState[i] ? ' on' : '');
+        out.innerHTML = `<div class="outlet-indicator"></div><div class="outlet-hole"></div><div class="outlet-hole"></div>`;
+        const lbl = document.createElement('div'); lbl.className = 'outlet-label'; lbl.textContent = name;
+        const wrap = document.createElement('div'); wrap.style.display='flex';wrap.style.flexDirection='column';wrap.style.alignItems='center';
+        wrap.appendChild(out); wrap.appendChild(lbl);
+        strip.appendChild(wrap);
+        const row = document.createElement('div'); row.className = 'ctrl-row';
+        row.innerHTML = `<span class="power-dot ${relayState[i]?'on':''}"></span><span class="ctrl-label">${name}</span><button class="toggle-btn ${relayState[i]?'on-state':''}" onclick="toggle(${i})">${relayState[i]?'Turn OFF':'Turn ON'}</button>`;
+        mock.appendChild(row);
+      });
+    }
+    window.toggle = function(i) {
+      relayState[i] = !relayState[i];
+      urlBar.textContent = `192.168.1.100/r${i}/${relayState[i]?'on':'off'}`;
+      setTimeout(() => { urlBar.textContent = '192.168.1.100/'; rebuild(); }, 600);
+    };
+    rebuild();
+    // Auto-demo toggle
+    let autoIdx = 0;
+    setInterval(() => { toggle(autoIdx % 4); autoIdx++; }, 3000);
+  </script>
+</body>
+</html>

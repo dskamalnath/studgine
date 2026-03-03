@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CubeSat Model with Sensor Suite – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a 1U CubeSat model on Raspberry Pi Zero 2W with LSM9DS1 attitude, RTL-SDR telemetry, INA219 power monitor, BME280 thermal, and a Flask ground-station web dashboard." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000208;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .cs-info{font-family:monospace;font-size:9px;color:#88ccff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>CubeSat Model with Sensor Suite</h1>
+      <p>A 1U CubeSat (10×10×10cm) model using Raspberry Pi Zero 2W as the on-board computer. LSM9DS1 provides attitude estimation, INA219 monitors simulated solar panel power, BME280 logs thermal telemetry, and an RTL-SDR simulates radio downlink. A Flask ground station web dashboard displays all telemetry live over Wi-Fi — a complete educational spacecraft model.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">CubeSat Model with Sensor Suite</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="csCanvas" width="130" height="100"></canvas>
+                <div class="cs-info">
+                  <div>OBC: Pi Zero 2W</div>
+                  <div>ORBIT: 400km LEO</div>
+                  <div style="margin-top:3px;">ATTITUDE</div>
+                  <div>ROLL: <span id="csRoll">-12.3</span>°</div>
+                  <div>PITCH: <span id="csPitch">5.1</span>°</div>
+                  <div>YAW: <span id="csYaw">218</span>°</div>
+                  <div style="margin-top:3px;">POWER</div>
+                  <div>PANEL: <span id="csPanel">1.84</span>W</div>
+                  <div>BUS: <span id="csBus">3.3</span>V</div>
+                  <div style="margin-top:3px;">THERMAL</div>
+                  <div>TEMP: <span id="csTemp">41.2</span>°C</div>
+                  <div>PRESS: <span id="csPress">0.0</span>Pa</div>
+                  <div id="csMode" style="color:#88ccff;">NOMINAL ✓</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=CubeSat+model+Raspberry+Pi+sensor+suite+ground+station+Flask" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>CubeSats are standardised 10cm cube satellites — over 2000 have been launched. This project builds a functional educational model at 1:1 scale that simulates every subsystem: On-Board Computer (Pi Zero 2W), Attitude Determination (LSM9DS1 Mahony filter), Electrical Power System (INA219 solar monitor), Thermal Control (BME280), and Communications (RTL-SDR beacon simulation). The ground station Flask dashboard simulates mission control, receiving telemetry "downlinked" over local Wi-Fi in the same AX.25 packet format used by real amateur CubeSats. Students understand spacecraft systems engineering through a tangible, working model.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🔲</span><div><span class="comp-name">Raspberry Pi Zero 2W</span><span class="comp-note"> — Quad-core ARM Cortex-A53; 512MB RAM; fits 1U CubeSat frame (65mm board); Wi-Fi onboard for telemetry; runs Raspberry Pi OS Lite; consumes ~1W</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">LSM9DS1 9-DOF IMU (ADCS)</span><span class="comp-note"> — 3-axis accel+gyro+mag; SPI or I²C; Mahony filter attitude estimation; reports roll/pitch/yaw; simulates ADCS subsystem star tracker output</span></div></li>
+                <li><span class="comp-icon">☀️</span><div><span class="comp-name">INA219 + Small Solar Cells (EPS)</span><span class="comp-note"> — 4× 0.5W 5V solar cells on CubeSat faces; INA219 I²C power monitor; measures panel voltage+current; simulates Electrical Power Subsystem telemetry</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">BME280 (Temperature/Pressure) + RTL-SDR</span><span class="comp-note"> — BME280 monitors board temperature; RTL-SDR USB dongle: pySX127x library simulates LoRa/FSK beacon; FM transmit test mode for RF characterisation demo</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>ADCS: Attitude Determination</h4><p>LSM9DS1 via SPI: read accelerometer (roll/pitch from gravity), gyroscope (rate integration), magnetometer (yaw). Mahony complementary filter: <code>ax,ay,az = imu.read_accel(); gx,gy,gz = imu.read_gyro(); mx,my,mz = imu.read_mag(); error = cross(normalised_accel, gravity_ref); integrator += Ki*error; rate_corrected = gyro + Kp*error + integrator; quaternion = integrate(rate_corrected, dt)</code>. Convert to Euler: <code>roll = atan2(2*(q0*q1+q2*q3), 1-2*(q1²+q2²)); pitch = asin(2*(q0*q2-q3*q1))</code>. Simulates star tracker attitude output for ADCS loop.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>EPS: Power Monitoring</h4><p>Four solar cell panels: each cell generates ~0.5W at full sun. Total simulated bus power: 2W budget for Pi Zero + sensors. INA219 setup: <code>from ina219 import INA219; ina = INA219(0.1, busnum=1); ina.configure(); V = ina.voltage(); I = ina.current(); P = ina.power()</code>. Simulate orbital sun/eclipse: 90min orbit, ~60min sun / ~30min eclipse. In software: <code>in_eclipse = (orbit_pos % 90) > 60; panel_power = P if not in_eclipse else 0</code>. Battery state of charge: charge/discharge model based on current draw vs panel power. Alert on low battery (&lt;20% SoC).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Telemetry Beacon Simulation</h4><p>Build AX.25-format beacon packet (same format as real amateur CubeSats): <code>import struct; callsign = b"STUDGN"; beacon = struct.pack("!6s1s4f4f", callsign, b"\x00", roll, pitch, yaw, panel_power, temperature, battery_soc, orbit_pos)</code>. Transmit: publish to local MQTT broker every 10s. Ground station (separate Pi or PC) subscribes. Alternatively, use RTL-SDR in transmit mode (if using HackRF/RTl-SDR-TX) or Si4432 RF module to broadcast actual 433MHz beacon receivable by any RTL-SDR ground station within 100m.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Flask Ground Station Dashboard</h4><p>Flask-SocketIO server receives MQTT telemetry: <code>@socketio.on('get_telem'); def get_telem(): emit('telem', {'roll': roll, 'pitch': pitch, 'power': panel_power, 'temp': temp, 'soc': battery_soc})</code>. Web dashboard with Chart.js live graphs: orbit track (polar plot), attitude cube 3D visualisation (Three.js), power budget bar chart, temperature trend. Mission Timeline: pass schedule, next communication window countdown. Archive: log all telemetry to SQLite; download CSV for analysis. Deploy as a systemd service: auto-starts on Pi boot.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import time, math, json
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+import smbus2
+
+app = Flask(__name__); socketio = SocketIO(app)
+
+# INA219 simplified I²C read (bus voltage register)
+def read_ina219_voltage(bus, addr=0x40):
+    bus.write_word_data(addr, 0x00, 0x399F)  # Config: 32V, 2A
+    time.sleep(0.01)
+    raw = bus.read_word_data(addr, 0x02)
+    raw = ((raw & 0xFF) << 8) | ((raw >> 8) & 0xFF)
+    return (raw >> 3) * 0.004  # 4mV per LSB
+
+def mahony_update(ax, ay, az, gx, gy, gz, q, dt, Kp=2.0, Ki=0.005):
+    """Simplified Mahony filter step."""
+    q0,q1,q2,q3 = q
+    recip_norm = 1.0/math.sqrt(ax**2+ay**2+az**2)
+    ax,ay,az = ax*recip_norm, ay*recip_norm, az*recip_norm
+    v0 = 2*(q1*q3 - q0*q2); v1 = 2*(q0*q1 + q2*q3); v2 = q0**2 - q1**2 - q2**2 + q3**2
+    ex = ay*v2 - az*v1; ey = az*v0 - ax*v2; ez = ax*v1 - ay*v0
+    gx += Kp*ex; gy += Kp*ey; gz += Kp*ez
+    q0 += 0.5*dt*(-q1*gx - q2*gy - q3*gz); q1 += 0.5*dt*(q0*gx + q2*gz - q3*gy)
+    q2 += 0.5*dt*(q0*gy - q1*gz + q3*gx); q3 += 0.5*dt*(q0*gz + q1*gy - q2*gx)
+    n = 1.0/math.sqrt(q0**2+q1**2+q2**2+q3**2)
+    return [q0*n, q1*n, q2*n, q3*n]
+
+@socketio.on('request_telemetry')
+def send_telem(): emit('telemetry', {'status':'nominal', 'roll': 0, 'pitch': 0})
+
+if __name__ == '__main__': socketio.run(app, host='0.0.0.0', port=5000)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🛰️ Orbital Mechanics Simulation</span>
+                <span class="app-tag">📻 Real 433MHz AX.25 Beacon</span>
+                <span class="app-tag">🌡️ Thermal Vacuum Test Simulation</span>
+                <span class="app-tag">💾 Onboard Data Recorder</span>
+                <span class="app-tag">🎯 3-Axis Attitude Control</span>
+                <span class="app-tag">📸 Earth Observation Pi Camera</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $70 – $130</li><li><strong>Build Time:</strong> 15 – 25 hours</li><li><strong>Form Factor:</strong> 1U CubeSat (10cm³)</li><li><strong>Comms:</strong> Wi-Fi + RTL-SDR</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Spacecraft subsystems engineering</li><li>Mahony attitude filter</li><li>INA219 power monitoring</li><li>AX.25 telemetry framing</li><li>Flask-SocketIO real-time web</li><li>Orbital simulation (sgp4)</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">Flask-SocketIO</span><span class="lib-desc"> — Real-time ground station web</span></li><li><span class="lib-name">ina219 (Python)</span><span class="lib-desc"> — INA219 power monitoring</span></li><li><span class="lib-name">smbus2</span><span class="lib-desc"> — I²C sensor bus driver</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const csC=document.getElementById('csCanvas');const csCtx=csC.getContext('2d');
+    let csPhase=0;
+    function drawCS(){
+      csCtx.fillStyle='rgba(0,2,8,0.4)';csCtx.fillRect(0,0,130,100);
+      // Stars
+      for(let i=0;i<20;i++){csCtx.fillStyle='rgba(255,255,255,0.7)';csCtx.fillRect((i*23+5)%130,(i*37+3)%100,1,1);}
+      // Earth arc
+      csCtx.strokeStyle='rgba(50,100,200,0.5)';csCtx.lineWidth=8;
+      csCtx.beginPath();csCtx.arc(65,160,90,Math.PI*1.15,Math.PI*1.85);csCtx.stroke();
+      // Orbit path
+      csCtx.strokeStyle='rgba(100,180,255,0.2)';csCtx.lineWidth=1;csCtx.setLineDash([2,4]);
+      csCtx.beginPath();csCtx.ellipse(65,100,55,20,-0.2,0,Math.PI*2);csCtx.stroke();csCtx.setLineDash([]);
+      // CubeSat
+      const satX=65+50*Math.cos(csPhase*0.3);const satY=85+18*Math.sin(csPhase*0.3);
+      csCtx.save();csCtx.translate(satX,satY);csCtx.rotate(csPhase*0.2);
+      csCtx.fillStyle='#88ccff';csCtx.fillRect(-5,-5,10,10);
+      csCtx.strokeStyle='#ffcc44';csCtx.lineWidth=1.5;
+      csCtx.beginPath();csCtx.moveTo(-12,0);csCtx.lineTo(12,0);csCtx.stroke();
+      csCtx.fillStyle='#ffcc44';csCtx.fillRect(-16,-2,6,4);csCtx.fillRect(10,-2,6,4);
+      csCtx.restore();
+      // Telemetry beam
+      csCtx.strokeStyle='rgba(100,180,255,0.3)';csCtx.lineWidth=0.7;
+      csCtx.beginPath();csCtx.moveTo(satX,satY);csCtx.lineTo(65,98);csCtx.stroke();
+      // Ground station
+      csCtx.fillStyle='#88ccff';csCtx.fillRect(62,91,6,9);
+      csPhase+=0.03;
+      const roll=-12+5*Math.sin(csPhase*0.15);const pitch=5+3*Math.cos(csPhase*0.2);
+      document.getElementById('csRoll').textContent=roll.toFixed(1);
+      document.getElementById('csPitch').textContent=pitch.toFixed(1);
+      document.getElementById('csYaw').textContent=((218+csPhase*3)%360).toFixed(0);
+      document.getElementById('csPanel').textContent=(1.84+0.2*Math.sin(csPhase*0.1)).toFixed(2);
+      document.getElementById('csTemp').textContent=(41.2+2*Math.sin(csPhase*0.08)).toFixed(1);
+      document.getElementById('csBus').textContent=(3.3+0.02*Math.sin(csPhase*0.5)).toFixed(2);
+      document.getElementById('csPress').textContent='0.0';
+      requestAnimationFrame(drawCS);
+    }
+    drawCS();
+  </script>
+</body>
+</html>

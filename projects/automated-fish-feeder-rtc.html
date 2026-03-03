@@ -1,0 +1,331 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Fish Feeder (RTC) – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a precision RTC-scheduled fish feeder with DS3231, servo auger mechanism, EEPROM feeding schedule, and oversize LCD control panel." />
+  <meta name="keywords" content="DS3231 RTC Arduino fish feeder, automated aquarium feeder, servo auger, EEPROM schedule, RTC feeding timer" />
+  <link rel="canonical" href="automated-fish-feeder-rtc.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#020d1a 0%,#051c2e 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .tank-mock{border:3px solid #1e90ff;border-radius:6px;background:rgba(0,100,200,0.15);width:180px;height:80px;position:relative;overflow:hidden;}
+    .water-line{position:absolute;bottom:0;left:0;width:100%;height:70%;background:rgba(30,144,255,0.2);}
+    .fish{position:absolute;bottom:20%;font-size:18px;animation:swim-fish 4s ease-in-out infinite;}
+    .fish:nth-child(2){font-size:14px;animation-delay:1.5s;bottom:40%;}
+    @keyframes swim-fish{0%{left:10%}50%{left:70%}100%{left:10%}}
+    .pellet{width:6px;height:6px;border-radius:50%;background:#c8a020;position:absolute;animation:fall-pellet 1.5s ease-in;}
+    @keyframes fall-pellet{0%{top:-8px;opacity:1}100%{top:80px;opacity:0}}
+    .hopper{width:50px;height:40px;background:#8B5E3C;border-radius:4px 4px 0 0;position:relative;display:flex;align-items:center;justify-content:center;}
+    .auger{width:8px;height:30px;background:#aaa;border-radius:2px;animation:auger-spin 0.5s linear infinite paused;}
+    .auger.spinning{animation-play-state:running;}
+    @keyframes auger-spin{0%,100%{transform:scaleY(1)}50%{transform:scaleY(0.6)}}
+    .rtc-display{background:#000;border:2px solid #0a3a0a;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:14px;color:#7dff40;text-align:center;}
+    .feed-badge{background:#c8a020;color:#000;border-radius:4px;padding:2px 8px;font-family:monospace;font-size:11px;font-weight:bold;display:none;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Automated Fish Feeder (RTC)</h1>
+      <p>Schedule up to 4 precision feedings per day using a DS3231 RTC, a servo-driven auger mechanism, and EEPROM-stored feeding times — keeps your aquarium fish fed while you're away.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Automated Fish Feeder (RTC)</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;align-items:flex-end;gap:16px;">
+                  <div>
+                    <div class="hopper"><div class="auger" id="augerEl"></div></div>
+                    <div style="font-family:monospace;font-size:10px;color:#aaa;text-align:center;margin-top:2px;">Hopper + Auger</div>
+                  </div>
+                  <div style="position:relative;">
+                    <div class="tank-mock" id="tankEl">
+                      <div class="water-line"></div>
+                      <div class="fish">🐟</div>
+                      <div class="fish">🐠</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rtc-display" id="rtcDisplay">08:00:00 | Next feed: 12:00</div>
+                <div class="feed-badge" id="feedBadge">🍽 FEEDING NOW</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=DS3231+RTC+Arduino+automatic+fish+feeder+servo" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Unlike simple interval timers that drift over days, the DS3231 is a temperature-compensated real-time clock accurate to ±2 ppm — roughly ±1 minute per year. This is essential for aquarium feeding where fish need consistent, predictable meal times for health and digestion.</p>
+              <p>The auger mechanism is the key upgrade over beginner drum-sweep feeders. A servo rotates a helical auger inside a PVC tube loaded with pellet food. The auger pushes a consistent, measured amount of food to the dispensing outlet each rotation — far more reliable than a drum with a slot, which can jam or overdose. Feeding schedules and portion sizes are stored in EEPROM so they survive power cuts.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno / Mega</span><span class="comp-note"> — Main controller for RTC, servo, LCD, and buttons</span></div></li>
+                <li><span class="comp-icon">⏰</span><div><span class="comp-name">DS3231 RTC Module</span><span class="comp-note"> — I2C, ±2 ppm accuracy, coin cell backup</span></div></li>
+                <li><span class="comp-icon">🔩</span><div><span class="comp-name">MG996R High-Torque Servo</span><span class="comp-note"> — Rotates auger — needs high torque for dry pellets</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">20×4 LCD with I2C</span><span class="comp-note"> — Shows time, schedule, next meal countdown</span></div></li>
+                <li><span class="comp-icon">🔘</span><div><span class="comp-name">Tactile Buttons ×4</span><span class="comp-note"> — Set hour, minute, confirm, manual feed override</span></div></li>
+                <li><span class="comp-icon">🧱</span><div><span class="comp-name">PVC Pipe + Auger (3D printed)</span><span class="comp-note"> — Food container and helical dispensing auger</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Read RTC Time</h4><p>Use the RTClib library to get a <code>DateTime</code> object every second. Display hour:minute:second on the LCD first row. On first boot, check if DS3231 has lost power — if so, prompt the user to set the current time using the 4-button interface.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Store Schedule in EEPROM</h4><p>Allow up to 4 feeding times. Each slot takes 2 bytes (hour + minute) stored at EEPROM addresses 0–7. An 8th byte stores a bitmask of enabled slots. Use the button UI to browse and edit slots; call <code>EEPROM.update()</code> only when values change to preserve EEPROM write cycles.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Trigger the Auger</h4><p>Every second, compare current H:M with each enabled schedule slot. On a match, activate the servo for <code>portionRevolutions</code> full rotations (typically 2–4). Use <code>servo.write(180)</code> for one direction then <code>servo.write(0)</code> to stop — or use continuous rotation servo mode for constant-turn control.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Manual Feed and Countdown</h4><p>A dedicated "Feed Now" button triggers an immediate single portion for testing. The LCD second row counts down to the next scheduled feeding. Log each feeding event to EEPROM with a running counter so you can verify consistency on the Serial Monitor.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Wire.h&gt;
+#include &lt;RTClib.h&gt;
+#include &lt;Servo.h&gt;
+#include &lt;EEPROM.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+RTC_DS3231 rtc;
+Servo auger;
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+#define AUGER_PIN   9
+#define NUM_SLOTS   4
+#define EEPROM_BASE 0
+
+struct FeedSlot { uint8_t hour; uint8_t minute; bool enabled; };
+FeedSlot schedule[NUM_SLOTS];
+
+void loadSchedule() {
+  for (int i = 0; i &lt; NUM_SLOTS; i++) {
+    schedule[i].hour    = EEPROM.read(EEPROM_BASE + i * 3);
+    schedule[i].minute  = EEPROM.read(EEPROM_BASE + i * 3 + 1);
+    schedule[i].enabled = EEPROM.read(EEPROM_BASE + i * 3 + 2);
+  }
+}
+
+void dispense(int revolutions) {
+  auger.attach(AUGER_PIN);
+  for (int r = 0; r &lt; revolutions; r++) {
+    auger.write(180); delay(600);
+    auger.write(90);  delay(100);  // brief pause between revolutions
+  }
+  auger.detach();  // prevent jitter when idle
+}
+
+void setup() {
+  rtc.begin();
+  if (rtc.lostPower()) rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  loadSchedule();
+  lcd.init(); lcd.backlight();
+  auger.attach(AUGER_PIN);
+}
+
+void loop() {
+  DateTime now = rtc.now();
+  lcd.setCursor(0,0);
+  lcd.print(now.timestamp(DateTime::TIMESTAMP_FULL));
+  for (int i = 0; i &lt; NUM_SLOTS; i++) {
+    if (schedule[i].enabled &&
+        now.hour()   == schedule[i].hour &&
+        now.minute() == schedule[i].minute &&
+        now.second() == 0) {
+      dispense(3);  // 3 auger revolutions = one portion
+      lcd.setCursor(0,1); lcd.print("FED " + String(i+1) + " @ " +
+        String(schedule[i].hour) + ":" + String(schedule[i].minute));
+    }
+  }
+  delay(900);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🐟 Aquarium Automation</span>
+                <span class="app-tag">🐦 Bird Feeder Timer</span>
+                <span class="app-tag">🐔 Poultry Feeder</span>
+                <span class="app-tag">🌱 Seed Germination Dosing</span>
+                <span class="app-tag">💊 Pill Dispenser (Similar)</span>
+                <span class="app-tag">📱 Wi-Fi Remote Control</span>
+                <span class="app-tag">📊 Feeding Log to SD Card</span>
+                <span class="app-tag">🌡️ Temperature-Based Feed</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $15 – $28</li>
+                <li><strong>Build Time:</strong> 4 – 7 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Mega</li>
+                <li><strong>Interface:</strong> 20×4 LCD + Buttons</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>DS3231 RTC I2C interface</li>
+                <li>EEPROM multi-slot schedule</li>
+                <li>Servo auger mechanism</li>
+                <li>Button UI state machine</li>
+                <li>RTC battery-backup handling</li>
+                <li>DateTime comparison logic</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — Adafruit DS3231 driver</span></li>
+                <li><span class="lib-name">Servo</span><span class="lib-desc"> — Built-in Arduino servo library</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — LCD driver</span></li>
+                <li><span class="lib-name">EEPROM</span><span class="lib-desc"> — Built-in persistence library</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="smart-pill-dispenser.html">Smart Pill Dispenser</a></li>
+                <li><a href="ntp-smart-wall-clock.html">NTP Smart Wall Clock</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const feedTimes = ['08:00', '12:00', '17:30', '21:00'];
+    let h = 7, m = 58, s = 0, feeding = false;
+    function tick() {
+      s++;
+      if (s >= 60) { s = 0; m++; }
+      if (m >= 60) { m = 0; h = (h + 1) % 24; }
+      let timeStr = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      // next feed
+      let nextFeed = '–';
+      for (let ft of feedTimes) {
+        let [fh, fm] = ft.split(':').map(Number);
+        if (fh * 60 + fm > h * 60 + m) { nextFeed = ft; break; }
+      }
+      document.getElementById('rtcDisplay').textContent = timeStr + ' | Next: ' + nextFeed;
+      // Simulate feeding at 08:00
+      if (h === 8 && m === 0 && s >= 0 && s < 5 && !feeding) {
+        feeding = true;
+        document.getElementById('augerEl').classList.add('spinning');
+        document.getElementById('feedBadge').style.display = 'inline-block';
+        dropPellets();
+        setTimeout(() => {
+          document.getElementById('augerEl').classList.remove('spinning');
+          document.getElementById('feedBadge').style.display = 'none';
+          feeding = false;
+        }, 4000);
+      }
+    }
+    function dropPellets() {
+      let tank = document.getElementById('tankEl');
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          let p = document.createElement('div');
+          p.className = 'pellet';
+          p.style.left = (30 + Math.random() * 80) + 'px';
+          p.style.top = '-8px';
+          tank.appendChild(p);
+          setTimeout(() => p.remove(), 1600);
+        }, i * 250);
+      }
+    }
+    setInterval(tick, 50); // fast demo
+  </script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indoor Positioning System (UWB) – Advanced Project | Studgine</title>
+  <meta name="description" content="Four DWM1000 UWB anchors trilaterate a tag position to cm accuracy indoors. A Raspberry Pi displays live asset locations on a floor-plan map overlay." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#030510;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .uwb-info{font-family:monospace;font-size:9px;color:#44aaff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Indoor Positioning System (UWB)</h1>
+      <p>Four DWM1000 Ultra-Wideband ranging modules placed at room corners act as anchors. A mobile tag module performs Two-Way Ranging (TWR) with each anchor; a Raspberry Pi aggregates the four distances and trilateration solves the tag's X,Y position to ±10cm accuracy — enabling real-time indoor asset tracking on a live floor-plan map.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Indoor Positioning System (UWB)</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="uwbCanvas" width="140" height="110"></canvas>
+                <div class="uwb-info">
+                  <div>TAG X: <span id="uwbX">2.34</span>m</div>
+                  <div>TAG Y: <span id="uwbY">1.87</span>m</div>
+                  <div style="margin-top:3px;">RANGES</div>
+                  <div>A1: <span id="r1">2.81</span>m</div>
+                  <div>A2: <span id="r2">3.44</span>m</div>
+                  <div>A3: <span id="r3">2.95</span>m</div>
+                  <div>A4: <span id="r4">3.12</span>m</div>
+                  <div style="margin-top:3px;color:#00ff88;">ACCURACY: ±10cm</div>
+                  <div>UPDATE: 10Hz</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=DWM1000+UWB+indoor+positioning+trilateration+Arduino+Raspberry+Pi" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>GPS does not work indoors. Ultra-Wideband (UWB) radio measures Time of Flight (ToF) of short RF pulses with nanosecond precision — translating to centimetre-level range measurements. The DecaWave DWM1000 module provides ±10cm ranging accuracy over 10m, costs ~$15 each, and communicates via SPI. This project places 4 anchors at known positions (room corners), and a mobile tag ranges to all four simultaneously. The Least-Squares trilateration algorithm solves the over-determined system of 4 range equations to find the tag's X,Y position. Applications: asset tracking, robot localisation, and elderly/patient location in hospitals.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">5× DWM1000 UWB Modules</span><span class="comp-note"> — 4 anchors (fixed corners) + 1 tag (mobile); 3.5–6.5GHz UWB; SPI interface; 3.3V; Arduino Pro Mini host</span></div></li>
+                <li><span class="comp-icon">🔌</span><div><span class="comp-name">5× Arduino Pro Mini 3.3V</span><span class="comp-note"> — One per DWM1000 node; runs DecaWave TWR timing firmware; anchors report ranges to Pi via UART; tag mobile</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (Network Hub)</span><span class="comp-note"> — Receives range data from 4 anchors via USB-UART adaptors; runs trilateration solver; Flask web map display</span></div></li>
+                <li><span class="comp-icon">🗺️</span><div><span class="comp-name">Floor-Plan Map (image file)</span><span class="comp-note"> — Scaled PNG of room; overlaid with tag position dot; matplotlib or Flask/Leaflet.js interactive display</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Two-Way Ranging Protocol</h4><p>Each anchor-tag pair performs DecaWave DS-TWR (Double-Sided Two-Way Ranging) to cancel clock drift. Anchor initiates: sends POLL, records T_TX. Tag receives, timestamps T_RX, replies RESPONSE, records T_TX2. Anchor receives, timestamps T_RX2, sends FINAL with all timestamps. Tag computes distance: <code>Tround1 = T_RX2 - T_TX; Treply2 = T_TX2 - T_RX; d = c*(Tround1 - Treply2)/2</code>. Achieves ±10cm @ 10Hz. Anchors serial-print range CSV: <code>"A1:2.81\n"</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Trilateration Algorithm</h4><p>Known anchor positions: A1=(0,0), A2=(W,0), A3=(W,L), A4=(0,L) (room corners). Given ranges r1,r2,r3,r4. Set up least-squares: <code>d_i² = (x-xi)²+(y-yi)²</code>. Linearise: subtract equation 1: <code>2(x1-x_i)*x + 2(y1-y_i)*y = r_i²-r1²-xi²-yi²</code>. Build A matrix [3×2], b vector [3×1]. Solve: <code>pos = np.linalg.lstsq(A, b)[0]</code>. Output: [x, y] in metres. Kalman filter for smoothing: process noise σ=0.1m, measurement noise σ=0.15m.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Flask Web Map Display</h4><p>Flask server on Pi returns index.html with Leaflet.js map using the floor-plan PNG as tile layer. Position endpoint: <code>@app.route('/position'); return jsonify({'x':tx,'y':ty})</code>. JavaScript polls every 100ms and updates marker position. Draw range circles from each anchor (radius = range). Visualise uncertainty ellipse (from Kalman covariance). Display position history trail (last 50 positions as dots). Optional: store position history to PostgreSQL + display playback timeline.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Multi-Tag + Zone Detection</h4><p>Add more tags (each with unique ID). TDMA slot assignment: anchor polls tags round-robin to avoid radio collisions. Pi tracks multiple tags simultaneously, each as distinct marker. Define zones: <code>if 1.0 &lt; tx &lt; 3.0 and 0.5 &lt; ty &lt; 2.5: zone='Meeting Room'</code>. Zone entry/exit events logged. Applications: hospital patient tracking, museum visitor analytics, warehouse forklift safety zones (alarm if near pedestrian &lt;1m).</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np, serial
+
+# Anchor positions in metres (room 6m × 5m)
+ANCHORS = np.array([[0.0,0.0],[6.0,0.0],[6.0,5.0],[0.0,5.0]])
+
+def trilaterate(ranges):
+    """Least-squares trilateration from 4 anchors."""
+    A = []
+    b = []
+    x0,y0 = ANCHORS[0]; r0 = ranges[0]
+    for i in range(1, 4):
+        xi,yi = ANCHORS[i]; ri = ranges[i]
+        A.append([2*(x0-xi), 2*(y0-yi)])
+        b.append(r0**2 - ri**2 - x0**2 - y0**2 + xi**2 + yi**2)
+    A, b = np.array(A), np.array(b)
+    pos, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    return pos  # [x, y] in metres
+
+# Read from 4 anchor serial streams
+ports = [serial.Serial(f'/dev/ttyUSB{i}', 115200) for i in range(4)]
+
+while True:
+    ranges = []
+    for i, port in enumerate(ports):
+        line = port.readline().decode().strip()
+        d = float(line.split(':')[1])  # "A1:2.81"
+        ranges.append(d)
+    pos = trilaterate(ranges)
+    print(f"Tag position: X={pos[0]:.2f}m, Y={pos[1]:.2f}m")</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏥 Hospital Patient Tracking</span>
+                <span class="app-tag">🤖 Robot UWB Localisation</span>
+                <span class="app-tag">🏭 Warehouse Asset Tracking</span>
+                <span class="app-tag">🔒 Proximity-Based Access Control</span>
+                <span class="app-tag">📊 Dwell Time Analytics</span>
+                <span class="app-tag">3️⃣ 3D Height Estimation</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $60 – $110</li><li><strong>Build Time:</strong> 10 – 16 hours</li><li><strong>Accuracy:</strong> ±10cm indoors</li><li><strong>Update Rate:</strong> 10Hz per tag</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>UWB ToF ranging protocol (TWR)</li><li>DWM1000 SPI firmware</li><li>Least-squares trilateration</li><li>Kalman filter position smoothing</li><li>Flask + Leaflet.js web display</li><li>Multi-tag TDMA scheduling</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">numpy.linalg.lstsq</span><span class="lib-desc"> — Trilateration solver</span></li><li><span class="lib-name">pyserial</span><span class="lib-desc"> — Anchor UART reads</span></li><li><span class="lib-name">Flask + Leaflet.js</span><span class="lib-desc"> — Web map display</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const uC=document.getElementById('uwbCanvas');
+    const uCtx=uC.getContext('2d');
+    let uPhase=0;
+    const ANCHORS=[[10,10],[130,10],[130,100],[10,100]];
+    function drawUWB(){
+      uCtx.fillStyle='rgba(3,5,16,0.4)';uCtx.fillRect(0,0,140,110);
+      // Room outline
+      uCtx.strokeStyle='#224466';uCtx.lineWidth=1;
+      uCtx.strokeRect(10,10,120,90);
+      // Floor plan lines
+      uCtx.strokeStyle='#112233';
+      uCtx.beginPath();uCtx.moveTo(10,55);uCtx.lineTo(70,55);uCtx.stroke();
+      uCtx.beginPath();uCtx.moveTo(70,10);uCtx.lineTo(70,100);uCtx.stroke();
+      // Tag position
+      const tx=70+40*Math.cos(uPhase*0.3+Math.sin(uPhase*0.15)*0.5);
+      const ty=55+30*Math.sin(uPhase*0.25+Math.cos(uPhase*0.2)*0.4);
+      // Range circles
+      ANCHORS.forEach(([ax,ay],i)=>{
+        const dist=Math.sqrt((tx-ax)**2+(ty-ay)**2);
+        uCtx.strokeStyle='rgba(68,170,255,0.15)';uCtx.lineWidth=1;
+        uCtx.beginPath();uCtx.arc(ax,ay,dist,0,Math.PI*2);uCtx.stroke();
+      });
+      // Anchors
+      ANCHORS.forEach(([ax,ay],i)=>{
+        uCtx.fillStyle='#0055aa';uCtx.beginPath();uCtx.arc(ax,ay,5,0,Math.PI*2);uCtx.fill();
+        uCtx.fillStyle='#44aaff';uCtx.font='7px monospace';uCtx.fillText(`A${i+1}`,ax-4,ay-6);
+      });
+      // Tag
+      uCtx.fillStyle='#ff8800';uCtx.beginPath();uCtx.arc(tx,ty,5,0,Math.PI*2);uCtx.fill();
+      uCtx.strokeStyle='#ffaa00';uCtx.lineWidth=1.5;
+      uCtx.strokeRect(tx-7,ty-7,14,14);
+      uPhase+=0.04;
+      const worldX=(tx-10)/120*6;
+      const worldY=(ty-10)/90*5;
+      document.getElementById('uwbX').textContent=worldX.toFixed(2);
+      document.getElementById('uwbY').textContent=worldY.toFixed(2);
+      ANCHORS.forEach(([ax,ay],i)=>{
+        const d=Math.sqrt((tx-ax)**2+(ty-ay)**2)/120*6;
+        document.getElementById('r'+(i+1)).textContent=d.toFixed(2);
+      });
+      requestAnimationFrame(drawUWB);
+    }
+    drawUWB();
+  </script>
+</body>
+</html>

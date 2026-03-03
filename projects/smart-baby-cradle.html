@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Baby Cradle – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a smart automatic baby cradle that detects infant crying via a sound sensor and automatically rocks using a servo motor while playing lullabies with a DFPlayer MP3 module." />
+  <meta name="keywords" content="smart baby cradle Arduino, automatic baby rocker Arduino servo, sound sensor baby crying detector, DFPlayer lullaby Arduino, automatic baby swing project" />
+  <link rel="canonical" href="smart-baby-cradle.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080812 0%,#10102a 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .cradle{width:80px;height:52px;border:3px solid #6a4a8a;border-top:none;border-radius:0 0 50px 50px;position:relative;background:rgba(80,40,120,0.2);transition:transform 0.4s ease;}
+    .cradle::after{content:'👶';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:18px;}
+    .cradle-box{display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .cradle-stand{width:100px;height:3px;background:#4a3a6a;border-radius:2px;}
+    .sound-bar{display:flex;gap:2px;align-items:flex-end;height:30px;}
+    .sound-col{width:5px;background:#6040a0;border-radius:2px 2px 0 0;transition:height 0.15s;}
+    .lullaby-note{position:absolute;font-size:14px;animation:floatNote 2s ease infinite;}
+    @keyframes floatNote{0%{opacity:0;transform:translateY(0);}30%{opacity:1;}100%{opacity:0;transform:translateY(-40px);}}
+    .status-chip{background:#0a0a20;border:1px solid #3a2a5a;border-radius:4px;padding:3px 10px;font-family:monospace;font-size:10px;color:#a060cc;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Smart Baby Cradle</h1>
+      <p>A sound sensor detects infant crying and automatically starts rocking the cradle with an MG996R servo motor while a DFPlayer Mini plays soothing lullabies. Stops rocking after 10 minutes of quiet — saving parents a trip and a night's sleep.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Smart Baby Cradle</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;align-items:flex-end;gap:24px;">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                    <div style="font-family:monospace;font-size:9px;color:#806090;">🎤 Sound Level</div>
+                    <div class="sound-bar" id="soundBar"></div>
+                    <div style="font-family:monospace;font-size:9px;color:#6040a0;" id="soundDb">quiet</div>
+                  </div>
+                  <div class="cradle-box" style="position:relative;">
+                    <div style="font-family:monospace;font-size:9px;color:#9070b0;" id="noteLabel">🎵</div>
+                    <div class="cradle" id="cradle"></div>
+                    <div class="cradle-stand"></div>
+                    <div style="font-family:monospace;font-size:10px;color:#8060a0;margin-top:4px;" id="cradleStatus">idle</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div class="status-chip" id="rockChip">🤫 QUIET</div>
+                    <div class="status-chip" id="musicChip">🎵 music: off</div>
+                    <div class="status-chip" id="tempChip">🌡️ 25°C</div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+automatic+baby+cradle+servo+sound+sensor+lullaby" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>New parents average 4–5 hours of sleep per night in the first year. An automated cradle that responds to infant crying can restore precious rest by handling the soothing reflex automatically. This project connects a sound sensor to an Arduino that runs a state machine managing rocking motion and lullaby playback — and automatically returns to standby once the baby has been quiet for 10 minutes.</p>
+              <p>The design is safe-first: the servo uses a crank-and-connecting-rod mechanism that physically limits the rocking angle to ±15°, and a photo-interrupter optionally confirms cradle motion (so a motor stall is detected immediately). Temperature and humidity sensors monitor the sleeping environment for caregiver peace of mind.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎤</span><div><span class="comp-name">KY-037 / KY-038 Sound Sensor</span><span class="comp-note"> — Adjustable threshold potentiometer; digital out for cry detection trigger</span></div></li>
+                <li><span class="comp-icon">🤖</span><div><span class="comp-name">MG996R High-Torque Servo (or DC Motor + Crank)</span><span class="comp-note"> — 9 kg·cm torque; crank-rod mechanism converts rotation to swing motion</span></div></li>
+                <li><span class="comp-icon">🎵</span><div><span class="comp-name">DFPlayer Mini MP3 Module</span><span class="comp-note"> — Plays 128 kbps MP3 lullabies from microSD card on a small 3 W speaker</span></div></li>
+                <li><span class="comp-icon">🌡️</span><div><span class="comp-name">DHT11 or DHT22 Sensor</span><span class="comp-note"> — Monitors crib environment temperature and humidity; alerts if overheating</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Primary logic controller; UART to DFPlayer, PWM to servo</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 LCD + 3 Push Buttons</span><span class="comp-note"> — Manual override, song select, rocking speed adjust, sleep timer</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Cry Detection with Sound Sensor</h4><p>The KY-037 digital output triggers a hardware interrupt on Arduino pin 2 when sound level exceeds the threshold set by the on-board potentiometer. Calibrate the threshold to distinguish normal environmental noise from crying: tune so that a hand clap 50 cm away triggers it reliably. Count continuous triggers above threshold for 500 ms before treating it as a cry event (not a single noise spike). Software debounce prevents one trigger restarting the 10-minute quiet timer prematurely.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Servo Rocking State Machine</h4><p>State IDLE: servo at 90° (neutral). State ROCKING: use <code>sin(t)</code> function to smoothly sweep servo between 75° and 105° (±15°) with a period of 2 s — producing a natural, pendulum-like motion. Angle = <code>90 + 15 × sin(2π × t / rockPeriod)</code>. Do NOT use stepwise motion — the smooth sinusoidal sweep is important for infant safety (no jerking). Speed configurable via button: 1.5 s (fast), 2 s (normal), 3 s (slow).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>DFPlayer MP3 Lullaby Control</h4><p>Communicate with DFPlayer Mini via SoftwareSerial (any two pins). On cry detection: <code>myDFPlayer.play(1);</code>. Implement shuffle: <code>myDFPlayer.playMp3Folder(random(1, numSongs+1));</code>. Set volume to 20 (out of 30) for safe hearing levels. On returning to IDLE: <code>myDFPlayer.stop();</code> after a 30-second fade-out (reduce volume by 1 every 2 s). Store last-played track in EEPROM to avoid repeating same song immediately.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Safety Monitoring</h4><p>Read DHT22 every 60 s. If crib temperature > 30°C: display warning on LCD and optionally send notification via ESP8266 add-on. Add a 5-minute auto-stop safety timer: if rocking >5 minutes without further cry trigger, slow and stop (baby may have fallen asleep). Manual override button starts/stops rocking regardless of sensor state. Photo-interrupter on rocker confirms mechanical motion — if encoder doesn't show motion when servo commanded, set alarm (servo stall or mechanical jam).</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Servo.h&gt;
+#include &lt;DFRobotDFPlayerMini.h&gt;
+#include &lt;SoftwareSerial.h&gt;
+
+Servo cradle;
+SoftwareSerial dfSerial(10, 11);
+DFRobotDFPlayerMini player;
+
+bool rocking = false;
+unsigned long cryTime = 0, quietStart = 0;
+float t = 0;
+
+void cryISR() {
+  if(!rocking) { rocking = true; player.play(1); }
+  cryTime = millis();   // reset quiet timer
+}
+
+void setup() {
+  cradle.attach(9);
+  dfSerial.begin(9600); player.begin(dfSerial);
+  player.volume(20);
+  attachInterrupt(digitalPinToInterrupt(2), cryISR, RISING);
+}
+
+void loop() {
+  if(rocking) {
+    float angle = 90 + 15 * sin(2 * PI * t / 2000.0);
+    cradle.write((int)angle);
+    t += 20;
+    if(t > 2000) t = 0;
+    // stop after 10 min of quiet
+    if(millis() - cryTime > 600000) {
+      rocking = false; player.stop(); cradle.write(90);
+    }
+  }
+  delay(20);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">👶 Infant Care Automation</span>
+                <span class="app-tag">💤 Sleep Training Aid</span>
+                <span class="app-tag">📱 App Remote Control</span>
+                <span class="app-tag">📊 Sleep Pattern Logging</span>
+                <span class="app-tag">📷 Baby Monitor Camera</span>
+                <span class="app-tag">🌡️ Crib Climate Monitor</span>
+                <span class="app-tag">🎵 Custom Lullaby Upload</span>
+                <span class="app-tag">🔊 White Noise Mode</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $32</li>
+                <li><strong>Build Time:</strong> 5 – 7 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Nano</li>
+                <li><strong>Auto-stop:</strong> 10 min quiet timer</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Sound sensor threshold tuning</li>
+                <li>Sinusoidal servo motion</li>
+                <li>DFPlayer MP3 UART control</li>
+                <li>Hardware interrupt handling</li>
+                <li>Safe auto-stop timers</li>
+                <li>Child safety design principles</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Servo</span><span class="lib-desc"> — Arduino built-in PWM servo control</span></li>
+                <li><span class="lib-name">DFRobotDFPlayerMini</span><span class="lib-desc"> — MP3 module serial communication</span></li>
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> — Crib environment monitoring</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="automated-fish-feeder-rtc.html">Automated Fish Feeder (RTC)</a></li>
+                <li><a href="human-fall-detection.html">Human Fall Detection (Advanced)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    // build sound bar columns
+    const bar = document.getElementById('soundBar');
+    const cols = [];
+    for(let i=0;i<12;i++){const d=document.createElement('div');d.className='sound-col';d.style.height='4px';bar.appendChild(d);cols.push(d);}
+    let cryActive = false, rockAngle = 0, rockDir = 1, t = 0, quietTimer = 0;
+    setInterval(() => {
+      t++;
+      // random sound spikes, periodic cry
+      const isCrying = (t % 40 < 12);
+      const baseLevel = isCrying ? 18 : 3, noise = Math.random() * 8;
+      cols.forEach((c, i) => {
+        const h = Math.max(2, Math.round((baseLevel + noise) * Math.random() * 2.2));
+        c.style.height = Math.min(28, h) + 'px';
+        c.style.background = isCrying ? '#cc4080' : '#6040a0';
+      });
+      document.getElementById('soundDb').textContent = isCrying ? '😢 crying' : 'quiet';
+      if(isCrying) { cryActive = true; quietTimer = 0; } else { quietTimer++; if(quietTimer > 25) cryActive = false; }
+
+      if(cryActive) {
+        const angle = 15 * Math.sin(t * 0.18);
+        document.getElementById('cradle').style.transform = 'rotate(' + angle + 'deg)';
+        document.getElementById('cradleStatus').textContent = 'rocking 🤱';
+        document.getElementById('rockChip').textContent = '🍼 ROCKING';
+        document.getElementById('musicChip').textContent = '🎵 lullaby on';
+        document.getElementById('noteLabel').textContent = ['🎵','♪','🎶','🎵'][t % 4];
+      } else {
+        document.getElementById('cradle').style.transform = 'rotate(0deg)';
+        document.getElementById('cradleStatus').textContent = 'idle';
+        document.getElementById('rockChip').textContent = '🤫 QUIET';
+        document.getElementById('musicChip').textContent = '🎵 music: off';
+        document.getElementById('noteLabel').textContent = '';
+      }
+      document.getElementById('tempChip').textContent = '🌡️ ' + (24 + Math.round(Math.sin(t * 0.04) * 2)) + '°C';
+    }, 200);
+  </script>
+</body>
+</html>

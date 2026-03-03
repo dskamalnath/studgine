@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Temperature Monitor &ndash; Beginner Project | Studgine</title>
+  <meta name="description" content="Build a Digital Temperature and Humidity Monitor with Arduino Uno, DHT22 sensor, and 16x2 I2C LCD. Step-by-step guide, wiring diagram, and full code." />
+  <meta name="keywords" content="Arduino temperature monitor, DHT22, LCD I2C display, humidity sensor, beginner Arduino project" />
+  <link rel="canonical" href="digital-temperature-monitor.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .thermo-wrap  { display:flex; align-items:flex-end; gap:18px; }
+    .thermo-tube  { width:28px; border-radius:14px 14px 0 0; background:#1e1e2e; border:2px solid #444; position:relative; overflow:hidden; height:100px; }
+    .thermo-fill  { position:absolute; bottom:0; width:100%; background:linear-gradient(to top,#e74c3c,#f39c12); transition:height .8s ease; border-radius:0 0 12px 12px; }
+    .thermo-bulb  { width:28px; height:28px; border-radius:50%; background:#e74c3c; border:2px solid #444; margin-top:-2px; box-shadow:0 0 12px #e74c3c88; }
+    .lcd-display  { background:#1a2a1a; border:2px solid #2a4a2a; border-radius:6px; padding:10px 14px; font-family:monospace; font-size:13px; color:#33ff33; min-width:160px; line-height:1.7; box-shadow:0 0 6px #33ff3322; }
+    .lcd-display .lcd-row { letter-spacing:1px; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+        </a>
+        <ul class="navbar-nav">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </nav>
+    <div class="mobile-menu">
+      <a href="../index.html" class="nav-link">Home</a>
+      <a href="../projects.html" class="nav-link">Projects</a>
+      <a href="../budget-electronics.html" class="nav-link">Electronics</a>
+      <a href="../resources.html" class="nav-link">Resources</a>
+      <a href="../about.html" class="nav-link">About</a>
+    </div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">&#127823; Beginner Project</span>
+      <h1>Digital Temperature Monitor</h1>
+      <p>Build a real-time temperature and humidity display using a DHT22 sensor and a 16&times;2 I&sup2;C LCD with an Arduino Uno. Readings update every 2 seconds. A threshold alert triggers a buzzer or LED when temperature exceeds a set limit.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a>
+          <span class="sep">&rsaquo;</span>
+          <a href="../projects.html">Projects</a>
+          <span class="sep">&rsaquo;</span>
+          <span class="current">Digital Temperature Monitor</span>
+        </nav>
+
+        <div class="detail-layout">
+
+          <!--  Main  -->
+          <div class="detail-main">
+
+            <div class="detail-block">
+              <h2>&#127916; Live Preview</h2>
+              <div class="anim-stage">
+                <div class="thermo-wrap">
+                  <div style="display:flex;flex-direction:column;align-items:center">
+                    <div class="thermo-tube"><div class="thermo-fill" id="thermoFill" style="height:50%"></div></div>
+                    <div class="thermo-bulb"></div>
+                    <div style="font-size:9px;color:#888;margin-top:6px">DHT22</div>
+                  </div>
+                  <div class="lcd-display">
+                    <div class="lcd-row" id="lcdRow0">Temp: --.-&deg;C</div>
+                    <div class="lcd-row" id="lcdRow1">Hum: --.-%</div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualisation</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+DHT22+LCD+temperature+monitor" target="_blank" rel="noopener" class="video-link-yt">&#9654; Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#128214; Introduction</h2>
+              <p>The DHT22 (also labeled AM2302) is a calibrated digital sensor that measures temperature (&minus;40 to +80 &deg;C, &plusmn;0.5 &deg;C accuracy) and relative humidity (0&ndash;100 %, &plusmn;2 % accuracy). It communicates over a single-wire protocol at 5 V &mdash; no ADC needed. The <code>DHT.h</code> library abstracts the timing, giving you readings with one function call.</p>
+              <p>A 16&times;2 LCD with an I&#178;C backpack (PCF8574 expander) reduces the wiring from 6 pins to just SDA and SCL. The <code>LiquidCrystal_I2C</code> library handles the I&#178;C protocol, so the display is a drop-in replacement for parallel wiring with fewer than half the connections.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#129313; Components Required</h2>
+              <ul class="components-list">
+                <li>
+                  <span class="comp-icon">&#129504;</span>
+                  <div>
+                    <span class="comp-name">Arduino Uno R3</span>
+                    <span class="comp-note"> &mdash; DHT22 on D4, I&sup2;C on A4 (SDA) and A5 (SCL), alert LED on D8.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#127777;</span>
+                  <div>
+                    <span class="comp-name">DHT22 Sensor Module</span>
+                    <span class="comp-note"> &mdash; Temperature &amp; humidity, &plusmn;0.5 &deg;C. VCC to 5V, DATA to D4, 10 k&ohm; pull-up on data pin.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128250;</span>
+                  <div>
+                    <span class="comp-name">16&times;2 LCD with I&sup2;C Backpack (PCF8574)</span>
+                    <span class="comp-note"> &mdash; Default I&sup2;C address 0x27 or 0x3F. SDA &rarr; A4, SCL &rarr; A5. Adjustable contrast pot on backpack.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128280;</span>
+                  <div>
+                    <span class="comp-name">10 k&ohm; resistor</span>
+                    <span class="comp-note"> &mdash; DHT22 data-pin pull-up to VCC. Essential for reliable 1-wire timing.</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128266;</span>
+                  <div>
+                    <span class="comp-name">Passive Buzzer or Red LED + 220 &ohm;</span>
+                    <span class="comp-note"> &mdash; Alert indicator on D8. Trigger above threshold (default 30 &deg;C).</span>
+                  </div>
+                </li>
+                <li>
+                  <span class="comp-icon">&#128295;</span>
+                  <div>
+                    <span class="comp-name">Breadboard, jumper wires, USB-A cable</span>
+                    <span class="comp-note"> &mdash; Full Dupont jumper set; keep DHT22 data line under 20 cm for noise-free readings.</span>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#9881; How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <h4>DHT22 Read Cycle</h4>
+                    <p>Every 2 000 ms the sketch calls <code>dht.readTemperature()</code> and <code>dht.readHumidity()</code>. The library sends a start pulse, then reads 40 bits of data (16 humidity + 16 temperature + 8 checksum). If the checksum fails <code>isnan()</code> returns true and the LCD shows &ldquo;Sensor Err&rdquo; instead of a bogus value.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <h4>I&sup2;C LCD Update</h4>
+                    <p><code>lcd.setCursor(0, 0)</code> and <code>lcd.print()</code> write the temperature to row 0 and humidity to row 1. The display is cleared only when values change to prevent visible flicker. Calling <code>lcd.clear()</code> every loop causes a noticeable blink &mdash; cursor repositioning avoids this.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <h4>Threshold Alert</h4>
+                    <p>If <code>temp &gt; THRESHOLD</code> (default 30 &deg;C), pin D8 goes HIGH. Connected to a passive buzzer, this produces a 1 kHz tone via <code>tone(8, 1000)</code>, or an LED simply lights. The threshold constant is defined at the top of the sketch for easy adjustment.</p>
+                  </div>
+                </li>
+                <li class="step-item">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <h4>Serial Monitor Logging</h4>
+                    <p>Every reading is also printed to Serial at 9600 baud in CSV format: <code>millis,temp,humidity</code>. This lets you log data to a spreadsheet via the Arduino IDE serial plotter or a Python script with <code>pyserial</code> for simple data-logging experiments.</p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#128187; Core Code Snippet</h2>
+              <pre><code>#include &lt;DHT.h&gt;
+#include &lt;Wire.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+#define DHTPIN    4
+#define DHTTYPE   DHT22
+#define ALERT_PIN 8
+#define THRESHOLD 30.0f
+
+DHT dht(DHTPIN, DHTTYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+float lastTemp = -999, lastHum = -999;
+
+void setup() {
+  Serial.begin(9600);
+  dht.begin();
+  lcd.init();
+  lcd.backlight();
+  pinMode(ALERT_PIN, OUTPUT);
+
+  lcd.setCursor(0, 0); lcd.print("Studgine Monitor");
+  lcd.setCursor(0, 1); lcd.print("Initialising...");
+  delay(1500);
+  lcd.clear();
+}
+
+void loop() {
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+
+  if (isnan(t) || isnan(h)) {
+    lcd.setCursor(0, 0); lcd.print("Sensor Error!   ");
+    lcd.setCursor(0, 1); lcd.print("Check wiring    ");
+    delay(2000);
+    return;
+  }
+
+  if (t != lastTemp || h != lastHum) {
+    lcd.setCursor(0, 0);
+    lcd.print("Temp: ");
+    lcd.print(t, 1);
+    lcd.print((char)223);          // degree symbol
+    lcd.print("C   ");
+
+    lcd.setCursor(0, 1);
+    lcd.print("Hum:  ");
+    lcd.print(h, 1);
+    lcd.print("%    ");
+
+    lastTemp = t; lastHum = h;
+  }
+
+  digitalWrite(ALERT_PIN, t &gt; THRESHOLD ? HIGH : LOW);
+  Serial.print(millis()); Serial.print(',');
+  Serial.print(t);        Serial.print(',');
+  Serial.println(h);
+
+  delay(2000);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>&#127758; Extensions &amp; Applications</h2>
+              <div class="applications-grid">
+                <span class="app-tag">&#128201; Data Logger (SD card)</span>
+                <span class="app-tag">&#128241; Blynk App Dashboard</span>
+                <span class="app-tag">&#127968; Home Automation Node</span>
+                <span class="app-tag">&#129716; Plant Care Monitor</span>
+                <span class="app-tag">&#128209; InfluxDB + Grafana</span>
+                <span class="app-tag">&#128268; Multi-Sensor Array</span>
+              </div>
+            </div>
+
+          </div><!-- /.detail-main -->
+
+          <!--  Sidebar  -->
+          <aside class="detail-sidebar">
+
+            <div class="sidebar-block quick-facts">
+              <h3>&#9889; Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Beginner</li>
+                <li><strong>Budget:</strong> $5 &ndash; $12</li>
+                <li><strong>Build Time:</strong> 1 &ndash; 3 hours</li>
+                <li><strong>Sensor:</strong> DHT22 / AM2302</li>
+                <li><strong>Protocol:</strong> 1-Wire + I&sup2;C</li>
+                <li><strong>Display:</strong> 16&times;2 LCD I&sup2;C</li>
+              </ul>
+            </div>
+
+            <div class="sidebar-block">
+              <h3>&#128296; Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>I&sup2;C communication protocol</li>
+                <li>1-Wire sensor interfacing</li>
+                <li>LCD character display usage</li>
+                <li>DHT22 library &amp; data validation</li>
+                <li>Threshold alerting logic</li>
+                <li>Serial CSV data logging</li>
+              </ul>
+            </div>
+
+            <div class="sidebar-block">
+              <h3>&#128218; Libraries &amp; Tools</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">DHT sensor library</span><span class="lib-desc"> &mdash; by Adafruit</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> &mdash; by Frank de Brabander</span></li>
+                <li><span class="lib-name">Wire</span><span class="lib-desc"> &mdash; built-in I&sup2;C library</span></li>
+                <li><span class="lib-name">Arduino IDE 2</span><span class="lib-desc"> &mdash; Free, cross-platform</span></li>
+              </ul>
+            </div>
+
+            <a href="../projects.html" class="btn btn-secondary back-btn">&larr; Back to Projects</a>
+
+          </aside>
+
+        </div><!-- /.detail-layout -->
+      </div><!-- /.container -->
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Categories</h4>
+          <ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+  <script>
+  (function(){
+    var fill=document.getElementById('thermoFill');
+    var row0=document.getElementById('lcdRow0');
+    var row1=document.getElementById('lcdRow1');
+    var temp=22, hum=55, dir=1;
+    setInterval(function(){
+      temp += dir*(0.3+Math.random()*0.4);
+      hum  += (Math.random()-0.5)*0.8;
+      if(temp>38||temp<18) dir*=-1;
+      hum=Math.min(95,Math.max(30,hum));
+      var pct=Math.round((temp-0)/80*100);
+      fill.style.height=pct+'%';
+      row0.textContent='Temp: '+temp.toFixed(1)+'°C';
+      row1.textContent='Hum:  '+hum.toFixed(1)+'%';
+    },1800);
+  })();
+  </script>
+</body>
+</html>

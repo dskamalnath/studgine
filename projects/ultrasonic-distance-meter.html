@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ultrasonic Distance Meter – Beginner Project | Studgine</title>
+  <meta name="description" content="Measure distance in real time with an HC-SR04 ultrasonic sensor and display readings on an LCD. Foundation skill for any robot or proximity project." />
+  <meta name="keywords" content="Arduino ultrasonic distance meter, HC-SR04 tutorial, distance sensor LCD, beginner Arduino project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="ultrasonic-distance-meter.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-sonar-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .anim-sonar-screen { width:140px; height:140px; border-radius:50%; background:#001a00; border:3px solid #0a3; overflow:hidden; position:relative; }
+    .anim-sonar-sweep { position:absolute; top:50%; left:50%; width:50%; height:3px; background:linear-gradient(90deg,rgba(0,255,80,.9),transparent); transform-origin:left center; animation: sonar-sweep 2.5s linear infinite; }
+    .anim-sonar-ring  { position:absolute; border:1px solid #0a3; border-radius:50%; }
+    .anim-sonar-ring:nth-child(2){ inset:25%; }
+    .anim-sonar-ring:nth-child(3){ inset:10%; }
+    .anim-sonar-dot   { position:absolute; width:8px; height:8px; background:#0f0; border-radius:50%; top:28%; left:62%; animation: sonar-blip 2.5s ease-in-out infinite; }
+    @keyframes sonar-sweep { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+    @keyframes sonar-blip  { 0%,35%,100%{opacity:0} 40%,80%{opacity:1} }
+    .anim-dist-bar { width:180px; }
+    .anim-dist-track { background:#222; border-radius:6px; height:16px; width:100%; overflow:hidden; border:2px solid #444; }
+    .anim-dist-fill  { height:100%; background:linear-gradient(90deg,#00cc44,#00ff88); border-radius:4px; animation: dist-fill 2.5s ease-in-out infinite alternate; }
+    @keyframes dist-fill { 0%{width:10%} 100%{width:85%} }
+    .anim-dist-label { font-family:monospace; color:#0f0; font-size:.9rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine"><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="obstacle-avoidance-robot.html">Obstacle Robot</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+  <script>
+    // Animate distance value
+    var vals = [12, 24, 38, 55, 71, 89, 103, 78, 52, 33, 18];
+    var i = 0;
+    setInterval(function(){
+      var el = document.getElementById('dist-val');
+      if(el) el.textContent = vals[i++ % vals.length];
+    }, 600);
+  </script>
+</body>
+</html>

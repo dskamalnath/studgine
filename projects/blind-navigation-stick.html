@@ -1,0 +1,293 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blind Navigation Stick – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a smart navigation stick for the visually impaired using HC-SR04 ultrasonic distance sensors. Provides haptic vibration and audio feedback when obstacles are detected." />
+  <meta name="keywords" content="blind navigation stick Arduino, ultrasonic cane visually impaired, obstacle detection Arduino buzzer vibration, assistive technology Arduino project, smart walking cane HC-SR04" />
+  <link rel="canonical" href="blind-navigation-stick.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#060614 0%,#0e0e28 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .scene{position:relative;width:260px;height:100px;background:linear-gradient(180deg,#0a0a20 0%,#0e0e30 100%);border-radius:8px;overflow:hidden;}
+    .person{position:absolute;bottom:4px;left:30px;font-size:32px;}
+    .stick{position:absolute;bottom:6px;left:56px;width:3px;height:42px;background:#8080aa;border-radius:2px;transform-origin:bottom center;}
+    .obstacle{position:absolute;bottom:0;width:20px;height:40px;background:#404080;border-radius:2px 2px 0 0;transition:left 1s linear;}
+    .sonar-ring{position:absolute;bottom:6px;left:58px;width:0;height:0;border-radius:50%;border:2px solid rgba(100,200,255,0.6);transition:width 0.5s,height 0.5s,opacity 0.5s;transform:translate(-50%,-50%);}
+    .alert-level{width:180px;height:10px;border-radius:5px;overflow:hidden;background:#0a0a20;}
+    .alert-fill{height:100%;border-radius:5px;transition:width 0.3s,background 0.3s;}
+    .haptic-dot{width:10px;height:10px;border-radius:50%;background:#6060cc;animation:hapticPulse 0.3s infinite;}
+    @keyframes hapticPulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.6);opacity:0.5;}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Blind Navigation Stick</h1>
+      <p>A smart cane attachment with HC-SR04 ultrasonic sensors that detects obstacles at knee, waist, and overhead heights. Provides escalating haptic vibration and audio beeps that increase in frequency as the user approaches an object.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Blind Navigation Stick</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="scene" id="scene">
+                  <div class="person">🧑</div>
+                  <div class="stick" id="stick"></div>
+                  <div class="obstacle" id="obs1" style="left:200px;height:40px;"></div>
+                  <div class="obstacle" id="obs2" style="left:230px;height:60px;background:#603060;"></div>
+                  <div class="sonar-ring" id="sonarRing"></div>
+                </div>
+                <div style="display:flex;gap:16px;align-items:center;">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                    <div style="font-family:monospace;font-size:9px;color:#6060aa;">Proximity</div>
+                    <div class="alert-level"><div class="alert-fill" id="alertFill" style="width:20%;background:#2060cc;"></div></div>
+                    <div style="font-family:monospace;font-size:10px;color:#8080cc;" id="distLabel">dist: 120 cm</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+                    <div style="font-family:monospace;font-size:9px;color:#6060aa;">Vibration</div>
+                    <div class="haptic-dot" id="hapticDot" style="animation:none;opacity:0.3;"></div>
+                    <div style="font-family:monospace;font-size:9px;color:#6060aa;" id="hapticStatus">off</div>
+                  </div>
+                  <div style="font-family:monospace;font-size:10px;color:#5050a0;" id="alertStatus">CLEAR</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+blind+navigation+stick+ultrasonic+obstacle+detection" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Over 43 million people worldwide are blind, and hundreds of millions more have significant visual impairment. Standard white canes detect ground-level obstacles well but miss suspended objects like car wing mirrors, tree branches, or shop signs at head height. This ultrasonic stick attachment addresses that gap with three sensors at different angle profiles, providing full-height obstacle detection in a 3-metre forward arc.</p>
+              <p>This project is deeply impactful as an engineering design exercise — students must balance battery life, response time, feedback legibility (distinguishing vibration patterns), waterproofing, weight, ergonomics, and cost. An excellent capstone or final-year project topic.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">3× HC-SR04 Ultrasonic Sensors</span><span class="comp-note"> — Angled at ground, waist, head heights; 2 cm–4 m range, ±3 mm accuracy</span></div></li>
+                <li><span class="comp-icon">📳</span><div><span class="comp-name">3× Small Haptic Vibration Motors (ERM)</span><span class="comp-note"> — One per sensor; mounted at hand grip position for tactile distance feedback</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">Passive Buzzer / Mini Speaker</span><span class="comp-note"> — Distance-varying beep pattern; optional pre-recorded voice with DFPlayer Mini</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Nano</span><span class="comp-note"> — Compact form factor; fits inside stick mounting bracket</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">18650 Li-Ion Cell + TP4056</span><span class="comp-note"> — 3000 mAh gives ~12 h runtime; USB-C charging port on stick body</span></div></li>
+                <li><span class="comp-icon">🎙️</span><div><span class="comp-name">DFPlayer Mini (Optional)</span><span class="comp-note"> — Plays MP3 voice prompts: "Obstacle at 50 cm"; stores audio on microSD card</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Multi-Sensor Distance Measurement</h4><p>Read three HC-SR04 sensors sequentially (trigger sensors one at a time to avoid crosstalk). Each reading: 10 µs TRIG pulse → measure ECHO pulse duration → distance = <code>duration × 0.0343 / 2</code>. Allow 60 ms between sensor reads to prevent ultrasonic interference. Takes 5 readings per sensor per cycle and uses the median value to reject spike noise from reflective surfaces.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Tiered Proximity Feedback</h4><p>Three distance zones produce different feedback intensities: FAR (100–300 cm): single slow beep every 1 s, vibration motor 1 (low intensity PWM 80). NEAR (40–100 cm): rapid beep every 300 ms, all three motors at medium intensity. DANGER (&lt;40 cm): continuous tone, all motors at maximum (255 PWM). Different motors for different sensors let the user feel which height zone has an obstacle — crucial for informed navigation decisions.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Non-Blocking Haptic &amp; Audio Patterns</h4><p>Use <code>millis()</code>-based non-blocking timers for all feedback patterns — never <code>delay()</code>. This ensures sensor readings continue even while producing feedback. Implement pattern struct: <code>{onTime, offTime, repeats}</code>. Example: three-pulse emergency = {50ms, 50ms, 3×}. This keeps the feedback loop running at 20 Hz update rate regardless of audio/vibration patterns.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Water Detection Mode</h4><p>Optional: add a water/puddle sensor (two copper tape strips on stick base). On water detection (conductivity closes circuit): trigger special fast vibration pattern + rising tone alert — a pattern distinctly different from obstacle alerts. This warns the user to step differently (raise foot higher) rather than stop, distinguishing wet surface from solid obstacle. Store pattern preferences in EEPROM for custom user configurations.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#define TRIG1 2 #define ECHO1 3  // low (ground)
+#define TRIG2 4 #define ECHO2 5  // mid (waist)
+#define TRIG3 6 #define ECHO3 7  // high (head)
+#define VIB1 9 #define VIB2 10 #define VIB3 11
+#define BUZZER 8
+
+long readDistance(int trig, int echo) {
+  digitalWrite(trig, LOW); delayMicroseconds(2);
+  digitalWrite(trig, HIGH); delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  return pulseIn(echo, HIGH, 23200) * 0.0343 / 2;
+}
+
+void alertProximity(int vibPin, long dist) {
+  int intensity = 0;
+  if(dist &lt; 40)        intensity = 255;
+  else if(dist &lt; 100)  intensity = 150;
+  else if(dist &lt; 200)  intensity = 60;
+  analogWrite(vibPin, intensity);
+  if(intensity > 150) tone(BUZZER, 1000 + (200-dist)*5);
+  else if(intensity > 0) tone(BUZZER, 600);
+  else noTone(BUZZER);
+}
+
+void loop() {
+  long d1 = readDistance(TRIG1, ECHO1);
+  delay(30);
+  long d2 = readDistance(TRIG2, ECHO2);
+  delay(30);
+  long d3 = readDistance(TRIG3, ECHO3);
+  alertProximity(VIB1, d1);
+  alertProximity(VIB2, d2);
+  alertProximity(VIB3, d3);
+  delay(10);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">♿ Visual Impairment Aid</span>
+                <span class="app-tag">🏗️ Construction Zone Alert</span>
+                <span class="app-tag">🎙️ DFPlayer Voice Prompts</span>
+                <span class="app-tag">📍 GPS Waypoint Navigation</span>
+                <span class="app-tag">🌊 Water/Puddle Detection</span>
+                <span class="app-tag">📶 Bluetooth Phone Feedback</span>
+                <span class="app-tag">🔋 Solar Recharge Panel</span>
+                <span class="app-tag">🤖 LIDAR Upgrade (Advanced)</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $15 – $28</li>
+                <li><strong>Build Time:</strong> 4 – 7 hours</li>
+                <li><strong>Platform:</strong> Arduino Nano</li>
+                <li><strong>Detection Range:</strong> 2 cm – 3 m</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Multi-sensor HC-SR04 reading</li>
+                <li>Non-blocking millis() patterns</li>
+                <li>Haptic motor PWM control</li>
+                <li>Assistive tech design</li>
+                <li>DFPlayer MP3 integration</li>
+                <li>Battery power optimisation</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">tone()</span><span class="lib-desc"> — Arduino built-in buzzer frequency output</span></li>
+                <li><span class="lib-name">DFRobotDFPlayerMini</span><span class="lib-desc"> — MP3 voice prompt playback (optional)</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="iot-flood-sensor-alert.html">IoT Flood Sensor Alert</a></li>
+                <li><a href="lidar-obstacle-mapper.html">LIDAR Obstacle Mapper (Advanced)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let obsLeft = 200, direction = -1;
+    setInterval(() => {
+      obsLeft += direction * 2.5;
+      if(obsLeft < 65) direction = 1;
+      if(obsLeft > 230) direction = -1;
+      document.getElementById('obs1').style.left = obsLeft + 'px';
+      document.getElementById('obs2').style.left = (obsLeft + 30) + 'px';
+      const dist = Math.round((obsLeft - 58) * 1.5);
+      document.getElementById('distLabel').textContent = 'dist: ' + Math.max(5, dist) + ' cm';
+      const pct = Math.max(10, Math.min(100, 100 - dist / 1.8));
+      document.getElementById('alertFill').style.width = pct + '%';
+      let color, status;
+      if(dist < 40) { color='#ff2020'; status='🚨 DANGER'; }
+      else if(dist < 100) { color='#ff8800'; status='⚠️ NEAR'; }
+      else { color='#2060cc'; status='✅ CLEAR'; }
+      document.getElementById('alertFill').style.background = color;
+      document.getElementById('alertStatus').textContent = status;
+      document.getElementById('alertStatus').style.color = color;
+      const vibrating = dist < 200;
+      document.getElementById('hapticDot').style.animation = vibrating ? 'hapticPulse ' + (0.5 - dist/600) + 's infinite' : 'none';
+      document.getElementById('hapticDot').style.opacity = vibrating ? '1' : '0.2';
+      document.getElementById('hapticStatus').textContent = vibrating ? 'ON' : 'off';
+      // sonar ring
+      const ring = document.getElementById('sonarRing');
+      const r = (dist / 2); ring.style.width = r+'px'; ring.style.height = r+'px';
+      ring.style.left = (58 - r/2)+'px'; ring.style.opacity = 0.5 - r/240;
+    }, 150);
+  </script>
+</body>
+</html>

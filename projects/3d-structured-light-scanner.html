@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Structured-Light Scanner – Advanced Project | Studgine</title>
+  <meta name="description" content="Project Gray-code stripe patterns onto an object; a Pi Camera captures deformations and OpenCV triangulates a dense 3D point cloud exportable as an STL mesh." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000a10;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .sl-info{font-family:monospace;font-size:9px;color:#00eeff;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>3D Structured-Light Scanner</h1>
+      <p>Project Gray-code binary stripe patterns from a pico projector onto an object. A Pi Camera captures how the patterns deform over the surface. OpenCV triangulation converts those per-pixel phase maps into a dense 3D point cloud — exportable as an STL mesh for 3D printing — without any rotating parts or laser hazards.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">3D Structured-Light Scanner</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="slCanvas" width="130" height="100"></canvas>
+                <div class="sl-info">
+                  <div>PHASE: Gray-Code</div>
+                  <div>PATTERNS: <span id="slPat">8</span>/16</div>
+                  <div>BASELINE: 15cm</div>
+                  <div style="margin-top:3px;">POINT CLOUD</div>
+                  <div>POINTS: <span id="slPts">48291</span></div>
+                  <div>DEPTH RES: 0.3mm</div>
+                  <div>FOV: 30×25cm</div>
+                  <div style="margin-top:3px;">EXPORT</div>
+                  <div>FORMAT: PLY/STL</div>
+                  <div style="color:#00eeff;">SCANNING...</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=structured+light+3D+scanner+Raspberry+Pi+OpenCV+Gray+code" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Structured-light scanning is the same technology used in Apple Face ID and industrial quality-control systems. It works by projecting known patterns onto a surface and analysing how those patterns deform due to surface geometry. Gray code patterns are a sequence of binary-encoded stripe images where each pixel column gets a unique binary code across N images — this encodes absolute position without ambiguity even at discontinuities. Combined with sinusoidal phase-shifting for sub-pixel accuracy, the result is a dense, accurate 3D point cloud from just a projector + camera pair. Achievable resolution: 0.3mm at 30cm range.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">💡</span><div><span class="comp-name">Pico DLP Projector (AAXA P2 or similar)</span><span class="comp-note"> — HDMI input; 854×480 resolution; 50+ lumens; connect to Pi HDMI; project in dark room for best depth SNR</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Pi Camera v2 or HQ Camera</span><span class="comp-note"> — Fixed focus at scanning distance (30cm); global shutter preferred; triggered capture sync with projector via GPIO</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — Generates pattern images; controls projector via HDMI framebuffer; captures images; runs OpenCV triangulation</span></div></li>
+                <li><span class="comp-icon">📐</span><div><span class="comp-name">Calibration Board + Rigid Rig</span><span class="comp-note"> — Printed A4 chessboard 9×6 corners; rigid frame to fix camera-projector baseline angle (15–20cm separation, 30° angle)</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Gray Code Pattern Generation</h4><p>Generate N=log2(W) binary stripe images where each image halves the stripe width. For 16 strip codes: 4 images (8, 4, 2, 1 pixel stripes). Plus 4-step phase-shifted sinusoids for sub-pixel precision. PIL/Pygame render patterns as HDMI framebuffer: <code>for bit in range(N): img[y, x] = 255 if (x >> (N-1-bit)) & 1 else 0</code>. Project each image, capture with Pi Camera: <code>camera.capture(f"frame_{bit}.jpg"); time.sleep(0.2)</code>. Also capture uniformly-white and uniformly-black frames for normalisation.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Gray Code Decoding to Column Index</h4><p>Per-pixel, decode the bit sequence across N binary images to get projector column index: <code>for each pixel (py,px): binary = [frames[b][py,px] > threshold for b in range(N)]; col = gray_to_binary(binary)</code>. Gray-to-binary conversion: <code>b[0]=g[0]; for i in range(1,N): b[i]=b[i-1]^g[i]</code>. Add phase shift sub-pixel refinement: <code>phi = arctan2(I3-I1, I0-I2); col_refined = col + phi/(2*pi)</code>. Each camera pixel now maps to a projector column.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Stereo Triangulation to 3D Points</h4><p>Pre-calibrate camera (intrinsics K, distortion) + projector (treat as inverse camera with its own K). Compute fundamental matrix from chessboard calibration. Per-pixel correspondence: camera pixel (u_c, v_c) ↔ projector column u_p. Triangulation: x_world = cam_origin + t * ray_direction. Using OpenCV: <code>pts3d = cv2.triangulatePoints(P1, P2, pts_camera.T, pts_projector.T)</code>. Homogenise: <code>pts3d = pts3d[:3] / pts3d[3]</code>. Filter by reprojection error &lt;1px. Result: 50k–200k 3D points per scan.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Point Cloud to Mesh Export</h4><p>Save point cloud as PLY: <code>import open3d as o3d; pcd = o3d.geometry.PointCloud(); pcd.points = o3d.utility.Vector3dVector(pts3d.T); o3d.io.write_point_cloud("scan.ply", pcd)</code>. Visualise in Open3D viewer. Mesh reconstruction via Poisson surface: <code>mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=9)</code>. Export STL for 3D printing. Multiple scan angles: ICP registration to fuse front + side scans into complete 360° model.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import numpy as np, cv2
+from picamera2 import Picamera2
+
+camera = Picamera2(); camera.start()
+N = 4  # Gray code bits → 16 column regions
+
+def gen_gray_pattern(bit, width=854, height=480):
+    img = np.zeros((height, width), dtype=np.uint8)
+    for x in range(width):
+        img[:, x] = 255 if (x >> (N-1-bit)) & 1 else 0
+    return img
+
+def gray_to_int(gray_bits):
+    """Convert Gray code bits to integer."""
+    n = 0;  mask = gray_bits[0]
+    n |= mask
+    for i in range(1, len(gray_bits)):
+        mask ^= gray_bits[i]; n = (n << 1) | mask
+    return n
+
+frames = []
+for bit in range(N):
+    pattern = gen_gray_pattern(bit)
+    # Display on HDMI projector (framebuffer), capture image
+    # display_pattern(pattern)  # via pygame/HDMI
+    img = camera.capture_array()
+    frames.append(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY))
+
+# Decode per-pixel projector column
+h, w = frames[0].shape
+decoded = np.zeros((h, w), dtype=np.float32)
+for y in range(h):
+    for x in range(w):
+        bits = [(frames[b][y, x] > 128) for b in range(N)]
+        decoded[y, x] = gray_to_int(bits)
+
+print(f"Decoded range: {decoded.min():.0f} – {decoded.max():.0f}")</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🔄 360° Multi-Scan ICP Merge</span>
+                <span class="app-tag">🎨 Colour Point Cloud Texture</span>
+                <span class="app-tag">🖨️ Direct STL 3D Print Output</span>
+                <span class="app-tag">📦 Object Dimensions Measurement</span>
+                <span class="app-tag">🦷 Dental/Medical Scanning Demo</span>
+                <span class="app-tag">🕹️ Game Asset 3D Capture</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $60 – $115</li><li><strong>Build Time:</strong> 12 – 20 hours</li><li><strong>Depth Res:</strong> 0.3mm</li><li><strong>Output:</strong> PLY/STL mesh</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Gray code pattern generation</li><li>Phase-shift profilometry</li><li>Camera-projector calibration</li><li>Stereo triangulation (OpenCV)</li><li>Point cloud processing</li><li>Poisson mesh reconstruction</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">OpenCV</span><span class="lib-desc"> — Calibration + triangulation</span></li><li><span class="lib-name">Open3D</span><span class="lib-desc"> — Point cloud + mesh tools</span></li><li><span class="lib-name">picamera2</span><span class="lib-desc"> — Pi Camera capture</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const slC=document.getElementById('slCanvas');const slCtx=slC.getContext('2d');
+    let slPhase=0;
+    function drawSL(){
+      slCtx.fillStyle='rgba(0,10,16,0.4)';slCtx.fillRect(0,0,130,100);
+      // Stripe patterns projected on cube
+      const stripes=Math.floor(slPhase/2)%8+1;
+      for(let i=0;i<20;i++){
+        const x=i*(130/20);const bright=Math.sin(i*stripes*0.5+slPhase)*0.5+0.5;
+        slCtx.fillStyle=`rgba(0,180,255,${bright*0.4})`;slCtx.fillRect(x,15,6,70);
+      }
+      // Object (cube)
+      slCtx.strokeStyle='#00aabb';slCtx.lineWidth=1.5;
+      slCtx.strokeRect(35,25,60,50);
+      slCtx.strokeRect(50,18,30,10);
+      // Point cloud dots
+      for(let i=0;i<40;i++){
+        const x=35+Math.sin(i*0.7+slPhase*0.3)*28+30;
+        const y=25+Math.cos(i*0.9+slPhase*0.2)*22+25;
+        if(x>30&&x<100&&y>15&&y<85){
+          slCtx.fillStyle=`hsl(${180+i*5},100%,60%)`;
+          slCtx.fillRect(x,y,2,2);
+        }
+      }
+      slPhase+=0.06;
+      document.getElementById('slPat').textContent=Math.floor(slPhase)%16+1;
+      document.getElementById('slPts').textContent=(40000+Math.floor(slPhase)*200).toLocaleString();
+      setTimeout(drawSL,80);
+    }
+    drawSL();
+  </script>
+</body>
+</html>

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO -->
+  <title id="pageTitle">Topic – Free Engineering Platform</title>
+  <meta name="description" content="Free textbooks, video lectures, practice questions, and comprehensive notes for engineering students." />
+  <meta name="keywords" content="free engineering education, textbooks, MIT OCW, NPTEL" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/learn.css" />
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../budget-electronics.html" class="nav-link">Electronics</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="learn-page-hero">
+    <div class="container">
+      <span class="learn-eyebrow" id="heroBadge">Topic</span>
+      <h1 id="heroTitle">Loading...</h1>
+      <p id="heroDesc">Free resources from MIT, NPTEL, OpenStax, and more.</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top: 24px;">
+    <div class="container">
+      <nav class="learn-breadcrumb" aria-label="Breadcrumb">
+        <a href="../learn.html">Learning Platform</a>
+        <span class="sep">/</span>
+        <a href="#" id="breadDeptLink">Department</a>
+        <span class="sep">/</span>
+        <a href="#" id="breadSubjLink">Subject</a>
+        <span class="sep">/</span>
+        <span class="current" id="breadTopic">Topic</span>
+      </nav>
+
+      <div class="topic-detail-layout">
+        <div class="topic-main-content">
+          
+          <!-- Overview -->
+          <div class="learn-block">
+            <h2><span class="block-icon">📖</span> Overview</h2>
+            <p id="topicOverview">Loading overview...</p>
+          </div>
+
+          <!-- Resources Section -->
+          <div class="learn-block">
+            <h2><span class="block-icon">🎓</span> Free Learning Resources</h2>
+            <p style="font-size: 0.88rem; color: #6B7280; margin-bottom: 18px;">All resources below are 100% free and open. Click tabs to explore different resource types.</p>
+            
+            <nav class="resource-tab-nav" role="tablist">
+              <button class="rtab-btn active" data-tab="openTextbooks" role="tab">Open Textbooks</button>
+              <button class="rtab-btn" data-tab="mitOcw" role="tab">MIT OCW</button>
+              <button class="rtab-btn" data-tab="nptel" role="tab">NPTEL</button>
+              <button class="rtab-btn" data-tab="saylor" role="tab">Saylor Academy</button>
+              <button class="rtab-btn" data-tab="libreTexts" role="tab">LibreTexts</button>
+              <button class="rtab-btn" data-tab="govPdfs" role="tab">Gov PDFs</button>
+            </nav>
+
+            <div id="openTextbooks" class="rtab-panel active"></div>
+            <div id="mitOcw" class="rtab-panel"></div>
+            <div id="nptel" class="rtab-panel"></div>
+            <div id="saylor" class="rtab-panel"></div>
+            <div id="libreTexts" class="rtab-panel"></div>
+            <div id="govPdfs" class="rtab-panel"></div>
+          </div>
+
+          <!-- Summary Notes -->
+          <div class="learn-block">
+            <h2><span class="block-icon">📝</span> Summary Notes</h2>
+            <div class="summary-notes" id="summaryNotes">
+              <p>Loading notes...</p>
+            </div>
+          </div>
+
+          <!-- Practice Questions -->
+          <div class="learn-block">
+            <h2><span class="block-icon">💡</span> Practice Questions</h2>
+            <p style="font-size: 0.88rem; color: #6B7280; margin-bottom: 18px;">Test your understanding with these questions. Click to reveal answers.</p>
+            <div id="practiceQuestions"></div>
+          </div>
+
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="learn-sidebar">
+          <div class="learn-sidebar-card">
+            <h3>Related Topics</h3>
+            <div id="relatedTopics"></div>
+          </div>
+
+          <div class="learn-sidebar-card">
+            <h3>Quick Actions</h3>
+            <a href="#" id="prevTopicBtn" class="related-topic-link" style="border-bottom: none;">Previous Topic</a>
+            <a href="#" id="nextTopicBtn" class="related-topic-link" style="border-bottom: none;">Next Topic</a>
+            <a href="#" id="backToSubjBtn" class="related-topic-link" style="border-bottom: none;">← Back to Subject</a>
+          </div>
+        </aside>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">★</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Learning</h4><ul>
+            <li><a href="../learn.html">Free Learning Platform</a></li>
+            <li><a href="dept.html?dept=cse">Computer Science</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Books</a></li>
+            <li><a href="../resources.html">Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Resource</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  
+  <script src="../js/main.js"></script>
+  <script src="../js/learn-data.js"></script>
+  <script>
+    let currentDept, currentSubj, currentTopic, currentTopicIndex;
+
+    function getParamsFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        deptId: params.get('dept'),
+        subjId: params.get('subj'),
+        topicId: params.get('topic')
+      };
+    }
+
+    function getLicenseBadgeClass(license) {
+      if (!license) return 'license-open';
+      const l = license.toLowerCase();
+      if (l.includes('cc by-sa')) return 'license-cc-by-sa';
+      if (l.includes('cc by-nc')) return 'license-cc-by-nc';
+      if (l.includes('cc0')) return 'license-cc0';
+      if (l.includes('cc by')) return 'license-cc-by';
+      if (l.includes('mit')) return 'license-mit';
+      if (l.includes('public')) return 'license-public';
+      return 'license-open';
+    }
+
+    function loadTopic() {
+      const { deptId, subjId, topicId } = getParamsFromUrl();
+      const data = window.LEARN_DATA;
+      
+      if (!deptId || !subjId || !topicId || !data) {
+        window.location.href = '../learn.html';
+        return;
+      }
+
+      const dept = data.departments.find(d => d.id === deptId);
+      if (!dept) {
+        window.location.href = '../learn.html';
+        return;
+      }
+
+      const subj = dept.subjects.find(s => s.id === subjId);
+      if (!subj) {
+        window.location.href = `dept.html?dept=${deptId}`;
+        return;
+      }
+
+      const topicIndex = subj.topics.findIndex(t => t.id === topicId);
+      if (topicIndex === -1) {
+        window.location.href = `subject.html?dept=${deptId}&subj=${subjId}`;
+        return;
+      }
+
+      const topic = subj.topics[topicIndex];
+      currentDept = dept;
+      currentSubj = subj;
+      currentTopic = topic;
+      currentTopicIndex = topicIndex;
+
+      // Update page metadata
+      document.getElementById('pageTitle').textContent = `${topic.name} – ${subj.name}`;
+      document.getElementById('heroBadge').textContent = `📚 ${subj.name}`;
+      document.getElementById('heroTitle').textContent = topic.name;
+      
+      // Breadcrumb
+      const breadDeptLink = document.getElementById('breadDeptLink');
+      breadDeptLink.textContent = dept.name;
+      breadDeptLink.href = `dept.html?dept=${deptId}`;
+      
+      const breadSubjLink = document.getElementById('breadSubjLink');
+      breadSubjLink.textContent = subj.name;
+      breadSubjLink.href = `subject.html?dept=${deptId}&subj=${subjId}`;
+      
+      document.getElementById('breadTopic').textContent = topic.name;
+
+      // Populate content
+      document.getElementById('topicOverview').textContent = topic.overview;
+      
+      renderResources(topic.resources);
+      renderSummaryNotes(topic.summaryNotes);
+      renderPracticeQuestions(topic.practiceQuestions);
+      renderSidebar();
+    }
+
+    function renderResources(resources) {
+      // Open Textbooks
+      const otPanel = document.getElementById('openTextbooks');
+      if (resources.openTextbooks && resources.openTextbooks.length > 0) {
+        otPanel.innerHTML = resources.openTextbooks.map(res => `
+          <div class="resource-item">
+            <div class="resource-item-top">
+              <div class="resource-item-title">${res.title}</div>
+              <span class="license-badge ${getLicenseBadgeClass(res.license)}">${res.license || 'Open'}</span>
+            </div>
+            <div class="resource-item-meta">By ${res.author}</div>
+            <div class="resource-item-actions">
+              <a href="${res.url}" target="_blank" rel="noopener" class="res-link-btn primary">📖 Read Free</a>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        otPanel.innerHTML = '<p style="color: #9CA3AF; font-size: 0.88rem;">No open textbooks available for this topic yet.</p>';
+      }
+
+      // MIT OCW
+      const mitPanel = document.getElementById('mitOcw');
+      if (resources.mitOcw && resources.mitOcw.length > 0) {
+        mitPanel.innerHTML = resources.mitOcw.map(res => `
+          <div class="resource-item">
+            <div class="resource-item-top">
+              <div class="resource-item-title">${res.title}</div>
+              <span class="license-badge license-cc-by-nc">CC BY-NC-SA</span>
+            </div>
+            <div class="resource-item-meta">Course: ${res.course || 'MIT OpenCourseWare'}</div>
+            <div class="resource-item-actions">
+              <a href="${res.url}" target="_blank" rel="noopener" class="res-link-btn primary">🎓 View Course</a>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        mitPanel.innerHTML = '<p style="color: #9CA3AF; font-size: 0.88rem;">No MIT OCW courses available for this topic yet.</p>';
+      }
+
+      // NPTEL
+      const nptelPanel = document.getElementById('nptel');
+      if (resources.nptel && resources.nptel.length > 0) {
+        nptelPanel.innerHTML = resources.nptel.map(res => `
+          <div class="resource-item">
+            <div class="resource-item-top">
+              <div class="resource-item-title">${res.title}</div>
+              <span class="license-badge license-open">Free</span>
+            </div>
+            <div class="resource-item-meta">Instructor: ${res.instructor}</div>
+            <div class="resource-item-actions">
+              <a href="${res.url}" target="_blank" rel="noopener" class="res-link-btn primary">🎥 Watch Lectures</a>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        nptelPanel.innerHTML = '<p style="color: #9CA3AF; font-size: 0.88rem;">No NPTEL courses available for this topic yet.</p>';
+      }
+
+      // Saylor Academy
+      const saylorPanel = document.getElementById('saylor');
+      if (resources.saylor && resources.saylor.length > 0) {
+        saylorPanel.innerHTML = resources.saylor.map(res => `
+          <div class="resource-item">
+            <div class="resource-item-top">
+              <div class="resource-item-title">${res.title}</div>
+              <span class="license-badge license-cc-by">CC BY</span>
+            </div>
+            <div class="resource-item-actions">
+              <a href="${res.url}" target="_blank" rel="noopener" class="res-link-btn primary">📚 Learn Free</a>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        saylorPanel.innerHTML = '<p style="color: #9CA3AF; font-size: 0.88rem;">No Saylor Academy courses available for this topic yet.</p>';
+      }
+
+      // LibreTexts
+      const librePanel = document.getElementById('libreTexts');
+      if (resources.libreTexts && resources.libreTexts.length > 0) {
+        librePanel.innerHTML = resources.libreTexts.map(res => `
+          <div class="resource-item">
+            <div class="resource-item-top">
+              <div class="resource-item-title">${res.title}</div>
+              <span class="license-badge license-cc-by">CC BY</span>
+            </div>
+            <div class="resource-item-actions">
+              <a href="${res.url}" target="_blank" rel="noopener" class="res-link-btn primary">📖 Read Online</a>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        librePanel.innerHTML = '<p style="color: #9CA3AF; font-size: 0.88rem;">No LibreTexts resources available for this topic yet.</p>';
+      }
+
+      // Gov PDFs
+      const govPanel = document.getElementById('govPdfs');
+      if (resources.govPdfs && resources.govPdfs.length > 0) {
+        govPanel.innerHTML = resources.govPdfs.map(res => `
+          <div class="resource-item">
+            <div class="resource-item-top">
+              <div class="resource-item-title">${res.title}</div>
+              <span class="license-badge license-public">Public Domain</span>
+            </div>
+            <div class="resource-item-meta">Source: ${res.source}</div>
+            <div class="resource-item-actions">
+              <a href="${res.url}" target="_blank" rel="noopener" class="res-link-btn primary">📄 Download PDF</a>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        govPanel.innerHTML = '<p style="color: #9CA3AF; font-size: 0.88rem;">No government PDFs available for this topic yet.</p>';
+      }
+    }
+
+    function renderSummaryNotes(notes) {
+      const container = document.getElementById('summaryNotes');
+      if (!notes || notes.trim() === '') {
+        container.innerHTML = '<p style="color: #6B7280;">Summary notes will be available soon.</p>';
+        return;
+      }
+
+      // Split by periods and create bullet list
+      const sentences = notes.split('.').map(s => s.trim()).filter(s => s.length > 0);
+      container.innerHTML = '<ul>' + sentences.map(s => `<li>${s}.</li>`).join('') + '</ul>';
+    }
+
+    function renderPracticeQuestions(questions) {
+      const container = document.getElementById('practiceQuestions');
+      if (!questions || questions.length === 0) {
+        container.innerHTML = '<p style="color: #9CA3AF; font-size: 0.88rem;">Practice questions will be available soon.</p>';
+        return;
+      }
+
+      container.innerHTML = questions.map((q, idx) => `
+        <div class="pq-item" id="pq-${idx}">
+          <div class="pq-question" onclick="togglePQ(${idx})">
+            <span><strong>Q${idx + 1}.</strong> ${q.q}</span>
+            <span class="pq-chevron">▼</span>
+          </div>
+          <div class="pq-answer">${q.a}</div>
+        </div>
+      `).join('');
+    }
+
+    function togglePQ(index) {
+      const item = document.getElementById(`pq-${index}`);
+      item.classList.toggle('open');
+    }
+
+    function renderSidebar() {
+      const { deptId, subjId } = getParamsFromUrl();
+      const topics = currentSubj.topics;
+
+      // Related topics (all other topics in same subject)
+      const relatedContainer = document.getElementById('relatedTopics');
+      const otherTopics = topics.filter((t, idx) => idx !== currentTopicIndex).slice(0, 5);
+      
+      if (otherTopics.length > 0) {
+        relatedContainer.innerHTML = otherTopics.map(t => 
+          `<a href="topic.html?dept=${deptId}&subj=${subjId}&topic=${t.id}" class="related-topic-link">${t.name}</a>`
+        ).join('');
+      } else {
+        relatedContainer.innerHTML = '<p style="font-size: 0.82rem; color: #9CA3AF;">No related topics</p>';
+      }
+
+      // Navigation buttons
+      const prevBtn = document.getElementById('prevTopicBtn');
+      const nextBtn = document.getElementById('nextTopicBtn');
+      const backBtn = document.getElementById('backToSubjBtn');
+
+      if (currentTopicIndex > 0) {
+        const prevTopic = topics[currentTopicIndex - 1];
+        prevBtn.href = `topic.html?dept=${deptId}&subj=${subjId}&topic=${prevTopic.id}`;
+        prevBtn.textContent = `← ${prevTopic.name}`;
+        prevBtn.style.display = 'flex';
+      } else {
+        prevBtn.style.display = 'none';
+      }
+
+      if (currentTopicIndex < topics.length - 1) {
+        const nextTopic = topics[currentTopicIndex + 1];
+        nextBtn.href = `topic.html?dept=${deptId}&subj=${subjId}&topic=${nextTopic.id}`;
+        nextBtn.textContent = `${nextTopic.name} →`;
+        nextBtn.style.display = 'flex';
+      } else {
+        nextBtn.style.display = 'none';
+      }
+
+      backBtn.href = `subject.html?dept=${deptId}&subj=${subjId}`;
+    }
+
+    // Tab switching
+    document.querySelectorAll('.rtab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.dataset.tab;
+        
+        // Update buttons
+        document.querySelectorAll('.rtab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Update panels
+        document.querySelectorAll('.rtab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', loadTopic);
+  </script>
+</body>
+</html>

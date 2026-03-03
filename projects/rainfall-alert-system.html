@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rainfall Alert System – Beginner Project | Studgine</title>
+  <meta name="description" content="Use a rain sensor module with Arduino to trigger a buzzer and LED when rainfall is detected. Learn analog threshold comparisons and alert logic." />
+  <meta name="keywords" content="Arduino rainfall alert system, rain sensor tutorial, rain detector buzzer, beginner Arduino project" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="rainfall-alert-system.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-rain-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .anim-rain-scene { width:160px; height:120px; background:linear-gradient(180deg,#1a2a3a,#2c3e50); border-radius:10px; border:2px solid #2980b9; position:relative; overflow:hidden; }
+    .anim-rain-drop  { position:absolute; width:2px; border-radius:2px; background:rgba(100,200,255,0.8); animation: rain-fall 1.2s linear infinite; }
+    .anim-rain-drop:nth-child(1){ left:15%; height:12px; animation-delay:0s;     animation-duration:1.1s; }
+    .anim-rain-drop:nth-child(2){ left:30%; height:10px; animation-delay:.25s;   animation-duration:1.3s; }
+    .anim-rain-drop:nth-child(3){ left:50%; height:14px; animation-delay:.5s;    animation-duration:1.0s; }
+    .anim-rain-drop:nth-child(4){ left:65%; height:11px; animation-delay:.1s;    animation-duration:1.4s; }
+    .anim-rain-drop:nth-child(5){ left:80%; height:13px; animation-delay:.7s;    animation-duration:1.2s; }
+    .anim-rain-sensor { position:absolute; bottom:10px; left:50%; transform:translateX(-50%); width:60px; height:20px; background:#333; border:2px solid #555; border-radius:4px; display:flex; align-items:center; justify-content:center; }
+    .anim-rain-sensor-label { font-size:7px; color:#aaa; font-family:monospace; }
+    .anim-rain-alert { display:flex; gap:12px; align-items:center; }
+    .anim-led-red    { width:14px; height:14px; border-radius:50%; background:#c0392b; box-shadow:0 0 6px #e74c3c; animation: led-blink-red 1.0s ease-in-out infinite; }
+    .anim-buzzer-icon{ font-size:1.4rem; animation: buzzer-shake 1s ease-in-out infinite; }
+    @keyframes rain-fall   { 0%{top:-15px;opacity:1} 100%{top:110px;opacity:.3} }
+    @keyframes led-blink-red{ 0%,100%{opacity:.2;box-shadow:none} 50%{opacity:1;box-shadow:0 0 10px #e74c3c} }
+    @keyframes buzzer-shake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine"><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="obstacle-avoidance-robot.html">Obstacle Robot</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

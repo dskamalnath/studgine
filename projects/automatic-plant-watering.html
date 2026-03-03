@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automatic Plant Watering – Studgine</title>
+  <meta name="description" content="A soil moisture sensor controls a mini water pump via relay to keep your plant perfectly hydrated. Arduino relay and sensor project." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:flex-end; justify-content:center; gap:20px; padding:18px 16px 10px; height:120px; position:relative; overflow:hidden; }
+    .pot { width:50px; height:55px; background:linear-gradient(180deg,#78350f,#92400e); border-radius:0 0 12px 12px; position:relative; display:flex; align-items:flex-start; justify-content:center; }
+    .soil { width:40px; height:22px; background:#7c3aed; border-radius:4px 4px 0 0; margin-top:2px; position:relative; overflow:hidden; }
+    .soil::after { content:''; position:absolute; left:0; top:0; height:100%; background:#5b21b6; animation:wet-soil 3s ease-in-out infinite; width:0%; }
+    @keyframes wet-soil { 0%,60%{width:0%} 80%,100%{width:100%} }
+    .plant { font-size:2rem; position:absolute; bottom:55px; left:50%; transform:translateX(-50%); animation:plant-grow 4s ease-in-out infinite; }
+    @keyframes plant-grow { 0%,50%{transform:translateX(-50%) scale(.95)} 80%,100%{transform:translateX(-50%) scale(1.05)} }
+    .pump-box { width:36px; height:36px; background:linear-gradient(135deg,#0284c7,#0369a1); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.55rem; font-weight:700; flex-shrink:0; align-self:center; }
+    .water-drop { position:absolute; top:18px; left:calc(50% - 50px); font-size:1.1rem; opacity:0; animation:drop-fall 3s ease-in-out infinite; }
+    @keyframes drop-fall { 0%,60%{opacity:0;top:20px} 70%{opacity:1;top:38px} 85%,100%{opacity:0;top:55px} }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>Automatic Plant Watering</h1>
+      <p class="hero-sub">A soil moisture sensor detects dry soil and automatically switches on a mini water pump via a relay module — your plant waters itself.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>Automatic Plant Watering</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="pump-box">PUMP</div>
+          <div style="position:relative;">
+            <div class="water-drop">💧</div>
+            <div class="pot">
+              <div class="soil"></div>
+            </div>
+            <div class="plant">🌱</div>
+          </div>
+        </div>
+        <p class="anim-stage-label">Soil dries → sensor triggers → relay opens → pump waters</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+automatic+plant+watering+soil+moisture+relay" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>The <strong>capacitive soil moisture sensor v2.0</strong> outputs an analog voltage proportional to the dielectric constant of the soil — dry soil (~3.2 V) vs wet soil (~1.5 V). The Arduino maps this reading and, when soil is too dry, drives a relay coil via a transistor to switch the 5–12 V pump circuit. A timed watering burst (e.g. 3 seconds) prevents over-watering.</p>
+        <p>This project is a practical IoT gateway: once it works on a breadboard you can extend it with an ESP8266 for remote monitoring, an RTC for scheduled watering, or a DHT11 to factor in ambient humidity.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Main controller</span></div></li>
+          <li><span class="comp-icon">🌱</span><div><span class="comp-name">Capacitive Soil Moisture Sensor v2.0</span><span class="comp-note">Analog moisture reading</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">5 V Single-Channel Relay Module</span><span class="comp-note">Switches pump power</span></div></li>
+          <li><span class="comp-icon">💧</span><div><span class="comp-name">Mini 3–6 V DC Submersible Pump</span><span class="comp-note">Water delivery</span></div></li>
+          <li><span class="comp-icon">🔋</span><div><span class="comp-name">External 5 V 1 A supply or 4× AA batteries</span><span class="comp-note">Powers pump separately</span></div></li>
+          <li><span class="comp-icon">🔗</span><div><span class="comp-name">Silicone tubing (30–40 cm)</span><span class="comp-note">Water delivery pipe</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire the sensor</strong> — Sensor AOUT → A0, VCC → 3.3 V (not 5 V for capacitive type), GND → GND. Relay IN → D7, relay VCC → 5 V, relay GND → GND. Pump connects to the relay's COM/NO terminals with its own power supply.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Calibrate</strong> — Insert the sensor in dry soil and note the reading (typically 600–800). Insert in very wet soil and note that reading (typically 200–400). Set <code>DRY_THRESHOLD = 600</code>. When <code>analogRead(A0) &gt; DRY_THRESHOLD</code>, soil needs watering.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Watering logic</strong> — When dry: <code>digitalWrite(RELAY_PIN, LOW)</code> (relay modules are often active-low), run pump for 3 seconds, then <code>digitalWrite(RELAY_PIN, HIGH)</code>. Then wait 10 minutes before checking again to let water absorb.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Add LCD feedback</strong> — Connect an I2C LCD (SDA→A4, SCL→A5). Display the raw moisture percentage and "Watering…" when the pump is active. Use the <code>LiquidCrystal_I2C</code> library to keep wiring simple.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🪴 Indoor pot plant automation</span>
+          <span class="app-tag">🏡 Garden bed irrigation</span>
+          <span class="app-tag">📲 IoT remote monitoring</span>
+          <span class="app-tag">⏰ RTC scheduled watering</span>
+          <span class="app-tag">💧 Multi-zone irrigation</span>
+          <span class="app-tag">☁️ Cloud dashboard logging</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$6 – $15</span></li>
+            <li class="fact-row"><span>Build Time</span><span>2 – 3 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Extras</span><span>Relay Module</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">Relay switching</span></li>
+            <li><span class="skill-tag">Capacitive sensor reading</span></li>
+            <li><span class="skill-tag">Timed actuator burst</span></li>
+            <li><span class="skill-tag">Sensor calibration</span></li>
+            <li><span class="skill-tag">millis() non-blocking delay</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">LiquidCrystal_I2C (optional)</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="soil-moisture-monitor.html" class="skill-tag">Soil Moisture Monitor</a></li>
+            <li><a href="smart-dustbin-lid.html" class="skill-tag">Smart Dustbin Lid</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

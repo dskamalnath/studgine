@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biometric ATM Simulator – Advanced Project | Studgine</title>
+  <meta name="description" content="Combine fingerprint authentication, RFID card verification, and PIN entry on a Raspberry Pi touchscreen to simulate a secure ATM transaction flow." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#0a0a1a;border-radius:12px;padding:24px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .atm-screen{width:120px;height:90px;background:#000820;border:2px solid #003388;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#00aaff;gap:3px;}
+    .fp-oval{width:36px;height:44px;border:2px solid #0066ff;border-radius:50% 50% 50% 50%;display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .atm-info{font-family:monospace;font-size:9px;color:#44aaff;display:flex;flex-direction:column;gap:3px;}
+    .step-indicator{display:flex;gap:4px;margin-top:6px;}
+    .step-dot{width:8px;height:8px;border-radius:50%;background:#112;}
+    .step-dot.active{background:#0088ff;}
+    .step-dot.done{background:#00dd66;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Biometric ATM Simulator</h1>
+      <p>Combine fingerprint authentication (AS608), RFID card verification (MFRC522), and PIN entry on a Raspberry Pi 7" touchscreen to simulate a fully secure ATM transaction flow with live account balance display and transaction logging.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Biometric ATM Simulator</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                  <div class="atm-screen"><span id="atmStep">INSERT CARD</span><div style="font-size:16px;margin:4px 0;">💳</div><div class="step-indicator"><div class="step-dot done" id="s1"></div><div class="step-dot" id="s2"></div><div class="step-dot" id="s3"></div><div class="step-dot" id="s4"></div></div></div>
+                </div>
+                <div class="atm-info">
+                  <div>STATE: <span id="atmState">IDLE</span></div>
+                  <div>CARD:  <span id="atmCard">----</span></div>
+                  <div>FP:    <span id="atmFp">WAITING</span></div>
+                  <div>PIN:   <span id="atmPin">----</span></div>
+                  <div>BAL:   <span id="atmBal">£---</span></div>
+                  <div style="color:#00dd66;" id="atmResult">READY</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+fingerprint+RFID+ATM+simulator+touchscreen" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Modern ATMs use multi-factor authentication: something you have (card), something you know (PIN), and increasingly something you are (biometric). This project replicates all three layers on a Raspberry Pi. The MFRC522 RFID reader verifies a Mifare card UID; the AS608 optical fingerprint module performs 1:N matching against a stored database; and a touchscreen GPIO keypad accepts a 4-digit PIN. SQLite stores accounts with hashed PINs and balance history.</p><p>The project demonstrates state-machine design, multi-modal authentication sequencing, and secure data storage — skills directly applicable to embedded fintech systems.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">👆</span><div><span class="comp-name">AS608 Optical Fingerprint Module</span><span class="comp-note"> — UART at 57600 baud; 127 fingerprint capacity; 1:N matching in &lt;0.5s; match threshold &lt;0.1% FAR</span></div></li>
+                <li><span class="comp-icon">💳</span><div><span class="comp-name">MFRC522 RFID Reader</span><span class="comp-note"> — SPI 3.3V; reads 13.56 MHz Mifare Classic cards; 4-byte or 7-byte UID extracted per card</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">Raspberry Pi 4 + 7" DSI Touchscreen</span><span class="comp-note"> — tkinter GUI ATM interface; touchscreen keypad for PIN entry; 800×480 display</span></div></li>
+                <li><span class="comp-icon">🗄️</span><div><span class="comp-name">SQLite Database</span><span class="comp-note"> — Stores accounts (card_uid, fp_id, pin_hash, balance); transaction log table with timestamps</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Card Authentication (RFID)</h4><p>Continuously poll MFRC522 via SPI using <code>MFRC522</code> library. When a card approaches, read UID: <code>reader.read_id_no_block()</code>. Compare UID against SQLite <code>accounts</code> table. If found, store session card_uid and advance to fingerprint stage. Timeout after 10s with "CARD NOT RECOGNISED" message and reset state machine.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Fingerprint Verification</h4><p>Use <code>pyfingerprint</code> library on UART. Command: <code>f.readImage(); f.convertImage(0x01); result = f.searchTemplate()</code>. Returns (position, accuracy_score). If position matches account's fp_id and score &gt; 50, advance to PIN. If 3 failed attempts, lock account for 60s and log event. Enrolment mode: two readings combined into template stored at AS608 internal flash position.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>PIN Verification + Transaction</h4><p>Touchscreen shows 4×3 numeric keypad. Compute SHA-256 of entered PIN: <code>hashlib.sha256(pin.encode()).hexdigest()</code>. Compare against stored hash in SQLite (never store plain PIN). On match: show balance, offer Withdraw/Deposit/Check. Deduct withdrawal amount with <code>UPDATE accounts SET balance=balance-amount WHERE card_uid=?</code>. Insert row into <code>transactions</code> table with timestamp.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Audit Trail + Security</h4><p>All events logged: card scans (success/fail), fingerprint results, PIN attempts, transactions — each with UTC timestamp and session_id. Failed auth attempts increment lockout counter persisted in SQLite. Receipt printed to console or thermal printer (ESC/POS via UART). Session token ephemeral — cleared from memory on logout or 30s inactivity timeout.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import sqlite3, hashlib, serial, spidev, time
+from pyfingerprint.pyfingerprint import PyFingerprint
+
+# State machine
+STATE = 'IDLE'
+session = {}
+
+def check_card(uid):
+    db = sqlite3.connect('atm.db')
+    r = db.execute("SELECT * FROM accounts WHERE card_uid=?", (uid,)).fetchone()
+    db.close()
+    return r
+
+def verify_pin(card_uid, pin):
+    pin_hash = hashlib.sha256(pin.encode()).hexdigest()
+    db = sqlite3.connect('atm.db')
+    r = db.execute(
+        "SELECT balance FROM accounts WHERE card_uid=? AND pin_hash=?",
+        (card_uid, pin_hash)).fetchone()
+    db.close()
+    return r[0] if r else None
+
+def withdraw(card_uid, amount):
+    db = sqlite3.connect('atm.db')
+    bal = db.execute("SELECT balance FROM accounts WHERE card_uid=?",
+                     (card_uid,)).fetchone()[0]
+    if bal >= amount:
+        db.execute("UPDATE accounts SET balance=balance-? WHERE card_uid=?",
+                   (amount, card_uid))
+        db.execute("INSERT INTO transactions VALUES(?,?,?,datetime('now'))",
+                   (card_uid, 'WITHDRAW', amount))
+        db.commit()
+        return True
+    db.close()
+    return False
+
+# Main loop: poll RFID → fingerprint → PIN
+f = PyFingerprint('/dev/ttyS0', 57600, 0xFFFFFFFF, 0x00000000)
+while True:
+    # RFID poll handled via MFRC522 interrupt callback
+    time.sleep(0.1)</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🧾 Thermal Receipt Printer</span>
+                <span class="app-tag">🎙️ Voice Guidance TTS</span>
+                <span class="app-tag">📷 Face Liveness Check</span>
+                <span class="app-tag">🌐 Online Banking API</span>
+                <span class="app-tag">📲 SMS OTP Integration</span>
+                <span class="app-tag">🔒 AES Encrypted Storage</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $50 – $95</li><li><strong>Build Time:</strong> 7 – 10 hours</li><li><strong>Auth Factors:</strong> 3 (card + FP + PIN)</li><li><strong>FP Capacity:</strong> 127 templates</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Multi-factor authentication flow</li><li>AS608 fingerprint enrollment + matching</li><li>MFRC522 RFID UID reading</li><li>SQLite secure password hashing</li><li>tkinter touchscreen UI/state machine</li><li>Transaction auditing design</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pyfingerprint</span><span class="lib-desc"> — AS608 UART driver</span></li><li><span class="lib-name">MFRC522</span><span class="lib-desc"> — RFID SPI reader</span></li><li><span class="lib-name">sqlite3 + hashlib</span><span class="lib-desc"> — Secure account store</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const steps=['INSERT CARD','SCAN FINGER','ENTER PIN','PROCESSING'];
+    const icons=['💳','👆','🔢','✅'];
+    const states=['IDLE','CARD_OK','FP_SCAN','PIN_ENTRY'];
+    const cards=['----','A4:3F:B2','A4:3F:B2','A4:3F:B2'];
+    const fps=['WAITING','MATCHED','MATCHED','MATCHED'];
+    const pins=['----','----','••••','••••'];
+    const bals=['£---','£---','£---','£1,250'];
+    const results=['READY','CARD OK','FP OK','ACCESS OK'];
+    let si=0;
+    function animAtm(){
+      document.getElementById('atmStep').textContent=steps[si];
+      document.getElementById('atmState').textContent=states[si];
+      document.getElementById('atmCard').textContent=cards[si];
+      document.getElementById('atmFp').textContent=fps[si];
+      document.getElementById('atmPin').textContent=pins[si];
+      document.getElementById('atmBal').textContent=bals[si];
+      document.getElementById('atmResult').textContent=results[si];
+      for(let i=0;i<4;i++){
+        const d=document.getElementById('s'+(i+1));
+        if(d){d.className='step-dot'+(i<si?' done':i===si?' active':'');}
+      }
+      si=(si+1)%4;
+    }
+    animAtm(); setInterval(animAtm,1800);
+  </script>
+</body>
+</html>

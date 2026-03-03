@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alcohol-Interlocked Ignition – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an alcohol-interlocked vehicle ignition system using MQ-3 gas sensor and relay. Prevents engine start if BAC is above safe threshold." />
+  <meta name="keywords" content="alcohol interlock ignition Arduino MQ-3, breathalyser relay interlock Arduino, MQ-3 alcohol sensor relay project, road safety breath alcohol gadget Arduino, ignition relay interlock project" />
+  <link rel="canonical" href="alcohol-interlocked-ignition.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#120000 0%,#1e0000 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .bac-bar-wrap{width:220px;}
+    .bac-label{display:flex;justify-content:space-between;font-family:monospace;font-size:10px;margin-bottom:4px;}
+    .bac-bar-bg{width:100%;height:18px;background:#1a0000;border-radius:9px;border:1px solid #400000;overflow:hidden;}
+    .bac-bar-fill{height:100%;border-radius:9px;transition:width 0.5s,background 0.5s;}
+    .relay-status{font-family:monospace;font-size:14px;font-weight:700;padding:6px 18px;border-radius:6px;border:2px solid;}
+    .status-leds{display:flex;gap:8px;}
+    .led-dot{width:14px;height:14px;border-radius:50%;border:1px solid #333;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Alcohol-Interlocked Ignition</h1>
+      <p>An MQ-3 alcohol sensor must detect safe breath levels before a relay allows an engine ignition signal. A road-safety demo project combining sensor thresholds and relay interlock logic.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Alcohol-Interlocked Ignition</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="font-family:monospace;font-size:11px;color:#804040;">BREATH ALCOHOL LEVEL:</div>
+                <div class="bac-bar-wrap">
+                  <div class="bac-label"><span id="bacPct">0.00%</span><span style="color:#602020;">limit: 0.08%</span></div>
+                  <div class="bac-bar-bg"><div class="bac-bar-fill" id="bacFill" style="width:0%;background:#00aa00;"></div></div>
+                </div>
+                <div class="status-leds">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div class="led-dot" id="ledGreen" style="background:#004400;"></div><div style="font-family:monospace;font-size:8px;color:#008000;">SAFE</div></div>
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div class="led-dot" id="ledYellow" style="background:#2a2200;"></div><div style="font-family:monospace;font-size:8px;color:#808000;">WARN</div></div>
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div class="led-dot" id="ledRed" style="background:#2a0000;"></div><div style="font-family:monospace;font-size:8px;color:#800000;">LOCK</div></div>
+                </div>
+                <div class="relay-status" id="relayStatus" style="color:#00ff00;border-color:#00aa00;background:#001200;">⚡ RELAY: CLOSED — START OK</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=MQ-3+alcohol+sensor+relay+ignition+interlock+Arduino" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Alcohol-interlocked ignition systems are mandated by law in several countries for repeat DUI offenders. This project builds an educational prototype demonstrating how an MQ-3 gas sensor — a tin-oxide chemiresistive device whose resistance decreases in the presence of ethanol vapour — can gate a relay that controls an ignition circuit.</p>
+              <p>The key engineering challenges are sensor warm-up (the heater coil must reach operating temperature before readings are valid), calibration against a known ethanol concentration reference, and designing the interlock state machine so the relay only closes in the SAFE state and requires re-measurement if the driver's door is opened again (preventing the "blow by proxy" trick).</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🍷</span><div><span class="comp-name">MQ-3 Alcohol Gas Sensor</span><span class="comp-note"> — Chemiresistive; R₀ calibration in clean air; heater draws ~180 mA, needs 5 V</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note"> — ADC reads sensor voltage; controls relay and display; runs FSM</span></div></li>
+                <li><span class="comp-icon">⚡</span><div><span class="comp-name">5 V Relay Module (1-channel)</span><span class="comp-note"> — Normally open (NO); closed only when BAC below safe threshold</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 LCD or OLED</span><span class="comp-note"> — Shows current BAC % reading, state (WARM UP / READY / LOCKED), countdown timer</span></div></li>
+                <li><span class="comp-icon">🔔</span><div><span class="comp-name">Passive Buzzer</span><span class="comp-note"> — Warning tones: double beep for READY, continuous for LOCKED state</span></div></li>
+                <li><span class="comp-icon">💡</span><div><span class="comp-name">3× LEDs (R/Y/G)</span><span class="comp-note"> — Visual BAC level indicator bar (SAFE / CAUTION / LOCKOUT)</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Sensor Warm-Up &amp; Calibration</h4><p>After power-on, the MQ-3 heater must warm for 30–60 seconds. During warm-up, display a countdown and disable the relay. To calibrate R₀: in clean air, read 200 ADC samples over 5 seconds, average them, convert to sensor resistance using <code>Rs = (5.0 - Vout) / Vout × RL</code>, then set <code>R₀ = Rs / 60.0</code> (datasheet curve constant for clean air). Store R₀ in EEPROM so it survives power cycles.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>BAC Percentage Calculation</h4><p>Compute <code>ratio = Rs / R₀</code>. Use the MQ-3 datasheet sensitivity curve (log-log linear): <code>ppm = A × ratio^B</code> with constants A ≈ 0.3934, B ≈ -1.504. Convert ethanol ppm to approximate BAC% by multiplying by a breath-to-blood partition factor (~2100:1). Validate against a commercial breathalyser during calibration. Sample continuously at 10 Hz, use a 5-reading median filter to reduce noise from sensor shot noise and ambient breath disturbances.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>FSM: WARMING_UP → READY → SAFE / LOCKED</h4><p>Four states: <strong>WARMING_UP</strong> (30s timer; relay OFF; buzzer quiet), <strong>READY</strong> (two-beep prompt; user blows for 3 seconds), <strong>MEASURING</strong> (peak BAC captured over 3s blow window), <strong>RESULT</strong>: if BAC&lt;0.05% → SAFE (relay ON; green LED; engine enabled 10 minutes), else LOCKED (relay OFF; buzzer 5 beeps; 20-minute lockout timer before retry). AUTO-RELOCK if vibration sensor (SW-420) detects car door slam.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Relay Interlock Wiring</h4><p>Wire the relay's Normally Open (NO) contacts in series with the ignition key signal wire. The relay coil is driven by a BC547 transistor (Arduino pin → 1 kΩ base resistor → transistor base → collector drives relay coil → flyback diode across coil). The relay only ever closes when the firmware explicitly sets the output HIGH in the SAFE state — fail-safe means any firmware crash or power glitch defaults to engine-disabled (open circuit).</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;EEPROM.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+const int MQ3_PIN = A0, RELAY_PIN = 8, BUZZ = 9;
+float R0;
+
+enum State { WARMING, READY, MEASURING, SAFE, LOCKED } state = WARMING;
+unsigned long stateTimer;
+
+float readBAC() {
+  long sum=0; for(int i=0;i&lt;50;i++){sum+=analogRead(MQ3_PIN);delay(10);}
+  float Vout = (sum/50.0) * 5.0 / 1023.0;
+  float Rs = (5.0-Vout)/Vout * 10.0; // RL=10kΩ
+  float ratio = Rs / R0;
+  float ppm = 0.3934 * pow(ratio, -1.504);
+  return ppm / 2100.0; // approx BAC%
+}
+
+void setup() {
+  pinMode(RELAY_PIN, OUTPUT); digitalWrite(RELAY_PIN, LOW);
+  EEPROM.get(0, R0); if(R0 &lt; 0.1 || R0 > 200) R0 = 9.8; // default
+  stateTimer = millis();
+}
+
+void loop() {
+  switch(state) {
+    case WARMING:
+      if(millis()-stateTimer > 45000) { tone(BUZZ,1000,200); state=READY; stateTimer=millis(); }
+      break;
+    case READY:
+      if(millis()-stateTimer > 3000) { state=MEASURING; stateTimer=millis(); }
+      break;
+    case MEASURING: {
+      float bac = readBAC();
+      if(bac &lt; 0.05) { digitalWrite(RELAY_PIN,HIGH); state=SAFE; }
+      else { tone(BUZZ,500,1000); state=LOCKED; }
+      stateTimer=millis();
+    } break;
+    case SAFE:
+      if(millis()-stateTimer > 600000) { digitalWrite(RELAY_PIN,LOW); state=READY; }
+      break;
+    case LOCKED:
+      if(millis()-stateTimer > 1200000) state=READY;
+      break;
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🚗 DUI Prevention Demo</span>
+                <span class="app-tag">🔒 Fail-Safe Relay Logic</span>
+                <span class="app-tag">📏 BAC Calibration Station</span>
+                <span class="app-tag">🔔 Roadside Safety Alert</span>
+                <span class="app-tag">🏭 Industrial Entry Gate</span>
+                <span class="app-tag">📊 Breath Log SD Card</span>
+                <span class="app-tag">📱 SMS Alert on Lockout</span>
+                <span class="app-tag">🔑 RFID Emergency Override</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $10 – $20</li>
+                <li><strong>Build Time:</strong> 3 – 4 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno</li>
+                <li><strong>Safe BAC Threshold:</strong> &lt; 0.05%</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Chemiresistive gas sensor maths</li>
+                <li>R₀ calibration &amp; EEPROM storage</li>
+                <li>Fail-safe relay interlock wiring</li>
+                <li>FSM with timer gates</li>
+                <li>Median filter noise rejection</li>
+                <li>BC547 relay drive transistor circuit</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — LCD display; or use Adafruit SSD1306 for OLED</span></li>
+                <li><span class="lib-name">EEPROM (built-in)</span><span class="lib-desc"> — Persist R₀ calibration across reboots</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="smart-motorcycle-helmet-lock.html">Smart Motorcycle Helmet Lock</a></li>
+                <li><a href="fire-fighting-robot.html">Fire Fighting Robot</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let t=0;
+    setInterval(()=>{
+      t++;
+      const bac = 0.03 + 0.07*Math.abs(Math.sin(t*0.05));
+      const pct = Math.min(100, bac/0.16*100);
+      const bacFill = document.getElementById('bacFill');
+      document.querySelector('#bacPct').textContent = (bac).toFixed(3)+'%';
+      bacFill.style.width = pct+'%';
+      const relay = document.getElementById('relayStatus');
+      const g=document.getElementById('ledGreen'),y=document.getElementById('ledYellow'),r=document.getElementById('ledRed');
+      if(bac < 0.05) {
+        bacFill.style.background='#00aa00';
+        g.style.background='#00ff00'; y.style.background='#2a2200'; r.style.background='#2a0000';
+        relay.textContent='⚡ RELAY: CLOSED — START OK'; relay.style.color='#00ff00'; relay.style.borderColor='#00aa00'; relay.style.background='#001200';
+      } else if(bac < 0.08) {
+        bacFill.style.background='#aaaa00';
+        g.style.background='#004400'; y.style.background='#ffff00'; r.style.background='#2a0000';
+        relay.textContent='⚠️ RELAY: OPEN — CAUTION'; relay.style.color='#ffff00'; relay.style.borderColor='#aaaa00'; relay.style.background='#1a1a00';
+      } else {
+        bacFill.style.background='#aa0000';
+        g.style.background='#004400'; y.style.background='#2a2200'; r.style.background='#ff0000';
+        relay.textContent='🔒 RELAY: LOCKED — OVER LIMIT'; relay.style.color='#ff4040'; relay.style.borderColor='#aa0000'; relay.style.background='#200000';
+      }
+    }, 200);
+  </script>
+</body>
+</html>

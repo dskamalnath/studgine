@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Storage Oscilloscope – Advanced Project | Studgine</title>
+  <meta name="description" content="Build a digital oscilloscope using Raspberry Pi and MCP3208 SPI ADC to display waveforms on HDMI with adjustable timebase and trigger controls." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000a00;border-radius:12px;padding:20px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .scope-screen{width:130px;height:90px;background:#001400;border:2px solid #005000;border-radius:4px;position:relative;overflow:hidden;}
+    canvas.scope-canvas{position:absolute;top:0;left:0;}
+    .scope-grid{position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 17px,#003000 17px,#003000 18px),repeating-linear-gradient(90deg,transparent,transparent 25px,#003000 25px,#003000 26px);}
+    .scope-info{font-family:monospace;font-size:9px;color:#00cc00;display:flex;flex-direction:column;gap:3px;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Digital Storage Oscilloscope</h1>
+      <p>Build a working oscilloscope using a Raspberry Pi, MCP3208 12-bit SPI ADC, and a pygame display — with adjustable timebase, voltage range, and edge trigger controls on an HDMI touchscreen.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Digital Storage Oscilloscope</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div class="scope-screen">
+                    <div class="scope-grid"></div>
+                    <canvas id="scopeCanvas" class="scope-canvas" width="130" height="90"></canvas>
+                  </div>
+                  <div style="font-family:monospace;font-size:7px;color:#008000;">CH1: 1V/div | 1ms/div</div>
+                </div>
+                <div class="scope-info">
+                  <div>FREQ: <span id="scopeFreq">1.00kHz</span></div>
+                  <div>VMAX: <span id="scopeVmax">3.3V</span></div>
+                  <div>VMIN: <span id="scopeVmin">0.0V</span></div>
+                  <div>SRTE: 50kSPS</div>
+                  <div>TRIG: <span id="scopeTrig">EDGE↑</span></div>
+                  <div style="color:#00ff00;">ADC: MCP3208</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=raspberry+pi+oscilloscope+MCP3208+SPI+ADC+pygame" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>A digital storage oscilloscope (DSO) captures, stores, and displays voltage waveforms. This project uses the MCP3208 — a 12-bit, 8-channel, SPI ADC that can sample at up to 100 kSPS — connected to a Raspberry Pi. The captured samples are displayed in real time using pygame on an HDMI monitor. Key oscilloscope features — timebase, voltage scaling, edge triggering — are all software-implemented.</p><p>This project teaches ADC interfacing, ring-buffer triggering algorithms, aliasing, and signal conditioning. A ×10 probe divider circuit and input protection (1MΩ + Zener clamp) make it somewhat safe for real circuit debugging up to ±15V inputs.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">MCP3208 12-bit SPI ADC</span><span class="comp-note"> — 8 channels; 100 kSPS max; 12-bit resolution; SPI 0–3.3V input range; PDIP-16 package</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 or 5</span><span class="comp-note"> — SPI0 port (MOSI/MISO/SCLK/CE0); pigpio SPI at 1 MHz for reliable capture; Pi 5 recommended for higher sample rate</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">7" HDMI Touchscreen (1024×600)</span><span class="comp-note"> — pygame renders waveform + UI controls; touchscreen for timebase/trigger adjustment via GUI buttons</span></div></li>
+                <li><span class="comp-icon">🛡️</span><div><span class="comp-name">Input Protection Circuit</span><span class="comp-note"> — 1MΩ input resistor + BZX55C3V3 Zener clamp + 100Ω series; limits input to 0–3.3V for ADC safety</span></div></li>
+                <li><span class="comp-icon">📉</span><div><span class="comp-name">×10 Voltage Divider</span><span class="comp-note"> — 9MΩ/1MΩ divider extends input range to 33V; matched to 1MΩ input impedance</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>High-Speed SPI Sampling</h4><p>Use pigpio SPI: <code>h = pi.spi_open(0, 1000000, 0)</code>. Read MCP3208 channel 0: send 3 bytes <code>[0x06, 0x00, 0x00]</code>, read 3 bytes back, extract 12-bit value: <code>adc = ((buf[1]&0x0F)<<8) | buf[2]</code>. Convert to voltage: <code>voltage = adc * 3.3 / 4096</code>. Fill a 512-sample ring buffer at target sample rate. Use <code>time.perf_counter()</code> for precise inter-sample delays. Actual achievable rate: ~50 kSPS on Pi 4 (limited by SPI overhead + Python GIL).</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Edge Triggering Algorithm</h4><p>Sweep through ring buffer to find trigger point: scan for first sample where <code>sample[i] >= trigger_level</code> and <code>sample[i-1] < trigger_level</code> (rising edge). Start display from that index. This stabilises the waveform on screen — without triggering, the display would scroll randomly. Falling edge trigger: swap &gt;/&lt;. Auto trigger: if no edge found within 100ms, display anyway (prevents freeze on DC signals).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>pygame Waveform Rendering</h4><p>Map each sample to screen coordinates: <code>x = i * (screen_w/num_samples)</code>, <code>y = screen_h - (voltage - v_offset) * (screen_h / v_range)</code>. Draw with <code>pygame.draw.lines(screen, GREEN, False, points)</code>. Draw grid: 8×10 division graticule. Render measurements: frequency (via zero-crossing count), Vmax, Vmin, Vpp. Update at 30 FPS display rate (decouple from sample rate). Add touchscreen buttons for timebase: 0.1ms/div, 0.2ms, 0.5ms, 1ms, 2ms, 5ms.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Measurements + FFT</h4><p>Auto-measure: frequency = 1 / (average period of zero crossings). Duty cycle = time above 50% range / period. RMS = <code>sqrt(mean(samples^2))</code>. FFT: <code>numpy.fft.rfft(samples)</code> → plot frequency spectrum in a second window. This turns the DSO into a spectrum analyser. Useful for seeing harmonics of PWM signals, switching noise, and audio frequencies. Label peak frequency on spectrum display.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import pigpio, time, numpy as np, pygame
+
+pi = pigpio.pi()
+h = pi.spi_open(0, 1_000_000, 0)  # SPI0, 1MHz
+
+def read_mcp3208(ch):
+    cmd = [0x06|(ch>>2), (ch&3)<<6, 0]
+    c, data = pi.spi_xfer(h, cmd)
+    return ((data[1]&0x0F)<<8)|data[2]  # 12-bit result
+
+SAMPLES = 512
+buf = [0.0]*SAMPLES
+TRIGGER_LEVEL = 1.65  # 3.3V midpoint
+
+def capture(samples_per_sec=50000):
+    dt = 1.0/samples_per_sec
+    for i in range(SAMPLES):
+        t = time.perf_counter()
+        buf[i] = read_mcp3208(0) * 3.3/4096
+        while time.perf_counter()-t < dt: pass
+
+def find_trigger():
+    for i in range(1, SAMPLES-1):
+        if buf[i-1] < TRIGGER_LEVEL <= buf[i]:
+            return i
+    return 0
+
+# pygame render
+pygame.init(); screen = pygame.display.set_mode((800,480))
+W, H = 800, 400; V_RANGE = 3.3
+
+while True:
+    capture()
+    t_idx = find_trigger()
+    points = [(int(i*(W/SAMPLES)), int(H-(buf[(t_idx+i)%SAMPLES]/V_RANGE)*H))
+              for i in range(min(SAMPLES, SAMPLES-t_idx))]
+    screen.fill((0,20,0))
+    if len(points)>1: pygame.draw.lines(screen,(0,255,64),False,points,2)
+    pygame.display.flip()</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">📊 FFT Spectrum Analyser</span>
+                <span class="app-tag">📏 Duty Cycle Measurement</span>
+                <span class="app-tag">💾 CSV Waveform Save</span>
+                <span class="app-tag">📡 2-Channel Display</span>
+                <span class="app-tag">🔊 Audio Signal Analysis</span>
+                <span class="app-tag">🌐 Web Remote View</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $40 – $75</li><li><strong>Build Time:</strong> 6 – 9 hours</li><li><strong>Sample Rate:</strong> ~50 kSPS</li><li><strong>Resolution:</strong> 12-bit (MCP3208)</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>SPI ADC sampling + timing</li><li>Ring-buffer triggering algorithm</li><li>pygame real-time waveform rendering</li><li>FFT frequency analysis</li><li>Auto-measurement algorithms</li><li>Input protection circuit design</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pigpio</span><span class="lib-desc"> — High-speed SPI for MCP3208</span></li><li><span class="lib-name">pygame</span><span class="lib-desc"> — Real-time waveform display</span></li><li><span class="lib-name">numpy</span><span class="lib-desc"> — FFT, RMS, array processing</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const canvas=document.getElementById('scopeCanvas');
+    const ctx=canvas.getContext('2d');
+    let phase=0;
+    function drawWave(){
+      ctx.clearRect(0,0,130,90);
+      ctx.strokeStyle='#00ff40'; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      for(let x=0;x<130;x++){
+        const y=45-35*Math.sin(2*Math.PI*x/40+phase);
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      phase+=0.15;
+      document.getElementById('scopeFreq').textContent=(1+Math.random()*0.02).toFixed(2)+'kHz';
+      requestAnimationFrame(drawWave);
+    }
+    drawWave();
+  </script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RGB Color Mixer – Studgine</title>
+  <meta name="description" content="Three potentiometers independently control the red, green, and blue PWM channels of an RGB LED. Learn analog reading and PWM output with Arduino." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage { display:flex; align-items:center; justify-content:center; gap:18px; padding:20px; height:120px; }
+    .pots { display:flex; gap:8px; align-items:flex-end; }
+    .pot-knob { width:20px; border-radius:10px 10px 3px 3px; transition:height .5s; }
+    .pot-knob.r { background:#ef4444; animation:pot-r 4s ease-in-out infinite; }
+    .pot-knob.g { background:#22c55e; animation:pot-g 4s ease-in-out infinite .6s; }
+    .pot-knob.b { background:#3b82f6; animation:pot-b 4s ease-in-out infinite 1.2s; }
+    @keyframes pot-r { 0%,100%{height:20px} 50%{height:50px} }
+    @keyframes pot-g { 0%,100%{height:40px} 50%{height:15px} }
+    @keyframes pot-b { 0%,100%{height:30px} 50%{height:50px} }
+    .led-big { width:60px; height:60px; border-radius:50%; border:3px solid rgba(255,255,255,.15); animation:rgb-cycle 4s ease-in-out infinite; }
+    @keyframes rgb-cycle { 0%{background:rgb(255,100,100);box-shadow:0 0 30px rgba(255,100,100,.6)} 25%{background:rgb(100,255,100);box-shadow:0 0 30px rgba(100,255,100,.6)} 50%{background:rgb(100,100,255);box-shadow:0 0 30px rgba(100,100,255,.6)} 75%{background:rgb(255,200,100);box-shadow:0 0 30px rgba(255,200,100,.6)} 100%{background:rgb(255,100,100);box-shadow:0 0 30px rgba(255,100,100,.6)} }
+    .arrow-icon { font-size:1.6rem; color:var(--color-text-muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta">
+          <a href="../projects.html" class="btn btn-primary btn-sm">Explore</a>
+          <button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟢 Beginner Project</p>
+      <h1>RGB Color Mixer</h1>
+      <p class="hero-sub">Three potentiometers independently dial in the red, green, and blue PWM channels of an RGB LED — mix any colour you want in real time.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../index.html">Home</a> <span>›</span>
+      <a href="../projects.html">Projects</a> <span>›</span>
+      <span>RGB Color Mixer</span>
+    </nav>
+
+    <div class="detail-layout">
+      <article class="detail-main">
+        <div class="anim-stage">
+          <div class="pots">
+            <div class="pot-knob r"></div>
+            <div class="pot-knob g"></div>
+            <div class="pot-knob b"></div>
+          </div>
+          <div class="arrow-icon">→</div>
+          <div class="led-big"></div>
+        </div>
+        <p class="anim-stage-label">3× analogRead (0–1023) → map() → 3× analogWrite (0–255) PWM</p>
+
+        <div class="video-links">
+          <a href="https://www.youtube.com/results?search_query=Arduino+RGB+LED+potentiometer+PWM+color+mixer" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+        </div>
+
+        <h2>📖 Introduction</h2>
+        <p>An RGB LED contains three separate dies (Red, Green, Blue) in one package. By varying the brightness of each channel via <strong>PWM (Pulse Width Modulation)</strong> — where <code>analogWrite(pin, 0–255)</code> sets duty cycle — you can mix 16.7 million colours.</p>
+        <p>A 10 kΩ potentiometer connected as a voltage divider gives an analog value of 0–1023 on the ADC. The Arduino <code>map()</code> function rescales this to 0–255 for the PWM output. This one-line relationship is the foundation of every digital dimmer, audio volume control, and motor speed controller.</p>
+
+        <h2>🧩 Components Needed</h2>
+        <ul class="components-list">
+          <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note">Controller</span></div></li>
+          <li><span class="comp-icon">💡</span><div><span class="comp-name">Common-Cathode RGB LED</span><span class="comp-note">Colour output</span></div></li>
+          <li><span class="comp-icon">🎚️</span><div><span class="comp-name">3× 10 kΩ Potentiometer</span><span class="comp-note">R, G, B channel controls</span></div></li>
+          <li><span class="comp-icon">🔌</span><div><span class="comp-name">3× 220 Ω resistors</span><span class="comp-note">LED current limiting</span></div></li>
+          <li><span class="comp-icon">📋</span><div><span class="comp-name">Breadboard & Jumper wires</span><span class="comp-note">Prototype wiring</span></div></li>
+        </ul>
+
+        <h2>⚙️ How It Works</h2>
+        <ol class="steps-list">
+          <li class="step-item">
+            <span class="step-number">1</span>
+            <div class="step-content">
+              <strong>Wire the pots</strong> — Outer legs to 5 V and GND; wiper to A0 (Red), A1 (Green), A2 (Blue). Wire RGB LED: common cathode to GND; Red pin via 220 Ω to D9 (~); Green to D10 (~); Blue to D11 (~). All three are PWM-capable pins on the Uno.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">2</span>
+            <div class="step-content">
+              <strong>Read and map</strong> — In <code>loop()</code>: <code>int rVal = map(analogRead(A0), 0, 1023, 0, 255);</code> — repeat for G and B. The <code>map()</code> function does linear interpolation and handles the 10-bit → 8-bit conversion in one call.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">3</span>
+            <div class="step-content">
+              <strong>Write PWM</strong> — <code>analogWrite(9, rVal); analogWrite(10, gVal); analogWrite(11, bVal);</code>. For a common-anode RGB LED, invert: <code>analogWrite(9, 255 - rVal);</code>. Add a short <code>delay(10);</code> to smooth readings.
+            </div>
+          </li>
+          <li class="step-item">
+            <span class="step-number">4</span>
+            <div class="step-content">
+              <strong>Add Serial output</strong> — Print the hex colour code to Serial Monitor: <code>Serial.printf("#%02X%02X%02X\n", rVal, gVal, bVal);</code> so you can note colours as CSS hex values. A great way to build your own colour palette.
+            </div>
+          </li>
+        </ol>
+
+        <h2>🌐 Applications & Extensions</h2>
+        <div class="applications-grid">
+          <span class="app-tag">🎨 Colour picker interface</span>
+          <span class="app-tag">💡 Mood lamp controller</span>
+          <span class="app-tag">🎭 Stage lighting prototype</span>
+          <span class="app-tag">📺 Ambilight system</span>
+          <span class="app-tag">🌈 LED strip driver</span>
+          <span class="app-tag">🖥️ Display calibration tool</span>
+        </div>
+      </article>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card">
+          <h3>⚡ Quick Facts</h3>
+          <ul class="quick-facts">
+            <li class="fact-row"><span>Difficulty</span><span>Beginner</span></li>
+            <li class="fact-row"><span>Budget</span><span>$5 – $12</span></li>
+            <li class="fact-row"><span>Build Time</span><span>1 – 2 hrs</span></li>
+            <li class="fact-row"><span>Board</span><span>Arduino Uno</span></li>
+            <li class="fact-row"><span>Technique</span><span>PWM</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>🎓 Skills You'll Learn</h3>
+          <ul class="skills-list">
+            <li><span class="skill-tag">analogRead()</span></li>
+            <li><span class="skill-tag">analogWrite() PWM</span></li>
+            <li><span class="skill-tag">map() scaling</span></li>
+            <li><span class="skill-tag">RGB colour theory</span></li>
+            <li><span class="skill-tag">Potentiometer wiring</span></li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>📦 Libraries Needed</h3>
+          <p style="color:var(--color-text-muted);font-size:.9rem;">None — built-in Arduino functions only.</p>
+        </div>
+        <div class="sidebar-card">
+          <h3>🔗 Try Next</h3>
+          <ul class="skills-list">
+            <li><a href="gesture-controlled-leds.html" class="skill-tag">Gesture-Controlled LEDs</a></li>
+            <li><a href="fan-speed-pwm-controller.html" class="skill-tag">Fan Speed Controller</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="back-btn">← Back to Projects</a>
+      </aside>
+    </div>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button>
+  <script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gait Abnormality Detector – Advanced Project | Studgine</title>
+  <meta name="description" content="An IMU array on shoe insoles streams gait kinematics to a Raspberry Pi that classifies limping and fall risk using a trained decision-tree model." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#030308;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .gait-info{font-family:monospace;font-size:9px;color:#44ccff;display:flex;flex-direction:column;gap:3px;}
+    .imu-bar{width:55px;height:5px;background:#000a14;border-radius:2px;overflow:hidden;}
+    .imu-fill{height:100%;background:#44aaff;border-radius:2px;transition:width 0.15s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Gait Abnormality Detector</h1>
+      <p>An MPU-6050 IMU embedded in each shoe insole streams 200Hz gait kinematics over BLE to a Raspberry Pi that classifies limping, asymmetry, and fall risk in real time using a trained decision-tree model — a compelling medical wearable technology demonstration.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Gait Abnormality Detector</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="gaitCanvas" width="120" height="80"></canvas>
+                <div class="gait-info">
+                  <div>CADENCE:<span id="gaitCad"> 108</span>spm</div>
+                  <div>ASYM:  <span id="gaitAsym">4.2</span>%</div>
+                  <div>STRIDE: <span id="gaitStride">1.42</span>m</div>
+                  <div style="margin-top:3px;">CLASSIFICATION</div>
+                  <div id="gaitClass" style="color:#00ff88;">NORMAL</div>
+                  <div>FALL RISK: <div class="imu-bar"><div class="imu-fill" id="gaitRisk" style="width:12%;background:#00cc44;"></div></div></div>
+                  <div>L STEP: <span id="gaitL">485</span>ms</div>
+                  <div>R STEP: <span id="gaitR">491</span>ms</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Arduino+MPU6050+gait+analysis+IMU+insole+machine+learning" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Gait analysis is used clinically to detect neurological disorders, orthopaedic injuries, and fall risk in elderly patients. Traditional gait labs cost thousands of pounds. This project creates an instrumented shoe insole using two MPU-6050 6-DOF IMUs (one per foot) inside 3D-printed or foam insole carriers. Data streams over nRF24L01 radio (or Bluetooth) to a central Raspberry Pi. Feature extraction computes step time symmetry, cadence, stride length, and heel-strike impact. A Random Forest trained on a labelled gait dataset classifies: normal, limping, shuffle (Parkinson's indicator), and high-fall-risk.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🦶</span><div><span class="comp-name">2× MPU-6050 IMU (Insole Nodes)</span><span class="comp-note"> — 6-DOF accel+gyro; I²C; 200Hz data rate; each embedded in Arduino Pro Mini + nRF24L01 radio in insole</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">2× nRF24L01 + Arduino Pro Mini</span><span class="comp-note"> — 2.4GHz; 250kbps; one per insole node; <2g total weight per insole; LiPo + TP4056 charger</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Raspberry Pi 4 Receiver Hub</span><span class="comp-note"> — nRF24L01 receiver; scikit-learn Random Forest (300 trees); real-time feature computation + classification</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">Gait Display Dashboard</span><span class="comp-note"> — matplotlib real-time step time plots; symmetry bar; classification label display; session CSV export</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Insole Node IMU Streaming</h4><p>Arduino Pro Mini reads MPU-6050 at 200Hz: <code>Wire.beginTransmission(0x68); accel_x = readWord(0x3B); gyro_y = readWord(0x45);</code>. Package as 12-byte struct [timestamp, ax, ay, az, gx, gy, gz]. Transmit via nRF24L01: <code>radio.write(&data, sizeof(data))</code>. Battery: 150mAh LiPo → ~6hr runtime. Insole weight: &lt;15g per foot using printed TPU carrier. Heel-strike detection: <code>vertical_accel_peak &gt; 1.8g</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Gait Feature Extraction</h4><p>Receive both insole streams; sync by timestamp. Detect step events (heel-strike peaks). Compute per-step features: step_time = time between peaks; step_length approximated from gyro integration; left/right step time symmetry = <code>|tL - tR| / ((tL+tR)/2) * 100%</code>. Stride: two consecutive same-side steps. Cadence: steps/minute. Vertical impact: peak accel at heel-strike. Collect sliding window of 20 steps → feature vector for classification.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Random Forest Classification</h4><p>Train on labelled gait dataset (or simulate: normal person, person simulating limping, shuffling, etc.). Feature vector: [mean_step_time, symmetry%, cadence, mean_impact, stride_variance, stance_ratio]. Random Forest with 300 trees, max_depth=8. Test accuracy: ~91% on 4-class problem. Export: <code>joblib.dump(model, 'gait_model.pkl')</code>. Pi inference: <code>model.predict([features])[0]</code> — very fast (&lt;1ms). Output: NORMAL / LIMPING / SHUFFLING / HIGH_FALL_RISK.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Fall Risk Score + Alerting</h4><p>Fall risk score: weighted combination of symmetry%, stride variance, and mean_impact. Threshold &gt;70% triggers haptic buzzer on wrist band (Arduino Nano BLE + vibration motor). Flask dashboard on Pi shows: step-time sequence bar chart, colour-coded symmetry plot, classification history over session. Export session to PDF report with summary statistics (useful for physiotherapy appointments).</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code># Raspberry Pi receiver + classifier
+import struct, numpy as np
+from RF24 import RF24, RF24_PA_LOW
+import joblib
+
+radio = RF24(22, 0)  # CE=GPIO22, CSN=SPI0
+radio.begin(); radio.openReadingPipe(1, 0xF0F0F0F0E1)
+radio.setPALevel(RF24_PA_LOW); radio.startListening()
+
+model = joblib.load('gait_rf_model.pkl')
+scaler = joblib.load('gait_scaler.pkl')
+step_times = {'L':[], 'R':[]}
+prev_peak = {'L':0,'R':0}
+
+def extract_features(steps_L, steps_R):
+    if len(steps_L)<5 or len(steps_R)<5: return None
+    tL, tR = np.mean(steps_L[-10:]), np.mean(steps_R[-10:])
+    symm = abs(tL-tR)/((tL+tR)/2)*100
+    cadence = 60/(np.mean(steps_L[-5:]+steps_R[-5:]))
+    variance = np.std(steps_L[-10:]+steps_R[-10:])
+    return [tL, tR, symm, cadence, variance]
+
+while True:
+    if radio.available():
+        payload = radio.read(12)
+        foot, ts, az = struct.unpack('Bff', payload[:9])
+        side = 'L' if foot==0 else 'R'
+        if az > 1.8 and ts - prev_peak[side] > 0.3:
+            step_times[side].append(ts - prev_peak[side])
+            prev_peak[side] = ts
+        feats = extract_features(step_times['L'], step_times['R'])
+        if feats:
+            x = scaler.transform([feats])
+            pred = model.predict(x)[0]
+            print(f"Gait: {pred} (symmetry={feats[2]:.1f}%)")</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">👣 3D Gait Animation Visualiser</span>
+                <span class="app-tag">📊 Physiotherapy Progress Tracking</span>
+                <span class="app-tag">🏃 Runner Efficiency Optimiser</span>
+                <span class="app-tag">🧓 Elderly Fall Prevention Alert</span>
+                <span class="app-tag">🏥 Post-Surgery Rehab Monitor</span>
+                <span class="app-tag">📱 Smartphone BLE Data Sync</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $55 – $100</li><li><strong>Build Time:</strong> 12 – 18 hours</li><li><strong>IMU Sample Rate:</strong> 200Hz</li><li><strong>Model Accuracy:</strong> ~91%</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Wearable IMU data streaming</li><li>nRF24L01 radio communication</li><li>Gait feature engineering</li><li>Random Forest training + export</li><li>Real-time gait classification</li><li>Medical wearable UX design</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">RF24 (Python)</span><span class="lib-desc"> — nRF24L01 radio driver</span></li><li><span class="lib-name">scikit-learn</span><span class="lib-desc"> — Random Forest training</span></li><li><span class="lib-name">joblib</span><span class="lib-desc"> — Model serialisation</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const gc=document.getElementById('gaitCanvas');
+    const gctx=gc.getContext('2d');
+    let gphase=0,gstep=0;
+    function drawGaitStep(x,y,size,color){gctx.fillStyle=color;gctx.fillRect(x,y,size,size*2);}
+    function drawGait(){
+      gctx.fillStyle='rgba(3,3,8,0.4)';gctx.fillRect(0,0,120,80);
+      // Draw step timing bars for L and R
+      gctx.fillStyle='#224466';gctx.fillRect(10,10,100,25);gctx.fillRect(10,45,100,25);
+      gctx.fillStyle='#44aaff';
+      const steps=8;
+      for(let i=0;i<steps;i++){
+        const lw=Math.round(10+2*Math.sin(gphase+i*0.5));
+        const rx=i*(100/steps)+((i%2===0)?0:3);
+        gctx.fillStyle='#4488ff';
+        gctx.fillRect(10+i*(100/steps), 12, Math.max(4,lw), 21);
+        gctx.fillStyle='#44ccff';
+        gctx.fillRect(10+i*(100/steps)+2, 47, Math.max(4,lw-2), 21);
+      }
+      gctx.fillStyle='#88ccff';gctx.font='7px monospace';
+      gctx.fillText('LEFT',12,8);gctx.fillText('RIGHT',12,43);
+      gphase+=0.05;
+      const asym=(4+2*Math.abs(Math.sin(gphase*0.3))).toFixed(1);
+      document.getElementById('gaitAsym').textContent=asym;
+      document.getElementById('gaitCad').textContent=Math.round(108+3*Math.sin(gphase*0.2));
+      document.getElementById('gaitClass').textContent=+asym>8?'LIMPING':'NORMAL';
+      document.getElementById('gaitClass').style.color=+asym>8?'#ff4444':'#00ff88';
+      document.getElementById('gaitRisk').style.width=Math.round(10+asym*4)+'%';
+      document.getElementById('gaitRisk').style.background=+asym>8?'#ff4444':'#00cc44';
+      setTimeout(drawGait,100);
+    }
+    drawGait();
+  </script>
+</body>
+</html>

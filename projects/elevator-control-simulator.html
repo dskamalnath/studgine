@@ -1,0 +1,331 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elevator Control Simulator – Intermediate Project | Studgine</title>
+  <meta name="description" content="Simulate a 3-floor elevator with Arduino using the SCAN algorithm. Floor-call buttons, direction indicator LEDs, and a stepper motor–driven platform." />
+  <meta name="keywords" content="elevator control simulator Arduino, SCAN algorithm elevator Arduino, 3 floor elevator stepper motor Arduino, elevator scheduler Arduino project, lift control algorithm Arduino" />
+  <link rel="canonical" href="elevator-control-simulator.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a0808 0%,#150e0e 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;align-items:center;justify-content:center;gap:28px;position:relative;overflow:hidden;}
+    .shaft{width:50px;height:130px;background:#0a0a0a;border:2px solid #404040;border-radius:4px;position:relative;overflow:hidden;}
+    .floor-line{position:absolute;left:0;right:0;height:1px;background:#303030;}
+    .cabin{position:absolute;left:4px;right:4px;height:36px;background:#3a3a60;border:1px solid #6060a0;border-radius:3px;transition:bottom 0.8s ease;display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:9px;color:#a0a0ff;}
+    .floor-panel{display:flex;flex-direction:column;gap:6px;}
+    .floor-row{display:flex;align-items:center;gap:8px;font-family:monospace;font-size:10px;color:#808080;}
+    .call-btn{width:14px;height:14px;border-radius:50%;border:1px solid #404040;background:#1a1a1a;cursor:default;}
+    .floor-led{width:10px;height:10px;border-radius:50%;border:1px solid #404040;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Elevator Control Simulator</h1>
+      <p>Simulate a 3-floor elevator with floor-call buttons, direction indicator LEDs, and a stepper motor–driven platform that services requests using the SCAN (elevator) algorithm.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Elevator Control Simulator</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                  <div style="font-family:monospace;font-size:9px;color:#606060;">3-FLOOR SHAFT</div>
+                  <div class="shaft" id="shaft">
+                    <div class="floor-line" style="bottom:43px;"></div>
+                    <div class="floor-line" style="bottom:87px;"></div>
+                    <div class="cabin" id="cabin" style="bottom:4px;">LIFT</div>
+                  </div>
+                </div>
+                <div class="floor-panel">
+                  <div class="floor-row">
+                    <div class="floor-led" id="led3" style="background:#2a2a00;"></div>
+                    <div>FL 3</div>
+                    <div class="call-btn" id="btn3" style="background:#1a1a1a;"></div>
+                    <div style="font-size:8px;color:#404040;" id="status3">—</div>
+                  </div>
+                  <div class="floor-row">
+                    <div class="floor-led" id="led2" style="background:#2a2a00;"></div>
+                    <div>FL 2</div>
+                    <div class="call-btn" id="btn2" style="background:#1a1a1a;"></div>
+                    <div style="font-size:8px;color:#404040;" id="status2">—</div>
+                  </div>
+                  <div class="floor-row">
+                    <div class="floor-led" id="led1" style="background:#00aa00;"></div>
+                    <div>FL 1</div>
+                    <div class="call-btn" id="btn1" style="background:#1a6600;"></div>
+                    <div style="font-size:8px;color:#00aa00;" id="status1">HERE</div>
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;font-family:monospace;font-size:9px;">
+                  <div id="dirLabel" style="color:#a0a0a0;">DIR: IDLE</div>
+                  <div id="queueLabel" style="color:#606060;">Queue: []</div>
+                  <div id="scanLabel" style="color:#406040;">SCAN algo</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+elevator+control+stepper+motor+SCAN+algorithm+3+floor" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The elevator (SCAN) algorithm is a classic operating-systems scheduling topic that maps directly to a physical hardware build. The key insight: instead of servicing floor calls in first-come-first-served order (which causes starvation), the elevator sweeps in one direction servicing all pending floors, then reverses — just like a real lift. This minimises total stepper motor travel distance.</p>
+              <p>This project uses a 28BYJ-48 unipolar stepper motor with ULN2003 driver to physically move a small platform representing the elevator cabin between three floors defined by limit switches or optical encoders. Six push buttons (up/down per floor) trigger floor calls, while a 16×2 LCD shows current floor, direction, and pending queue. It's an excellent data-structures + embedded-systems crossover project.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">28BYJ-48 Stepper + ULN2003 Driver</span><span class="comp-note"> — 64 steps/rev × 64:1 gearbox = 4096 steps/rev; 5 V; perfect for slow, precise platform movement</span></div></li>
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note"> — Runs SCAN scheduler, reads buttons, drives stepper + LEDs + LCD</span></div></li>
+                <li><span class="comp-icon">🔴</span><div><span class="comp-name">6× Push Buttons</span><span class="comp-note"> — 2 per floor (up + down call); cabin has 3 destination buttons; total 9 buttons including lobby</span></div></li>
+                <li><span class="comp-icon">📏</span><div><span class="comp-name">3× IR Slot Sensors (H206)</span><span class="comp-note"> — Optical end-stop per floor; reads the platform vane position for absolute floor detection</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note"> — Displays current floor, direction (▲▼), pending call queue</span></div></li>
+                <li><span class="comp-icon">💡</span><div><span class="comp-name">6× LEDs (Green × 3, Red × 3)</span><span class="comp-note"> — Per-floor indicator: green = cabin here, red = pending call</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Floor Homing &amp; Step Counting</h4><p>On power-up, the motor drives downward until the floor-1 IR sensor triggers — this is the home (reference) position. Absolute floor positions are stored as step counts from home: floor 1 = 0, floor 2 = 1365 steps, floor 3 = 2730 steps (adjust for your physical build). A running <code>currentStep</code> counter tracks position. IR sensors provide correction every time the platform actually reaches a floor, preventing accumulated step errors from gear slip.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>SCAN Scheduling Algorithm</h4><p>Maintain a sorted queue of pending floor requests. SCAN rule: while moving UP, only service floors ≥ currentFloor. When no more requests above, reverse direction and service floors ≤ currentFloor. Implementation: <code>int queue[3]; bool pending[4]</code>. When a button is pressed, set <code>pending[floor] = true</code>. In the scheduler: scan upward through pending[] for the next floor in direction, or reverse if none found. Queue display: render on LCD as e.g. "Queue: 2,3" with arrow direction.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Stepper Motor Movement</h4><p>Use the <code>Stepper</code> library: <code>Stepper motor(STEPS, 8, 10, 9, 11)</code>. Set speed to 8 RPM (slow enough for realistic simulation). To move between floors, calculate <code>stepsNeeded = (targetFloor - currentFloor) * STEPS_PER_FLOOR</code>. Call <code>motor.step(stepsNeeded)</code> (blocks until complete; use non-blocking AccelStepper for a more realistic gradual acceleration profile). At arrival: turn off stepper coils (<code>digitalWrite</code> all coil pins LOW) to prevent overheating when stationary.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Door Open Simulation &amp; Safety Delays</h4><p>At each stop: flash the floor LED for 3 seconds (simulates door open/close time). During this window, accept new button presses to add to queue but do not move. If a destination on the same floor as the next queued stop is pressed while doors are "open", service it immediately (door-hold). After 3 seconds, close doors (stop LED flash) and immediately compute the next SCAN target. Buzzer: single beep on floor arrival, double beep on direction change.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Stepper.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+const int STEPS_PER_FLOOR = 1365;
+Stepper motor(4096, 8, 10, 9, 11);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+int currentFloor = 1, direction = 1; // 1=UP, -1=DOWN
+bool pending[4] = {false,false,false,false}; // index 1..3
+
+const int BTN[4] = {0,2,3,4}; // pins for floors 1,2,3
+
+void setup() {
+  motor.setSpeed(8); lcd.begin();
+  for(int i=1;i<=3;i++) pinMode(BTN[i], INPUT_PULLUP);
+  lcd.print("F1 IDLE"); 
+}
+
+int nextFloor() {
+  // SCAN: look in current direction first
+  if(direction == 1) {
+    for(int f=currentFloor+1;f<=3;f++) if(pending[f]) return f;
+    direction=-1;
+    for(int f=currentFloor-1;f>=1;f--) if(pending[f]) return f;
+  } else {
+    for(int f=currentFloor-1;f>=1;f--) if(pending[f]) return f;
+    direction=1;
+    for(int f=currentFloor+1;f<=3;f++) if(pending[f]) return f;
+  }
+  return 0; // no pending
+}
+
+void loop() {
+  for(int i=1;i<=3;i++) if(digitalRead(BTN[i])==LOW) { pending[i]=true; delay(50); }
+  int target = nextFloor();
+  if(target) {
+    int steps = (target - currentFloor) * STEPS_PER_FLOOR;
+    motor.step(steps);
+    currentFloor = target; pending[target]=false;
+    lcd.clear(); lcd.print("Floor "+String(target));
+    delay(3000); // door open
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏗️ OS Scheduling Algorithm Demo</span>
+                <span class="app-tag">🔄 SCAN / LOOK / C-SCAN Compare</span>
+                <span class="app-tag">📊 Journey Time Analytics LCD</span>
+                <span class="app-tag">🔔 Floor Arrival Buzzer</span>
+                <span class="app-tag">🏢 Multi-Elevator Coordination</span>
+                <span class="app-tag">⚡ AccelStepper Acceleration</span>
+                <span class="app-tag">📱 Blynk Remote Floor Call</span>
+                <span class="app-tag">🔐 Keypad Priority Floor Access</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $12 – $25</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno</li>
+                <li><strong>Algorithm:</strong> SCAN (Elevator)</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>SCAN disk/elevator scheduling</li>
+                <li>28BYJ-48 stepper control</li>
+                <li>Absolute position tracking</li>
+                <li>IR optical end-stop homing</li>
+                <li>Priority queue implementation</li>
+                <li>LCD menu + status display</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Stepper (built-in)</span><span class="lib-desc"> — Basic 4-wire stepper control; or use AccelStepper for smooth acceleration</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — 16×2 I2C LCD for floor and queue display</span></li>
+                <li><span class="lib-name">AccelStepper</span><span class="lib-desc"> — Mike McCauley; non-blocking acceleration profiles</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="mini-cnc-drawing-machine.html">Mini CNC Drawing Machine</a></li>
+                <li><a href="smart-parking-system.html">Smart Parking System</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let curFloor=1; const floors=[1,2,3]; let pendingQ=[], dir=1, doorTimer=0;
+    const cabinPos=[4,47,90]; // bottom px for floors 1,2,3
+    let t=0;
+    setInterval(()=>{
+      t++;
+      // randomly add a call every 4s if queue empty
+      if(t%20===0 && pendingQ.length===0) {
+        const f = floors[Math.floor(Math.random()*3)];
+        if(f!==curFloor && !pendingQ.includes(f)) pendingQ.push(f);
+      }
+      if(t%8===0 && pendingQ.length===0) {
+        const f = floors[Math.floor(Math.random()*3)];
+        if(f!==curFloor && !pendingQ.includes(f)) pendingQ.push(f);
+      }
+      // SCAN: pick next in direction
+      if(pendingQ.length>0 && doorTimer===0) {
+        // sort
+        let target;
+        const above = pendingQ.filter(f=>f>curFloor).sort((a,b)=>a-b);
+        const below = pendingQ.filter(f=>f<curFloor).sort((a,b)=>b-a);
+        if(dir===1 && above.length>0) target=above[0];
+        else if(dir===1 && below.length>0){dir=-1;target=below[0];}
+        else if(dir===-1 && below.length>0) target=below[0];
+        else if(dir===-1 && above.length>0){dir=1;target=above[0];}
+        if(target) {
+          curFloor=target;
+          pendingQ=pendingQ.filter(f=>f!==target);
+          doorTimer=5;
+          document.getElementById('cabin').style.bottom=cabinPos[curFloor-1]+'px';
+        }
+      }
+      if(doorTimer>0) doorTimer--;
+      // Update UI
+      ['led1','led2','led3'].forEach((id,i)=>{
+        document.getElementById(id).style.background=(i+1===curFloor)?'#00cc00':'#1a1a00';
+      });
+      ['status1','status2','status3'].forEach((id,i)=>{
+        const s=document.getElementById(id);
+        if(i+1===curFloor){s.textContent='HERE';s.style.color='#00cc00';}
+        else if(pendingQ.includes(i+1)){s.textContent='WAIT';s.style.color='#cccc00';}
+        else{s.textContent='—';s.style.color='#404040';}
+      });
+      document.getElementById('dirLabel').textContent='DIR: '+(dir===1?'▲ UP':'▼ DOWN');
+      document.getElementById('queueLabel').textContent='Queue: ['+pendingQ.join(',')+']';
+    }, 600);
+  </script>
+</body>
+</html>

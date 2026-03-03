@@ -1,0 +1,215 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edge TPU Neural Accelerator Demo – Advanced Project | Studgine</title>
+  <meta name="description" content="Deploy INT8-quantised TFLite models on a Google Coral USB Accelerator and benchmark inference latency, throughput and accuracy vs CPU on Raspberry Pi." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000505;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:20px;position:relative;overflow:hidden;}
+    .tpu-info{font-family:monospace;font-size:9px;color:#00ffcc;display:flex;flex-direction:column;gap:3px;}
+    .perf-bar{width:65px;height:6px;background:#001010;border-radius:2px;overflow:hidden;}
+    .perf-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine"></a>
+        <ul class="navbar-nav"><li><a href="../index.html" class="nav-link">Home</a></li><li><a href="../projects.html" class="nav-link active">Projects</a></li><li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li><li><a href="../resources.html" class="nav-link">Resources</a></li><li><a href="../about.html" class="nav-link">About</a></li></ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🔴 Advanced Project</span>
+      <h1>Edge TPU Neural Accelerator Demo</h1>
+      <p>Deploy INT8-fully-quantised TFLite models — MobileNetV2 image classification and SSD MobileNet object detection — onto a Google Coral USB Accelerator connected to Raspberry Pi 4. Benchmark inference latency, power efficiency, and accuracy vs. CPU, demonstrating how dedicated neural hardware transforms edge AI deployment.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb"><a href="../index.html">Home</a><span class="sep">›</span><a href="../projects.html">Projects</a><span class="sep">›</span><span class="current">Edge TPU Neural Accelerator Demo</span></nav>
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo</h2>
+              <div class="anim-stage">
+                <canvas id="tpuCanvas" width="120" height="90"></canvas>
+                <div class="tpu-info">
+                  <div>MODEL: MobileNetV2</div>
+                  <div style="margin-top:3px;">CPU INFERENCE</div>
+                  <div><span id="cpuMs">82</span>ms <div class="perf-bar"><div class="perf-fill" id="cpuBar" style="width:82%;background:#ff8844;"></div></div></div>
+                  <div style="margin-top:3px;">TPU INFERENCE</div>
+                  <div><span id="tpuMs">2.4</span>ms <div class="perf-bar"><div class="perf-fill" id="tpuBar" style="width:2%;background:#00ffcc;"></div></div></div>
+                  <div style="margin-top:3px;">SPEEDUP: <span id="tpuSpeedup" style="color:#00ffcc;">34×</span></div>
+                  <div>PRED: <span id="tpuPred">cat (94.2%)</span></div>
+                  <div>FPS (TPU): <span id="tpuFps">420</span></div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=Google+Coral+Edge+TPU+Raspberry+Pi+TFLite+benchmark+accelerator" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>The Google Coral USB Accelerator contains a dedicated Edge TPU ASIC capable of 4 TOPS (tera-operations per second) while consuming only 2W. For TFLite INT8-quantised models where all ops are TPU-compatible, it delivers 30–100× speedup over the Pi 4 CPU. This project is a structured benchmark + live demo: three models (MobileNetV2 classification, SSD-MobileNet detection, DeepLabV3 segmentation), measured on 1000 frames each, producing a definitive comparison table. Then live Pi Camera demo showing real-time 300fps classification — impossible on CPU alone.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🧠</span><div><span class="comp-name">Google Coral USB Accelerator</span><span class="comp-note"> — Edge TPU 4 TOPS; USB 3.0 (use USB 3 port for full speed!); plug-and-play with pycoral library; &lt;2W</span></div></li>
+                <li><span class="comp-icon">🧩</span><div><span class="comp-name">Raspberry Pi 4 (4 GB)</span><span class="comp-note"> — USB 3.0 host; pycoral + tflite-runtime; picamera2; benchmark harness; matplotlib result plots</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Pi Camera Module v2</span><span class="comp-note"> — Live inference demo input; 640×480 frames; compare CPU vs TPU inference pipeline visually</span></div></li>
+                <li><span class="comp-icon">📊</span><div><span class="comp-name">USB Power Meter (FNIRSI or UM25C)</span><span class="comp-note"> — Measure Coral USB current draw during inference; calculate TOPS/Watt efficiency vs CPU</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Model Preparation: Full INT8 Quantisation</h4><p>The Edge TPU requires ALL operations to be INT8. Standard TFLite partial quantisation won't work. Post-training INT8 quantisation with representative dataset: <code>converter.optimizations=[tf.lite.Optimize.DEFAULT]; converter.representative_dataset=representative_data_gen; converter.target_spec.supported_ops=[tf.lite.OpsSet.TFLITE_BUILTINS_INT8]; converter.inference_input_type=tf.uint8; converter.inference_output_type=tf.uint8</code>. Compile for Edge TPU: <code>edgetpu_compiler model_quant.tflite</code>. Output: <code>model_quant_edgetpu.tflite</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>pycoral Inference Setup</h4><p>Install: <code>pip install pycoral</code>. Detect Coral: <code>from pycoral.utils.edgetpu import make_interpreter; interp = make_interpreter('model_edgetpu.tflite')</code>. For CPU: <code>import tflite_runtime.interpreter as tflite; cpu_interp = tflite.Interpreter('model_quant.tflite')</code>. Both APIs are compatible. Warm-up: run 10 inference passes before benchmarking to avoid USB initialisation latency in timing.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Structured Benchmark Harness</h4><p>For each model × hardware: run 1000 inference passes on pre-loaded batch of test images. Record latency: <code>t0=time.perf_counter(); interp.invoke(); latency=(time.perf_counter()-t0)*1000</code>. Compute: mean, p50, p95, p99 latency, throughput (FPS). Power measurement via USB meter read via serial. Plot: grouped bar chart of latency + separate scatter plot of accuracy vs. latency. Export results to CSV + Markdown table for project poster.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Live Camera Inference Demo</h4><p>Run SSD-MobileNet on Coral: real-time bounding box detection at ~300fps. Draw detections: <code>for obj in objs: cv2.rectangle(frame, obj.bbox[:2], obj.bbox[2:], (0,255,200), 2); cv2.putText(frame, f"{labels[obj.id]} {obj.score:.0%}", ...)</code>. Display CPU vs TPU side-by-side on HDMI (split-screen): left panel CPU at 8fps, right panel Coral at 60+fps. Dramatically demonstrates the value of dedicated ML hardware for edge deployment.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>import time, numpy as np
+from pycoral.utils.edgetpu import make_interpreter
+from pycoral.adapters import common, classify
+import tflite_runtime.interpreter as tflite
+
+# Load models
+tpu = make_interpreter('mobilenet_v2_1.0_224_quant_edgetpu.tflite')
+cpu = tflite.Interpreter('mobilenet_v2_1.0_224_quant.tflite')
+tpu.allocate_tensors(); cpu.allocate_tensors()
+
+def benchmark(interp, images, n=1000):
+    latencies = []
+    for i in range(n):
+        img = images[i % len(images)]
+        common.set_input(interp, img)
+        t0 = time.perf_counter()
+        interp.invoke()
+        latencies.append((time.perf_counter()-t0)*1000)
+    return {
+        'mean_ms': np.mean(latencies),
+        'p95_ms':  np.percentile(latencies, 95),
+        'fps':     1000 / np.mean(latencies)
+    }
+
+images = [np.random.randint(0,255,(224,224,3),dtype=np.uint8) for _ in range(100)]
+cpu_stats = benchmark(cpu, images)
+tpu_stats = benchmark(tpu, images)
+speedup = cpu_stats['mean_ms'] / tpu_stats['mean_ms']
+print(f"CPU: {cpu_stats['mean_ms']:.1f}ms | TPU: {tpu_stats['mean_ms']:.2f}ms | Speedup: {speedup:.0f}x")</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">👁️ 300fps Object Detection Demo</span>
+                <span class="app-tag">📊 TOPS/Watt Efficiency Benchmarks</span>
+                <span class="app-tag">🐦 Real-Time Bird Species ID</span>
+                <span class="app-tag">🧬 DeepLabV3 Segmentation</span>
+                <span class="app-tag">📦 YOLOv5n Edge TPU Deploy</span>
+                <span class="app-tag">🔥 Thermal Camera Object Detection</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $60 – $110</li><li><strong>Build Time:</strong> 6 – 10 hours</li><li><strong>TPU Peak:</strong> 4 TOPS</li><li><strong>Speedup:</strong> 30–100× vs CPU</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>INT8 full quantisation for Edge TPU</li><li>edgetpu_compiler workflow</li><li>pycoral inference API</li><li>Latency + throughput benchmarking</li><li>Power efficiency measurement</li><li>Live CV pipeline optimisation</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pycoral</span><span class="lib-desc"> — Google Coral TPU driver</span></li><li><span class="lib-name">tflite-runtime</span><span class="lib-desc"> — CPU baseline inference</span></li><li><span class="lib-name">matplotlib</span><span class="lib-desc"> — Benchmark result plots</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const tC=document.getElementById('tpuCanvas');
+    const tCtx=tC.getContext('2d');
+    let tPhase=0;
+    function drawTPU(){
+      tCtx.fillStyle='rgba(0,5,5,0.4)';tCtx.fillRect(0,0,120,90);
+      // Coral chip
+      tCtx.fillStyle='#00443a';tCtx.fillRect(30,20,60,50);
+      tCtx.strokeStyle='#00ffcc';tCtx.lineWidth=1;tCtx.strokeRect(30,20,60,50);
+      // Animated data flow lines
+      for(let i=0;i<8;i++){
+        const x=35+i*7;
+        const h=Math.abs(Math.sin(tPhase+i*0.4))*35;
+        tCtx.fillStyle=`rgba(0,255,200,${0.3+0.5*Math.abs(Math.sin(tPhase+i))})`;
+        tCtx.fillRect(x,70-h,5,h);
+      }
+      tCtx.fillStyle='#00ffcc';tCtx.font='8px monospace';
+      tCtx.fillText('EDGE TPU',38,40);tCtx.fillText('4 TOPS',42,52);
+      tPhase+=0.08;
+      const cpuMs=80+5*Math.sin(tPhase*0.3);
+      const tpuMs=2.4+0.2*Math.sin(tPhase*2);
+      const speedup=(cpuMs/tpuMs).toFixed(0);
+      document.getElementById('cpuMs').textContent=cpuMs.toFixed(0);
+      document.getElementById('tpuMs').textContent=tpuMs.toFixed(1);
+      document.getElementById('tpuSpeedup').textContent=speedup+'×';
+      document.getElementById('cpuBar').style.width=Math.min(100,cpuMs/1.0)+'%';
+      document.getElementById('tpuBar').style.width=Math.min(100,tpuMs/0.8)+'%';
+      document.getElementById('tpuFps').textContent=Math.round(1000/tpuMs);
+      requestAnimationFrame(drawTPU);
+    }
+    drawTPU();
+  </script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Pill Dispenser – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build an RTC-scheduled pill dispenser with a rotating drum servo, LCD reminder panel, buzzer alert, and EEPROM dose history using Arduino and DS3231." />
+  <meta name="keywords" content="pill dispenser Arduino, automatic medication dispenser, DS3231 servo drum, EEPROM dose log, buzzer pill reminder" />
+  <link rel="canonical" href="smart-pill-dispenser.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#08001a 0%,#120028 100%);border-radius:12px;padding:28px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .drum-wrap{position:relative;width:120px;height:120px;}
+    .drum{width:100px;height:100px;border-radius:50%;border:4px solid #7b2fff;background:#1a003a;position:absolute;top:10px;left:10px;display:flex;align-items:center;justify-content:center;transition:transform 0.8s ease;}
+    .compartment{position:absolute;font-size:13px;transition:color 0.3s;}
+    .compartment.active{color:#ff40ff;text-shadow:0 0 8px #ff40ff;}
+    .compartment.filled{color:#aaa;}
+    .arrow-indicator{position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);font-size:16px;color:#ff40ff;}
+    .lcd-pill{background:#000;border:2px solid #1a003a;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:13px;color:#bf7fff;text-align:center;min-width:180px;}
+    .pill-badge{background:#7b2fff;color:#fff;border-radius:4px;padding:3px 10px;font-family:monospace;font-size:11px;display:none;}
+    .pill-badge.show{display:inline-block;animation:pill-blink 0.6s step-end infinite;}
+    @keyframes pill-blink{0%,100%{opacity:1}50%{opacity:0}}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Smart Pill Dispenser</h1>
+      <p>A rotating 7-compartment drum dispenses the correct medication at DS3231 RTC-programmed times with buzzer alert, LCD reminder countdown, and EEPROM dose history logging.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Smart Pill Dispenser</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="drum-wrap">
+                  <div class="drum" id="drumEl">
+                    <span style="font-size:20px;" id="centerPill">💊</span>
+                  </div>
+                  <div class="arrow-indicator">▲</div>
+                </div>
+                <div class="lcd-pill" id="lcdPill">Next dose: 08:00<br>Compartment 1 / 7<br>Missed: 0</div>
+                <div class="pill-badge" id="pillBadge">💊 TAKE PILL NOW</div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+automatic+pill+dispenser+servo+RTC+DS3231" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Non-adherence to medication schedules is one of the most significant challenges in healthcare — especially for elderly patients managing multiple drugs. This dispenser automates that problem: load each week's compartments once, and the machine handles reminders and dispensing automatically.</p>
+              <p>A 3D-printed drum has 7 or 14 compartments (one per day, or two per day for 7 days). A stepper or high-torque servo indexes the drum to the correct compartment at each programmed alarm time. The DS3231's two built-in alarm outputs can wake the Arduino from sleep, saving significant battery power between doses. A check switch verifies the compartment is empty (pill taken) vs. still full (missed dose) and logs accordingly.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Main controller</span></div></li>
+                <li><span class="comp-icon">⏰</span><div><span class="comp-name">DS3231 RTC Module</span><span class="comp-note"> — I2C RTC with 2 hardware alarms and coin cell</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">MG996R Servo Motor</span><span class="comp-note"> — High torque for reliable drum indexing</span></div></li>
+                <li><span class="comp-icon">📟</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note"> — Next dose time, compartment number, missed count</span></div></li>
+                <li><span class="comp-icon">🔊</span><div><span class="comp-name">Active Buzzer</span><span class="comp-note"> — Reminder alert until pill is taken</span></div></li>
+                <li><span class="comp-icon">🖨️</span><div><span class="comp-name">3D Printed Drum (7 compartments)</span><span class="comp-note"> — Print with PLA; hex centre socket for servo horn</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Set DS3231 Alarms</h4><p>Use RTClib to set Alarm 1 for each daily dose time (e.g., 08:00, 13:00, 20:00). DS3231 pulls SQW/INT pin LOW when the alarm fires, waking the Arduino from power-down sleep via INT0. This extends battery life to weeks between charges.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Index the Drum</h4><p>Track current compartment index (0–6) in EEPROM. On alarm fire, call <code>indexDrum(currentCompartment + 1)</code>. The servo rotates to a target angle = <code>compartment × (360/7)</code> = 51.4° per step. Use position feedback (potentiometer on servo shaft) or count precise PWM pulses for accuracy.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Alert and Wait for Acknowledgement</h4><p>Sound the buzzer in a pattern (3 beeps every 30 s) and display "TAKE PILL NOW" on the LCD. An IR beam-break or micro-switch detects when the compartment is accessed. If no detection within 10 minutes, mark as MISSED in EEPROM and send alert via serial/GSM.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>EEPROM Dose Log</h4><p>Each dose event (taken / missed / skipped) is logged as a struct: timestamp (Unix epoch from RTC), compartment index, status. Use a 256-byte ring buffer in EEPROM for the last 30 days of history. Read the log through the Serial Monitor menu.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;RTClib.h&gt;
+#include &lt;Servo.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+#include &lt;avr/sleep.h&gt;
+
+RTC_DS3231 rtc;
+Servo drum;
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+const int BUZZER=7, SERVO_PIN=9, INT_PIN=2;
+int compartment = 0;  // 0..6 (7 days)
+float COMPARTMENT_ANGLE[7] = {0,51.4,102.8,154.3,205.7,257.1,308.6};
+
+void indexDrum(int slot) {
+  drum.attach(SERVO_PIN);
+  drum.write((int)COMPARTMENT_ANGLE[slot % 7]);
+  delay(1200);
+  drum.detach();
+  compartment = slot % 7;
+  EEPROM.write(0, compartment);
+}
+
+void setNextAlarm(int hour, int minute) {
+  rtc.clearAlarm(1);
+  rtc.setAlarm1(DateTime(2025,1,1,hour,minute,0),
+                DS3231_A1_Hour);      // match hour:minute:00
+}
+
+void IRAM_ATTR alarmISR() { /* wake up */ }
+
+void dispenseDose() {
+  indexDrum(compartment + 1);
+  lcd.clear(); lcd.print("TAKE PILL NOW");
+  lcd.setCursor(0,1); lcd.print("Slot " + String(compartment+1) + "/7");
+  for (int i=0; i&lt;6; i++) {
+    digitalWrite(BUZZER, HIGH); delay(200);
+    digitalWrite(BUZZER, LOW);  delay(800);
+  }
+}
+
+void setup() {
+  rtc.begin();
+  drum.attach(SERVO_PIN);
+  lcd.init(); lcd.backlight();
+  pinMode(INT_PIN, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(INT_PIN), alarmISR, FALLING);
+  setNextAlarm(8, 0);  // 08:00 first dose
+}
+
+void loop() {
+  if (rtc.alarmFired(1)) {
+    dispenseDose();
+    rtc.clearAlarm(1);
+    setNextAlarm(20, 0);  // next dose 20:00
+  }
+  // Sleep between doses...
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_enable(); sleep_cpu(); sleep_disable();
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">💊 Elderly Home Care</span>
+                <span class="app-tag">🏥 Hospital Bedside Dosing</span>
+                <span class="app-tag">🐾 Pet Medication Schedule</span>
+                <span class="app-tag">📱 SMS Missed-Dose Alert</span>
+                <span class="app-tag">🌐 IoT Compliance Dashboard</span>
+                <span class="app-tag">🔔 Caregiver Telegram Alert</span>
+                <span class="app-tag">📟 OLED Wristwatch Reminder</span>
+                <span class="app-tag">📦 2-Week Drum Variant</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $20 – $38</li>
+                <li><strong>Build Time:</strong> 6 – 10 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Nano</li>
+                <li><strong>Interface:</strong> LCD + Buzzer</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>DS3231 alarm interrupt wake</li>
+                <li>Servo drum index calculation</li>
+                <li>EEPROM ring buffer logging</li>
+                <li>Arduino low-power sleep modes</li>
+                <li>Pill detection via IR/switch</li>
+                <li>Buzzer alert state machine</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">RTClib</span><span class="lib-desc"> — Adafruit DS3231 with alarm support</span></li>
+                <li><span class="lib-name">Servo</span><span class="lib-desc"> — Built-in servo control</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — LCD display driver</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="automated-fish-feeder-rtc.html">Automated Fish Feeder (RTC)</a></li>
+                <li><a href="ntp-smart-wall-clock.html">NTP Smart Wall Clock</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const doses = ['08:00','13:00','20:00'];
+    let comp = 0, missed = 0, drumRot = 0;
+    function simDose() {
+      comp = (comp + 1) % 7;
+      drumRot += 51.4;
+      document.getElementById('drumEl').style.transform = 'rotate(' + drumRot + 'deg)';
+      let nextDose = doses[comp % doses.length];
+      document.getElementById('lcdPill').innerHTML = 'Next dose: ' + nextDose + '<br>Compartment ' + (comp+1) + ' / 7<br>Missed: ' + missed;
+      document.getElementById('pillBadge').className = 'pill-badge show';
+      setTimeout(() => {
+        document.getElementById('pillBadge').className = 'pill-badge';
+        // 20% chance of missed dose
+        if (Math.random() < 0.2) missed++;
+      }, 3000);
+    }
+    setInterval(simDose, 5000);
+  </script>
+</body>
+</html>

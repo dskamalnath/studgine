@@ -1,0 +1,614 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Project Details | Studgine</title>
+  <meta name="description" id="page-desc" content="Step-by-step project guide on Studgine." />
+  <meta name="robots" content="index, follow" />
+  <link rel="stylesheet" href="../css/style.css" />
+
+  <style>
+    /* ── Animation type styles ──────────────────────────── */
+
+    /* --- TRAFFIC LIGHT --- */
+    .anim-traffic { display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .anim-traffic .tl-housing { background:#222; border-radius:14px; padding:12px 18px; display:flex; flex-direction:column; gap:10px; border:3px solid #444; }
+    .anim-traffic .tl-bulb { width:40px; height:40px; border-radius:50%; border:2px solid #555; }
+    .tl-bulb.red   { animation: tl-red   3s infinite; }
+    .tl-bulb.amber { animation: tl-amber 3s infinite; }
+    .tl-bulb.green { animation: tl-green 3s infinite; }
+    @keyframes tl-red   { 0%,30%{background:#ff2200;box-shadow:0 0 18px #ff2200;} 31%,100%{background:#400;} }
+    @keyframes tl-amber { 33%,46%{background:#ff9900;box-shadow:0 0 18px #ff9900;} 0%,32%,47%,100%{background:#440;} }
+    @keyframes tl-green { 50%,100%{background:#00cc44;box-shadow:0 0 18px #00cc44;} 0%,49%{background:#040;} }
+
+    /* --- LED BLINK --- */
+    .anim-led-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .anim-led-single { width:50px; height:50px; border-radius:50%; border:3px solid #555; animation: led-pulse 1.2s ease-in-out infinite; }
+    .anim-led-single.green { background:#00cc44; animation: led-pulse-g 1.2s ease-in-out infinite; }
+    .anim-led-single.red   { background:#ff2200; animation: led-pulse-r 1.4s ease-in-out infinite; }
+    .anim-led-single.blue  { background:#0099ff; animation: led-pulse-b 1.0s ease-in-out infinite; }
+    @keyframes led-pulse-g { 0%,100%{box-shadow:0 0 8px #00cc44;opacity:.5;} 50%{box-shadow:0 0 28px #00ff44;opacity:1;} }
+    @keyframes led-pulse-r { 0%,100%{box-shadow:0 0 8px #ff2200;opacity:.5;} 50%{box-shadow:0 0 28px #ff4400;opacity:1;} }
+    @keyframes led-pulse-b { 0%,100%{box-shadow:0 0 8px #0099ff;opacity:.5;} 50%{box-shadow:0 0 28px #33bbff;opacity:1;} }
+    .anim-led-row { display:flex; gap:14px; }
+
+    /* --- LCD DISPLAY --- */
+    .anim-lcd-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .anim-lcd-screen { background:#1a3a1a; border:3px solid #444; border-radius:6px; padding:12px 20px; font-family:monospace; font-size:1.2rem; color:#22ff22; min-width:220px; text-align:center; box-shadow:0 0 12px #22ff2233 inset; }
+    .anim-lcd-line1 { border-bottom:1px solid #1f5c1f; padding-bottom:6px; margin-bottom:6px; }
+    .anim-lcd-cursor { animation: lcd-blink .7s step-end infinite; }
+    @keyframes lcd-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .anim-lcd-cycle { animation: lcd-val-cycle 2s steps(1) infinite; }
+    @keyframes lcd-val-cycle {
+      0%{content:'24.5°C'} 25%{content:'24.7°C'} 50%{content:'24.3°C'} 75%{content:'24.8°C'}
+    }
+
+    /* --- SERVO SWEEP --- */
+    .anim-servo-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .anim-servo-body { width:50px; height:40px; background:#555; border-radius:8px; border:2px solid #333; position:relative; }
+    .anim-servo-arm  { width:58px; height:8px; background:#e0c080; border-radius:4px; transform-origin:8px 4px; animation:servo-sweep 2s ease-in-out infinite alternate; position:absolute; top:16px; left:8px; }
+    @keyframes servo-sweep { 0%{transform:rotate(-50deg)} 100%{transform:rotate(50deg)} }
+
+    /* --- SENSOR BAR --- */
+    .anim-sensor-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; width:100%; max-width:220px; }
+    .anim-sensor-bar-track { background:#222; border-radius:8px; height:22px; width:100%; overflow:hidden; border:2px solid #444; }
+    .anim-sensor-bar-fill  { height:100%; border-radius:6px; background:linear-gradient(90deg,#0099ff,#00ccff); animation:sensor-fill 2.5s ease-in-out infinite alternate; }
+    @keyframes sensor-fill { 0%{width:15%} 100%{width:88%} }
+    .anim-sensor-label { font-family:monospace; color:#0af; font-size:.95rem; }
+
+    /* --- WIFI CLOUD --- */
+    .anim-wifi-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .anim-wifi-arcs { display:flex; flex-direction:column-reverse; align-items:center; gap:4px; }
+    .anim-wifi-arc  { border:3px solid #0af; border-radius:50%; border-bottom-color:transparent; border-left-color:transparent; }
+    .anim-wifi-arc:nth-child(1){width:18px;height:18px;animation:wifi-pulse .8s .0s infinite;}
+    .anim-wifi-arc:nth-child(2){width:36px;height:36px;animation:wifi-pulse .8s .2s infinite;}
+    .anim-wifi-arc:nth-child(3){width:54px;height:54px;animation:wifi-pulse .8s .4s infinite;}
+    .anim-wifi-dot  { width:8px;height:8px;background:#0af;border-radius:50%;margin-top:6px; }
+    @keyframes wifi-pulse { 0%,100%{opacity:.25;transform:rotate(45deg) scale(.9)} 50%{opacity:1;transform:rotate(45deg) scale(1.05)} }
+    .anim-cloud-icon { font-size:2.5rem; animation:cloud-bob 2s ease-in-out infinite alternate; }
+    @keyframes cloud-bob { 0%{transform:translateY(0)} 100%{transform:translateY(-6px)} }
+    .anim-packet { width:10px;height:10px;background:#0af;border-radius:50%;animation:packet-travel 1.5s linear infinite; }
+    @keyframes packet-travel { 0%{transform:translateY(30px);opacity:0} 50%{opacity:1} 100%{transform:translateY(-30px);opacity:0} }
+
+    /* --- CAMERA SNAP --- */
+    .anim-camera-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .anim-camera-body { width:80px;height:56px;background:#333;border-radius:10px;border:2px solid #555;position:relative;display:flex;align-items:center;justify-content:center; }
+    .anim-camera-lens { width:34px;height:34px;border-radius:50%;border:4px solid #666;background:#111;position:relative; }
+    .anim-camera-lens::after { content:'';position:absolute;inset:4px;border-radius:50%;background:#1a4466; }
+    .anim-camera-flash { position:absolute;inset:0;border-radius:10px;background:#fff;opacity:0;animation:cam-flash 2.5s ease-in-out infinite; }
+    @keyframes cam-flash { 0%,80%,100%{opacity:0} 82%{opacity:.85} 90%{opacity:0} }
+    .anim-bbox { width:120px;height:80px;border:2.5px solid #0f0;border-radius:4px;position:relative;animation:bbox-appear 2.5s ease-in-out infinite; }
+    .anim-bbox::before { content:'Object';position:absolute;top:-20px;left:0;color:#0f0;font-family:monospace;font-size:.7rem; }
+    @keyframes bbox-appear { 0%,75%{opacity:0;transform:scale(.8)} 80%,100%{opacity:1;transform:scale(1)} }
+
+    /* --- ROBOT MOVE --- */
+    .anim-robot-wrap { display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .anim-robot-body { width:52px;height:44px;background:#4488cc;border-radius:8px;position:relative;animation:robot-bob .5s ease-in-out infinite alternate; }
+    .anim-robot-eye  { width:9px;height:9px;background:#fff;border-radius:50%;position:absolute;top:10px; }
+    .anim-robot-eye.l{left:10px} .anim-robot-eye.r{right:10px}
+    .anim-robot-mouth{ width:20px;height:4px;background:#1a3355;border-radius:2px;position:absolute;bottom:8px;left:16px; }
+    .anim-robot-wheels{ display:flex;gap:14px;margin-top:2px; }
+    .anim-robot-wheel { width:18px;height:18px;border-radius:50%;border:3px solid #333;background:#555;animation:wheel-spin .6s linear infinite; }
+    @keyframes robot-bob  { 0%{transform:translateY(0)}  100%{transform:translateY(-4px)} }
+    @keyframes wheel-spin { 0%{transform:rotate(0)}     100%{transform:rotate(360deg)} }
+    .anim-robot-track { width:180px;height:3px;background:repeating-linear-gradient(90deg,#444 0,#444 8px,transparent 8px,transparent 16px);margin-top:-2px;border-radius:2px; }
+
+    /* --- ML CLASSIFY --- */
+    .anim-ml-wrap { display:flex;flex-direction:column;align-items:center;gap:12px; }
+    .anim-ml-bars { display:flex;align-items:flex-end;gap:8px;height:80px; }
+    .anim-ml-bar { width:30px;background:linear-gradient(0deg,#7c3aed,#a78bfa);border-radius:4px 4px 0 0;transition:height .3s; }
+    .anim-ml-bar:nth-child(1){animation:ml-b1 3s ease-in-out infinite}
+    .anim-ml-bar:nth-child(2){animation:ml-b2 3s ease-in-out infinite}
+    .anim-ml-bar:nth-child(3){animation:ml-b3 3s ease-in-out infinite}
+    .anim-ml-bar:nth-child(4){animation:ml-b4 3s ease-in-out infinite}
+    @keyframes ml-b1{0%,100%{height:20px}50%{height:65px}}
+    @keyframes ml-b2{0%,100%{height:50px}50%{height:30px}}
+    @keyframes ml-b3{0%,100%{height:35px}50%{height:70px}}
+    @keyframes ml-b4{0%,100%{height:60px}50%{height:25px}}
+    .anim-ml-label { font-family:monospace;color:#a78bfa;font-size:.85rem; }
+
+    /* --- OSCILLOSCOPE WAVE --- */
+    .anim-osc-wrap { display:flex;flex-direction:column;align-items:center;gap:8px; }
+    .anim-osc-screen { width:220px;height:100px;background:#001a00;border:3px solid #444;border-radius:6px;overflow:hidden;position:relative; }
+    .anim-osc-grid   { position:absolute;inset:0;background-image:linear-gradient(#0f200f 1px,transparent 1px),linear-gradient(90deg,#0f200f 1px,transparent 1px);background-size:22px 22px; }
+    .anim-osc-wave   { position:absolute;top:0;left:0;width:200%;height:100%;animation:wave-scroll 2s linear infinite; }
+    .anim-osc-svg    { width:100%;height:100%; }
+    @keyframes wave-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+    /* --- SOLAR TRACK --- */
+    .anim-solar-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-sun-icon   { font-size:2.4rem;animation:sun-rotate 6s linear infinite; }
+    @keyframes sun-rotate { 0%{transform:rotate(0) translateX(40px)} 100%{transform:rotate(360deg) translateX(40px)} }
+    .anim-solar-panel{ width:70px;height:44px;background:linear-gradient(135deg,#1a3a6e,#2255aa);border:2px solid #3377cc;border-radius:4px;animation:panel-track 6s ease-in-out infinite;transform-origin:bottom center; }
+    @keyframes panel-track { 0%,100%{transform:rotate(-25deg)} 50%{transform:rotate(25deg)} }
+
+    /* --- ALARM FLASH --- */
+    .anim-alarm-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-alarm-light{ width:60px;height:60px;border-radius:50%;background:#ff2200;animation:alarm-pulse 0.6s ease-in-out infinite alternate; }
+    @keyframes alarm-pulse { 0%{box-shadow:0 0 8px #ff2200;opacity:.4} 100%{box-shadow:0 0 40px #ff4400;opacity:1} }
+
+    /* --- SPECTRUM BARS --- */
+    .anim-spectrum-wrap { display:flex;align-items:flex-end;gap:5px;height:90px; }
+    .anim-spectrum-bar  { width:14px;background:linear-gradient(0deg,#0099ff,#00ffcc);border-radius:3px 3px 0 0; }
+    .anim-spectrum-bar:nth-child(1){animation:sp-b1 0.5s ease-in-out infinite alternate}
+    .anim-spectrum-bar:nth-child(2){animation:sp-b2 0.5s .07s ease-in-out infinite alternate}
+    .anim-spectrum-bar:nth-child(3){animation:sp-b3 0.5s .14s ease-in-out infinite alternate}
+    .anim-spectrum-bar:nth-child(4){animation:sp-b4 0.5s .21s ease-in-out infinite alternate}
+    .anim-spectrum-bar:nth-child(5){animation:sp-b5 0.5s .28s ease-in-out infinite alternate}
+    .anim-spectrum-bar:nth-child(6){animation:sp-b6 0.5s .35s ease-in-out infinite alternate}
+    .anim-spectrum-bar:nth-child(7){animation:sp-b7 0.5s .42s ease-in-out infinite alternate}
+    @keyframes sp-b1{0%{height:20px}100%{height:55px}}
+    @keyframes sp-b2{0%{height:40px}100%{height:80px}}
+    @keyframes sp-b3{0%{height:30px}100%{height:65px}}
+    @keyframes sp-b4{0%{height:55px}100%{height:25px}}
+    @keyframes sp-b5{0%{height:45px}100%{height:70px}}
+    @keyframes sp-b6{0%{height:25px}100%{height:60px}}
+    @keyframes sp-b7{0%{height:60px}100%{height:30px}}
+
+    /* --- COUNTER DISPLAY --- */
+    .anim-counter-wrap { display:flex;flex-direction:column;align-items:center;gap:12px; }
+    .anim-counter-digits{ font-family:monospace;font-size:3rem;color:#ff9900;background:#111;padding:12px 24px;border-radius:8px;border:2px solid #333;animation:counter-glow 1.5s ease-in-out infinite alternate; }
+    @keyframes counter-glow { 0%{text-shadow:0 0 8px #ff9900} 100%{text-shadow:0 0 22px #ffcc00} }
+
+    /* --- MOTOR SPIN --- */
+    .anim-motor-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-motor-wheel{ width:64px;height:64px;border-radius:50%;border:4px solid #888;background:conic-gradient(#555 0 25%,#333 25% 50%,#555 50% 75%,#333 75%);animation:motor-spin 0.6s linear infinite; }
+    @keyframes motor-spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+
+    /* --- PIANO KEYS --- */
+    .anim-piano-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-piano-keys { display:flex;gap:2px;position:relative; }
+    .anim-piano-white{ width:24px;height:70px;background:#f5f5f5;border:1px solid #aaa;border-radius:0 0 4px 4px;cursor:pointer; }
+    .anim-piano-black{ width:16px;height:44px;background:#222;border-radius:0 0 3px 3px;position:absolute;top:0;z-index:2; }
+    .anim-piano-white.press{animation:key-press .8s ease-in-out infinite alternate;}
+    @keyframes key-press{0%{background:#f5f5f5;transform:translateY(0)}100%{background:#e0e0e0;transform:translateY(3px)}}
+    .anim-piano-note { color:#ff9900;font-size:1.4rem;animation:note-float 1.2s ease-out infinite; }
+    @keyframes note-float { 0%{transform:translateY(0);opacity:1} 100%{transform:translateY(-30px);opacity:0} }
+
+    /* --- RFID SCAN --- */
+    .anim-rfid-wrap { display:flex;flex-direction:column;align-items:center;gap:12px; }
+    .anim-rfid-reader{ width:70px;height:90px;background:#2255aa;border-radius:8px;border:2px solid #3377cc;display:flex;align-items:center;justify-content:center; }
+    .anim-rfid-icon  { font-size:2rem; }
+    .anim-rfid-card  { width:80px;height:50px;background:linear-gradient(135deg,#ffd700,#ffaa00);border-radius:6px;border:2px solid #cc8800;animation:card-tap 2s ease-in-out infinite; }
+    @keyframes card-tap { 0%,100%{transform:translateY(20px)} 50%{transform:translateY(-5px)} }
+    .anim-rfid-beam  { width:80px;height:4px;background:#0af;border-radius:2px;animation:rfid-scan .8s ease-in-out infinite alternate; }
+    @keyframes rfid-scan { 0%{opacity:.2;width:40px} 100%{opacity:1;width:80px} }
+
+    /* --- IOT NODE --- */
+    .anim-iot-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-iot-chip  { width:56px;height:40px;background:#7c3aed;border-radius:6px;border:2px solid #a78bfa;position:relative;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700; }
+    .anim-iot-ping  { position:absolute;top:-6px;right:-6px;width:14px;height:14px;border-radius:50%;background:#0f0;animation:iot-ping 1.5s ease-out infinite; }
+    @keyframes iot-ping { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.5);opacity:0} }
+    .anim-iot-arrow { color:#0af;font-size:1.5rem;animation:iot-arrow .8s ease-in-out infinite alternate; }
+    @keyframes iot-arrow { 0%{transform:translateX(-4px)} 100%{transform:translateX(4px)} }
+
+    /* --- LIDAR RADAR --- */
+    .anim-radar-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-radar-screen{ width:120px;height:120px;border-radius:50%;background:#001a00;border:3px solid #0a3;overflow:hidden;position:relative; }
+    .anim-radar-sweep { position:absolute;top:50%;left:50%;width:50%;height:3px;background:linear-gradient(90deg,rgba(0,255,80,.9),transparent);transform-origin:left center;animation:radar-sweep 2s linear infinite; }
+    .anim-radar-ring  { position:absolute;border:1px solid #0a3;border-radius:50%; }
+    .anim-radar-ring:nth-child(2){inset:25%}
+    .anim-radar-ring:nth-child(3){inset:10%}
+    .anim-radar-dot   { position:absolute;width:6px;height:6px;background:#0f0;border-radius:50%;top:30%;left:65%;animation:radar-blip 2s ease-in-out infinite; }
+    @keyframes radar-sweep { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+    @keyframes radar-blip  { 0%,40%,100%{opacity:0} 42%,80%{opacity:1} }
+
+    /* --- RGB MIXER --- */
+    .anim-rgb-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-rgb-bulb { width:60px;height:60px;border-radius:50%;animation:rgb-cycle 6s linear infinite; }
+    @keyframes rgb-cycle {
+      0%{background:#ff0000;box-shadow:0 0 22px #ff0000}
+      16%{background:#ff9900;box-shadow:0 0 22px #ff9900}
+      33%{background:#ffff00;box-shadow:0 0 22px #ffff00}
+      50%{background:#00ff00;box-shadow:0 0 22px #00ff00}
+      66%{background:#0099ff;box-shadow:0 0 22px #0099ff}
+      83%{background:#cc00ff;box-shadow:0 0 22px #cc00ff}
+      100%{background:#ff0000;box-shadow:0 0 22px #ff0000}
+    }
+
+    /* --- ECG WAVE --- */
+    .anim-ecg-wrap { display:flex;flex-direction:column;align-items:center;gap:8px; }
+    .anim-ecg-screen{ width:220px;height:90px;background:#001000;border:2px solid #0a3;border-radius:6px;overflow:hidden;position:relative; }
+    .anim-ecg-wave  { position:absolute;top:0;left:0;width:200%;height:100%;animation:ecg-scroll 2.5s linear infinite; }
+    .anim-ecg-svg   { width:100%;height:100%; }
+    .anim-ecg-label { color:#0f0;font-family:monospace;font-size:.85rem; }
+
+    /* --- CNC ETCH --- */
+    .anim-cnc-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-cnc-bed  { width:140px;height:100px;background:#1a1a1a;border:2px solid #444;border-radius:4px;position:relative;overflow:hidden; }
+    .anim-cnc-head { position:absolute;top:20px;width:12px;height:40px;background:#888;border-radius:3px;animation:cnc-move 2s linear infinite alternate; }
+    @keyframes cnc-move { 0%{left:20px;top:20px} 100%{left:108px;top:60px} }
+    .anim-cnc-trail{ position:absolute;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(45deg,transparent 0,transparent 10px,rgba(0,153,255,.15) 10px,rgba(0,153,255,.15) 11px); }
+
+    /* --- FINGERPRINT --- */
+    .anim-fp-wrap { display:flex;flex-direction:column;align-items:center;gap:12px; }
+    .anim-fp-circle{ width:80px;height:80px;border-radius:50%;border:3px solid #0af;display:flex;align-items:center;justify-content:center;font-size:2.2rem;animation:fp-scan 2s ease-in-out infinite; }
+    @keyframes fp-scan { 0%,100%{border-color:#0af;box-shadow:0 0 8px #0af} 50%{border-color:#0f0;box-shadow:0 0 22px #0f0} }
+    .anim-fp-status{ font-family:monospace;font-size:.85rem;animation:fp-status-cycle 2s steps(1) infinite; }
+    @keyframes fp-status-cycle { 0%{color:#0af;} 50%{color:#0f0;} }
+
+    /* -- HOLOGRAM -- */
+    .anim-holo-wrap { display:flex;flex-direction:column;align-items:center;gap:10px; }
+    .anim-holo-obj  { font-size:2.8rem;animation:holo-spin 3s linear infinite;filter:drop-shadow(0 0 12px #00ccff); }
+    @keyframes holo-spin { 0%{transform:rotate(0) scale(1)} 50%{transform:rotate(180deg) scale(1.15)} 100%{transform:rotate(360deg) scale(1)} }
+    .anim-holo-pyramid{ width:0;height:0;border-left:40px solid transparent;border-right:40px solid transparent;border-top:60px solid rgba(0,204,255,.25);filter:drop-shadow(0 0 8px #00ccff); }
+
+    /* 404 state */
+    .detail-not-found { text-align:center;padding:4rem 1rem;color:var(--color-text-muted); }
+    .detail-not-found h2 { font-size:2rem;margin-bottom:1rem; }
+  </style>
+</head>
+<body>
+
+  <!-- ══ NAVIGATION ══════════════════════════════════════ -->
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine"><span class="footer-logo-name">STUD<span class="logo-accent">GINE</span></span></div>
+          <p>A student-focused resource platform helping engineering students worldwide discover affordable projects, tools, scholarships, and opportunities.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">⌥</a>
+            <a href="#" class="social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Popular Projects</h4>
+          <ul>
+            <li><a href="smart-led-mood-lamp.html">LED Mood Lamp</a></li>
+            <li><a href="digital-temperature-monitor.html">Temperature Monitor</a></li>
+            <li><a href="wifi-weather-station.html">Wi-Fi Weather Station</a></li>
+            <li><a href="../projects.html">All Projects →</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Submit a Project</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Sitemap</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <button id="scrollTop" aria-label="Scroll back to top">↑</button>
+  <script src="project-data.js"></script>
+  <script src="../js/main.js"></script>
+
+  <script>
+  (function(){
+    /* ── Helpers ─────────────────────────────────────────── */
+    function qs(sel){ return document.querySelector(sel); }
+    function getParam(name){
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    /* ── Render animation by type ────────────────────────── */
+    function buildAnim(anim, stage){
+      const animMap = {
+        'traffic': `
+          <div class="anim-traffic">
+            <div class="tl-housing">
+              <div class="tl-bulb red"></div>
+              <div class="tl-bulb amber"></div>
+              <div class="tl-bulb green"></div>
+            </div>
+          </div>`,
+        'led': `
+          <div class="anim-led-wrap">
+            <div class="anim-led-row">
+              <div class="anim-led-single green"></div>
+              <div class="anim-led-single red" style="animation-delay:.4s"></div>
+              <div class="anim-led-single blue" style="animation-delay:.8s"></div>
+            </div>
+            <span class="anim-stage-label">LED Array</span>
+          </div>`,
+        'lcd': `
+          <div class="anim-lcd-wrap">
+            <div class="anim-lcd-screen">
+              <div class="anim-lcd-line1">Studgine</div>
+              <div>Value: <span id="lcd-val">--</span> <span class="anim-lcd-cursor">█</span></div>
+            </div>
+          </div>`,
+        'servo': `
+          <div class="anim-servo-wrap">
+            <div class="anim-servo-body">
+              <div class="anim-servo-arm"></div>
+            </div>
+            <span class="anim-stage-label">Servo Motor</span>
+          </div>`,
+        'sensor': `
+          <div class="anim-sensor-wrap">
+            <div class="anim-sensor-bar-track"><div class="anim-sensor-bar-fill"></div></div>
+            <span class="anim-sensor-label">Sensor Reading ↑</span>
+          </div>`,
+        'wifi': `
+          <div class="anim-wifi-wrap">
+            <div class="anim-cloud-icon">☁️</div>
+            <div class="anim-packet"></div>
+            <div class="anim-wifi-arcs">
+              <div class="anim-wifi-arc"></div>
+              <div class="anim-wifi-arc"></div>
+              <div class="anim-wifi-arc"></div>
+              <div class="anim-wifi-dot"></div>
+            </div>
+            <span class="anim-stage-label">IoT → Cloud</span>
+          </div>`,
+        'camera': `
+          <div class="anim-camera-wrap">
+            <div class="anim-camera-body">
+              <div class="anim-camera-lens"></div>
+              <div class="anim-camera-flash"></div>
+            </div>
+            <div class="anim-bbox"></div>
+          </div>`,
+        'robot': `
+          <div class="anim-robot-wrap">
+            <div class="anim-robot-body">
+              <div class="anim-robot-eye l"></div>
+              <div class="anim-robot-eye r"></div>
+              <div class="anim-robot-mouth"></div>
+            </div>
+            <div class="anim-robot-wheels">
+              <div class="anim-robot-wheel"></div>
+              <div class="anim-robot-wheel" style="animation-delay:-.3s"></div>
+            </div>
+            <div class="anim-robot-track"></div>
+          </div>`,
+        'ml': `
+          <div class="anim-ml-wrap">
+            <div class="anim-ml-bars">
+              <div class="anim-ml-bar"></div>
+              <div class="anim-ml-bar"></div>
+              <div class="anim-ml-bar"></div>
+              <div class="anim-ml-bar"></div>
+            </div>
+            <span class="anim-ml-label">ML Confidence</span>
+          </div>`,
+        'oscilloscope': `
+          <div class="anim-osc-wrap">
+            <div class="anim-osc-screen">
+              <div class="anim-osc-grid"></div>
+              <div class="anim-osc-wave">
+                <svg class="anim-osc-svg" viewBox="0 0 440 100" preserveAspectRatio="none">
+                  <polyline fill="none" stroke="#00ff66" stroke-width="2.5"
+                    points="0,50 20,50 30,15 40,85 50,50 70,50 80,15 90,85 100,50 120,50 130,15 140,85 150,50 170,50 180,15 190,85 200,50 220,50 230,15 240,85 250,50 270,50 280,15 290,85 300,50 320,50 330,15 340,85 350,50 370,50 380,15 390,85 400,50 420,50 440,50"/>
+                </svg>
+              </div>
+            </div>
+            <span class="anim-stage-label">Live Waveform</span>
+          </div>`,
+        'solar': `
+          <div class="anim-solar-wrap">
+            <div class="anim-sun-icon">☀️</div>
+            <div class="anim-solar-panel"></div>
+            <span class="anim-stage-label">Auto-tracking Panel</span>
+          </div>`,
+        'alarm': `
+          <div class="anim-alarm-wrap">
+            <div class="anim-alarm-light"></div>
+            <span class="anim-stage-label">Alert Triggered</span>
+          </div>`,
+        'spectrum': `
+          <div class="anim-spectrum-wrap">
+            <div class="anim-spectrum-bar"></div>
+            <div class="anim-spectrum-bar"></div>
+            <div class="anim-spectrum-bar"></div>
+            <div class="anim-spectrum-bar"></div>
+            <div class="anim-spectrum-bar"></div>
+            <div class="anim-spectrum-bar"></div>
+            <div class="anim-spectrum-bar"></div>
+          </div>`,
+        'counter': `
+          <div class="anim-counter-wrap">
+            <div class="anim-counter-digits" id="anim-counter-val">0000</div>
+            <span class="anim-stage-label">Event Counter</span>
+          </div>`,
+        'motor': `
+          <div class="anim-motor-wrap">
+            <div class="anim-motor-wheel"></div>
+            <span class="anim-stage-label">Motor Control</span>
+          </div>`,
+        'piano': `
+          <div class="anim-piano-wrap">
+            <div class="anim-piano-keys">
+              <div class="anim-piano-white"></div>
+              <div class="anim-piano-white press" style="animation-delay:.3s"></div>
+              <div class="anim-piano-white"></div>
+              <div class="anim-piano-white press" style="animation-delay:.9s"></div>
+              <div class="anim-piano-white"></div>
+              <div class="anim-piano-white"></div>
+              <div class="anim-piano-white press" style="animation-delay:1.5s"></div>
+            </div>
+            <div class="anim-piano-note">♪</div>
+          </div>`,
+        'rfid': `
+          <div class="anim-rfid-wrap">
+            <div class="anim-rfid-reader"><div class="anim-rfid-icon">📡</div></div>
+            <div class="anim-rfid-beam"></div>
+            <div class="anim-rfid-card"></div>
+          </div>`,
+        'iot': `
+          <div class="anim-iot-wrap">
+            <div class="anim-iot-chip">ESP32<div class="anim-iot-ping"></div></div>
+            <div class="anim-iot-arrow">→</div>
+            <div class="anim-cloud-icon">🌐</div>
+          </div>`,
+        'lidar': `
+          <div class="anim-radar-wrap">
+            <div class="anim-radar-screen">
+              <div class="anim-radar-ring"></div>
+              <div class="anim-radar-ring"></div>
+              <div class="anim-radar-ring"></div>
+              <div class="anim-radar-sweep"></div>
+              <div class="anim-radar-dot"></div>
+            </div>
+            <span class="anim-stage-label">LiDAR / Radar Sweep</span>
+          </div>`,
+        'rgb': `
+          <div class="anim-rgb-wrap">
+            <div class="anim-rgb-bulb"></div>
+            <span class="anim-stage-label">RGB Color Cycle</span>
+          </div>`,
+        'ecg': `
+          <div class="anim-ecg-wrap">
+            <div class="anim-ecg-screen">
+              <div class="anim-ecg-wave">
+                <svg class="anim-ecg-svg" viewBox="0 0 440 90" preserveAspectRatio="none">
+                  <polyline fill="none" stroke="#00ff44" stroke-width="2"
+                    points="0,45 18,45 22,45 26,12 30,78 34,45 38,45 56,45 60,45 64,12 68,78 72,45 76,45 94,45 98,45 102,12 106,78 110,45 114,45 132,45 136,45 140,12 144,78 148,45 152,45 170,45 174,45 178,12 182,78 186,45 190,45 208,45 212,45 216,12 220,78 224,45 228,45 246,45 250,45 254,12 258,78 262,45 266,45 284,45 288,45 292,12 296,78 300,45 304,45 322,45 326,45 330,12 334,78 338,45 342,45 360,45 364,45 368,12 372,78 376,45 380,45 398,45 402,45 406,12 410,78 414,45 418,45 440,45"/>
+                </svg>
+              </div>
+            </div>
+            <span class="anim-ecg-label">ECG Heartbeat</span>
+          </div>`,
+        'cnc': `
+          <div class="anim-cnc-wrap">
+            <div class="anim-cnc-bed">
+              <div class="anim-cnc-trail"></div>
+              <div class="anim-cnc-head"></div>
+            </div>
+            <span class="anim-stage-label">CNC Toolpath</span>
+          </div>`,
+        'fingerprint': `
+          <div class="anim-fp-wrap">
+            <div class="anim-fp-circle">🫆</div>
+            <span class="anim-fp-status" id="fp-status-text">Scanning…</span>
+          </div>`,
+        'hologram': `
+          <div class="anim-holo-wrap">
+            <div class="anim-holo-obj">🌐</div>
+            <div class="anim-holo-pyramid"></div>
+          </div>`
+      };
+      stage.innerHTML = (animMap[anim] || animMap['led']) +
+        '\n<span class="anim-stage-label">Animated Visualization</span>';
+
+      /* Side effects for live-updating anims */
+      if(anim === 'counter'){
+        let count = 0;
+        setInterval(function(){ qs('#anim-counter-val').textContent = String(++count).padStart(4,'0'); }, 800);
+      }
+      if(anim === 'lcd'){
+        const vals = ['24.5°C','72%','1024','0.87V','HIGH','3.14'];
+        let i = 0;
+        setInterval(function(){ const el = qs('#lcd-val'); if(el) el.textContent = vals[i++ % vals.length]; }, 900);
+      }
+      if(anim === 'fingerprint'){
+        const states = ['Scanning…','Match ✓','Access Granted'];
+        let i = 0;
+        setInterval(function(){ const el = qs('#fp-status-text'); if(el) el.textContent = states[i++ % states.length]; }, 1000);
+      }
+    }
+
+    /* ── Render a project ────────────────────────────────── */
+    function render(p){
+      /* HEAD */
+      document.title = p.title + ' | Studgine';
+      qs('#page-desc').content = p.tagline;
+      /* Hero */
+      qs('#hero-eyebrow').textContent = p.difficulty + ' Project';
+      qs('#hero-title').textContent = p.title;
+      qs('#hero-tagline').textContent = p.tagline;
+      qs('#breadcrumb-title').textContent = p.title;
+      /* Animation */
+      buildAnim(p.anim, qs('#anim-stage'));
+      /* YouTube */
+      qs('#yt-link').href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(p.yt);
+      /* Intro */
+      qs('#intro-content').innerHTML = p.intro.map(function(t){ return '<p>' + t + '</p>'; }).join('');
+      /* Components */
+      qs('#components-list').innerHTML = p.parts.map(function(c){
+        return '<li><span class="comp-icon" aria-hidden="true">' + c.icon + '</span>' +
+          '<div><span class="comp-name">' + c.name + '</span>' +
+          '<span class="comp-note"> — ' + c.note + '</span></div></li>';
+      }).join('');
+      /* Steps */
+      qs('#steps-list').innerHTML = p.steps.map(function(s, i){
+        return '<li class="step-item"><div class="step-number" aria-hidden="true">' + (i+1) + '</div>' +
+          '<div class="step-content"><h4>' + s.title + '</h4><p>' + s.desc + '</p></div></li>';
+      }).join('');
+      /* Apps */
+      qs('#apps-grid').innerHTML = p.apps.map(function(a){ return '<span class="app-tag">' + a + '</span>'; }).join('');
+      /* Quick facts */
+      var diffBadge = {Beginner:'badge-green',Intermediate:'badge-orange',Advanced:'badge-red'}[p.difficulty] || 'badge-blue';
+      qs('#quick-facts').innerHTML =
+        fact('Difficulty','<span class="badge ' + diffBadge + '">' + p.difficulty + '</span>') +
+        fact('Budget', p.budget + ' USD') +
+        fact('Time', p.time) +
+        fact('Platform', p.platform) +
+        fact('Language', p.lang);
+      /* Skills */
+      qs('#skills-list').innerHTML = p.skills.map(function(s){ return '<span class="skill-tag">' + s + '</span>'; }).join('');
+      /* Libraries */
+      if(p.libs && p.libs.length){
+        qs('#libs-list').innerHTML = p.libs.map(function(l){
+          return '<span class="skill-tag" style="background:#d1fae5;color:#065f46;">' + l + '</span>';
+        }).join('');
+      } else {
+        qs('#libs-card').style.display = 'none';
+      }
+      /* Next projects */
+      if(p.next && p.next.length){
+        qs('#next-list').innerHTML = p.next.map(function(nid){
+          var np = window.PROJECT_DATA.find(function(x){ return x.id === nid; });
+          if(!np) return '';
+          var emoji = {Beginner:'🔰',Intermediate:'⚙️',Advanced:'🚀'}[np.difficulty] || '🔬';
+          return '<a href="project-detail.html?id=' + nid + '" class="btn btn-ghost btn-sm" ' +
+            'style="justify-content:flex-start;border:1px solid var(--color-border);">' +
+            emoji + ' ' + np.title + '</a>';
+        }).join('');
+      } else {
+        qs('#next-card').style.display = 'none';
+      }
+    }
+
+    function fact(label, value){
+      return '<div class="fact-row"><span class="fact-label">' + label + '</span>' +
+             '<span class="fact-value">' + value + '</span></div>';
+    }
+
+    /* ── Bootstrap ───────────────────────────────────────── */
+    var id = getParam('id');
+    if(id && window.PROJECT_DATA){
+      var project = window.PROJECT_DATA.find(function(p){ return p.id === id; });
+      if(project){
+        render(project);
+      } else {
+        qs('#hero-title').textContent = 'Project Not Found';
+        qs('#detail-layout').innerHTML =
+          '<div class="detail-not-found"><h2>404 – Project Not Found</h2>' +
+          '<p>The project ID <code>' + id + '</code> does not exist.</p>' +
+          '<a href="../projects.html" class="btn btn-primary">← Browse All Projects</a></div>';
+      }
+    } else {
+      window.location.href = '../projects.html';
+    }
+  })();
+  </script>
+</body>
+</html>

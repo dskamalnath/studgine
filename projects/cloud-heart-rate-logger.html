@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloud Heart Rate Logger – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a cloud heart rate logger with MAX30100 (or MAX30102) PPG sensor on ESP32. Upload BPM readings to Firebase Realtime Database and visualise live on a web dashboard." />
+  <meta name="keywords" content="cloud heart rate logger ESP32, MAX30100 heart rate Firebase, IoT heart rate monitor ESP32, BPM cloud upload ThingSpeak, MAX30102 pulse oximeter ESP32" />
+  <link rel="canonical" href="cloud-heart-rate-logger.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#0a0010 0%,#1a0020 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;overflow:hidden;}
+    .ecg-canvas{width:260px;height:80px;background:#0a000f;border-radius:6px;border:1px solid #3a0050;overflow:hidden;position:relative;}
+    .ecg-line{position:absolute;bottom:0;left:0;width:100%;height:100%;}
+    .bpm-big{font-size:42px;font-weight:700;font-family:monospace;color:#ff3060;text-shadow:0 0 12px rgba(255,30,90,0.6);}
+    .spo2-chip{background:#0a0a20;border:1px solid #3030a0;border-radius:4px;padding:4px 10px;font-family:monospace;font-size:12px;color:#6080ff;}
+    .upload-row{display:flex;gap:8px;font-family:monospace;font-size:10px;color:#804080;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Cloud Heart Rate Logger</h1>
+      <p>A MAX30102 PPG sensor on an ESP32 reads BPM and SpO₂ every 5 seconds and uploads readings to Firebase Realtime Database. View a live BPM graph on a web dashboard from anywhere in the world.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Cloud Heart Rate Logger</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+                  <div class="ecg-canvas"><canvas id="ppgCanvas" width="260" height="80"></canvas></div>
+                  <div style="display:flex;gap:20px;align-items:center;">
+                    <div style="text-align:center;"><div class="bpm-big" id="bpmNum">72</div><div style="font-family:monospace;font-size:10px;color:#804060;">BPM ❤️</div></div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      <div class="spo2-chip">SpO₂: <span id="spo2Num">98</span>%</div>
+                      <div style="font-family:monospace;font-size:9px;color:#6040a0;" id="cloudStatus">☁️ uploading...</div>
+                      <div style="font-family:monospace;font-size:9px;color:#404080;" id="lastUpload">last: 5s ago</div>
+                    </div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=ESP32+MAX30102+heart+rate+SpO2+Firebase+cloud+logger" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Wearable health monitoring is one of the fastest-growing areas of IoT. This project puts all the key fundamentals together: a photoplethysmography (PPG) sensor that detects blood volume changes in the fingertip through red and infrared light absorption, an ESP32 that processes the raw AC signal to extract beat-to-beat intervals, and a Firebase backend that stores the time-series data and serves it to a web dashboard.</p>
+              <p>The MAX30102 replaces the older MAX30100 (which required a custom library workaround for 3.3 V operation) and is a drop-in upgrade — built-in 3.3 V regulator and cleaner I2C implementation. This project teaches photonics-based biometrics, real-time cloud database operations, and basic signal processing without needing an oscilloscope or DSP hardware.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">❤️</span><div><span class="comp-name">MAX30102 PPG Sensor Module</span><span class="comp-note"> — I2C (@ 0x57); red (660 nm) + IR (880 nm) LEDs; built-in temperature sensor</span></div></li>
+                <li><span class="comp-icon">📡</span><div><span class="comp-name">ESP32 Dev Board</span><span class="comp-note"> — Dual-core, Wi-Fi + BT; runs signal processing + Firebase HTTP calls concurrently</span></div></li>
+                <li><span class="comp-icon">🖥️</span><div><span class="comp-name">0.96″ SSD1306 OLED</span><span class="comp-note"> — Local BPM and SpO₂ display without needing a phone or laptop nearby</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">LiPo 1000 mAh + TP4056</span><span class="comp-note"> — Wearable battery pack; USB-C charging; 6–8 h runtime</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>MAX30102 PPG Signal Processing</h4><p>The chip outputs raw 18-bit ADC values for Red and IR channels at up to 3200 Hz. Use the SparkFun MAX3010x library's built-in <code>getHeartRate()</code> and <code>getSpO2()</code> functions, which implement a PAN-TOMPKINS-style peak detector and the standard Beer-Lambert SpO₂ formula. Ensure finger is placed flat — even slight motion causes artefacts. Validate BPM is in human physiological range (40–200 BPM) before accepting.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Firebase Realtime Database Upload</h4><p>Use <code>FirebaseESP32</code> library. Authenticate with database secret or Google service account. Store readings at <code>/heartrate/&lt;unix_timestamp&gt;</code>: <code>{bpm: 72, spo2: 98, temp: 36.5}</code>. Set <code>.write</code> rule to authenticated only. Read back last 60 readings via <code>orderByKey().limitToLast(60)</code> for graph rendering. Firebase REST API works directly over HTTPS without SDK if you prefer lightweight <code>WiFiClientSecure</code>.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Web Dashboard (HTML + Firebase JS SDK)</h4><p>Create a single-page HTML file hosted on Firebase Hosting or GitHub Pages. Use Firebase JS SDK to subscribe to real-time updates: <code>ref.on("value", snap => chart.update(snap.val()))</code>. Chart.js renders the live BPM line graph, updating as new data arrives. Add a threshold line at 100 BPM (tachycardia alert). The entire dashboard is one 50-line HTML file — no backend server required.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Abnormality Detection &amp; Alert</h4><p>On-device: if BPM > 100 or SpO₂ < 94% for 3 consecutive readings, trigger a local alarm (OLED warning + buzzer) AND send a Telegram bot alert via HTTP POST. Implement running average over 5 readings to prevent single noisy readings triggering false alarms. Add a "calibration hold" — ignore first 15 seconds after finger placement while the AGC (auto-gain control) settles.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include "MAX30105.h"
+#include "heartRate.h"
+#include &lt;FirebaseESP32.h&gt;
+
+MAX30105 sensor; FirebaseData fbData;
+FirebaseConfig fbConfig; FirebaseAuth fbAuth;
+
+const byte RATE_SIZE = 4;
+byte rates[RATE_SIZE]; byte rateSpot = 0;
+long lastBeat = 0; float beatsPerMinute; int beatAvg;
+
+void setup() {
+  sensor.begin(Wire, I2C_SPEED_FAST);
+  sensor.setup();
+  fbConfig.database_url = "https://your-project.firebaseio.com/";
+  fbConfig.signer.tokens.legacy_token = "YOUR_SECRET";
+  Firebase.begin(&fbConfig, &fbAuth);
+}
+
+void loop() {
+  long irValue = sensor.getIR();
+  if(checkForBeat(irValue)) {
+    long delta = millis() - lastBeat; lastBeat = millis();
+    beatsPerMinute = 60 / (delta / 1000.0);
+    if(beatsPerMinute > 20 && beatsPerMinute < 255) {
+      rates[rateSpot++ % RATE_SIZE] = (byte)beatsPerMinute;
+      beatAvg = 0; for(byte x : rates) beatAvg += x;
+      beatAvg /= RATE_SIZE;
+    }
+  }
+  // Upload to Firebase every 5s
+  static unsigned long lastUpload = 0;
+  if(millis() - lastUpload > 5000) {
+    Firebase.setInt(fbData, "/heartrate/bpm", beatAvg);
+    lastUpload = millis();
+  }
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">❤️ Remote Patient Monitor</span>
+                <span class="app-tag">🏃 Sports Performance Track</span>
+                <span class="app-tag">🌡️ Fever + SpO₂ Watch</span>
+                <span class="app-tag">📊 Firebase Dashboard Chart</span>
+                <span class="app-tag">🔔 Tachycardia Alert Telegram</span>
+                <span class="app-tag">📱 Blynk App Integration</span>
+                <span class="app-tag">😴 Sleep HR Trend Analysis</span>
+                <span class="app-tag">🏥 Elderly Care Monitor</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $16 – $30</li>
+                <li><strong>Build Time:</strong> 4 – 6 hours</li>
+                <li><strong>Platform:</strong> ESP32</li>
+                <li><strong>Upload Rate:</strong> Every 5 s to Firebase</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>PPG optical heart rate sensing</li>
+                <li>SpO₂ Beer-Lambert calculation</li>
+                <li>Firebase Realtime Database</li>
+                <li>ESP32 dual-core tasking</li>
+                <li>Real-time web dashboard</li>
+                <li>Wearable battery design</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">SparkFun MAX3010x</span><span class="lib-desc"> — MAX30102 PPG sensor driver + algorithms</span></li>
+                <li><span class="lib-name">FirebaseESP32</span><span class="lib-desc"> — Mobizt; Firebase database + auth</span></li>
+                <li><span class="lib-name">Adafruit SSD1306</span><span class="lib-desc"> — OLED local display</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="ecg-monitor-ad8232.html">ECG Monitor (AD8232)</a></li>
+                <li><a href="wrist-spo2-heart-rate-band.html">Wrist SpO₂ Band</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const canvas = document.getElementById('ppgCanvas');
+    const ctx = canvas.getContext('2d');
+    const pts = [];
+    let t = 0, bpm = 72, uploadTimer = 0;
+    for(let i=0;i<260;i++) pts.push(40);
+    setInterval(() => {
+      t += 0.15;
+      // ECG-like PPG shape
+      let v = 40 - 8 * Math.exp(-Math.pow((t % (60/bpm * 5) - 1) * 4, 2)) * 25;
+      if((t % (Math.PI * 2)) < 0.3) v = 40 - 50;
+      else if((t % (Math.PI * 2)) < 0.5) v = 40 + 15;
+      else v = 40 + 20 * Math.sin(t * bpm / 60) * Math.exp(-0.3 * (t % 3));
+      pts.shift(); pts.push(v + (Math.random()-0.5)*3);
+      ctx.clearRect(0,0,260,80);
+      ctx.strokeStyle = '#ff3060'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      pts.forEach((p,i) => i===0 ? ctx.moveTo(i,p) : ctx.lineTo(i,p));
+      ctx.stroke();
+      bpm = 70 + Math.round(Math.sin(t*0.04)*8);
+      document.getElementById('bpmNum').textContent = bpm;
+      document.getElementById('spo2Num').textContent = 97 + Math.round(Math.random()*2);
+      uploadTimer++;
+      if(uploadTimer % 25 === 0) { document.getElementById('cloudStatus').textContent = '☁️ uploaded ✓'; document.getElementById('lastUpload').textContent = 'last: just now'; }
+      else if(uploadTimer % 25 > 3) { document.getElementById('cloudStatus').textContent = '☁️ next in ' + (5 - Math.floor((uploadTimer % 25)*0.2)) + 's'; }
+    }, 50);
+  </script>
+</body>
+</html>

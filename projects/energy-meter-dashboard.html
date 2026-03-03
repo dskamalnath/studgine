@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Energy Meter Dashboard – Studgine</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage {
+      background: linear-gradient(160deg, #0d1520 0%, #1a2030 100%);
+      border-radius: 12px;
+      height: 230px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+    /* Gauge circles */
+    .gauge-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .gauge-ring {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      position: relative;
+      display: flex; align-items:center; justify-content:center;
+    }
+    .gauge-ring svg { position:absolute; inset:0; transform:rotate(-90deg); }
+    .gauge-ring circle.bg { fill:none; stroke:rgba(255,255,255,0.1); stroke-width:6; }
+    .gauge-ring circle.fg { fill:none; stroke-width:6; stroke-linecap:round; transition: stroke-dashoffset 0.7s ease; }
+    .gauge-ring .val {
+      font-size: 0.78rem; font-weight: 700; color: #fff;
+      font-family: monospace; position: relative; z-index: 1;
+    }
+    .gauge-label { font-size: 0.6rem; color: #a0b4cc; text-align:center; }
+    /* OLED display */
+    .oled {
+      background: #000;
+      border: 2px solid #2a9d8f;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: monospace;
+      font-size: 0.67rem;
+      color: #2a9d8f;
+      line-height: 2;
+      min-width: 130px;
+    }
+    .oled .oled-title { color: #40e0d0; font-weight:700; }
+    /* status badge */
+    .pzem-badge {
+      position: absolute;
+      top: 10px; right: 14px;
+      background: rgba(42,157,143,0.18);
+      border: 1px solid #2a9d8f;
+      border-radius: 20px;
+      padding: 3px 9px;
+      font-size: 0.6rem;
+      color: #40e0d0;
+    }
+    /* AC waveform */
+    .wave-box {
+      position: absolute;
+      bottom: 10px; left: 12px;
+      width: 100px; height: 28px;
+    }
+    .wave-box svg path { transition: d 0.3s; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="navbar container">
+      <a href="../index.html" class="nav-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="16" fill="#FF6B35"/>
+          <path d="M8 22 L16 10 L24 22" stroke="white" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+          <circle cx="16" cy="10" r="2" fill="white"/>
+        </svg>
+        <span>Studgine</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../projects.html" class="active">Projects</a></li>
+        <li><a href="../resources.html">Resources</a></li>
+        <li><a href="../about.html">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="hero-eyebrow">🟡 Intermediate Project</p>
+      <h1>Energy Meter Dashboard</h1>
+      <p>Use a PZEM-004T module with an ESP32 to measure AC voltage, current, power, and energy then stream data to an OLED and cloud dashboard.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <nav class="breadcrumb">
+      <a href="../projects.html">← Back to Projects</a>
+      <span>/</span>
+      <span>Energy Meter Dashboard</span>
+    </nav>
+
+    <div class="detail-layout">
+      <div class="detail-main">
+
+        <div class="anim-stage" id="emStage">
+          <div class="pzem-badge">PZEM-004T v3</div>
+          <!-- Gauges -->
+          <div class="gauge-wrap">
+            <div class="gauge-ring">
+              <svg viewBox="0 0 70 70"><circle class="bg" cx="35" cy="35" r="29"/><circle class="fg" id="gV" cx="35" cy="35" r="29" stroke="#f0c040" stroke-dasharray="182" stroke-dashoffset="36"/></svg>
+              <span class="val" id="tV">220V</span>
+            </div>
+            <div class="gauge-label">Voltage</div>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge-ring">
+              <svg viewBox="0 0 70 70"><circle class="bg" cx="35" cy="35" r="29"/><circle class="fg" id="gA" cx="35" cy="35" r="29" stroke="#2a9d8f" stroke-dasharray="182" stroke-dashoffset="120"/></svg>
+              <span class="val" id="tA">1.8A</span>
+            </div>
+            <div class="gauge-label">Current</div>
+          </div>
+          <div class="gauge-wrap">
+            <div class="gauge-ring">
+              <svg viewBox="0 0 70 70"><circle class="bg" cx="35" cy="35" r="29"/><circle class="fg" id="gW" cx="35" cy="35" r="29" stroke="#e76f51" stroke-dasharray="182" stroke-dashoffset="100"/></svg>
+              <span class="val" id="tW">396W</span>
+            </div>
+            <div class="gauge-label">Power</div>
+          </div>
+          <!-- OLED display -->
+          <div class="oled" id="oledDisplay">
+            <div class="oled-title">ENERGY METER</div>
+            <div id="oV">V: 220.3 V</div>
+            <div id="oA">I: 1.80 A</div>
+            <div id="oE">E: 0.42 kWh</div>
+          </div>
+          <div class="wave-box">
+            <svg viewBox="0 0 100 28" width="100" height="28">
+              <path id="waveAC" d="M0,14 C5,14 8,2 15,2 C22,2 25,26 32,26 C39,26 42,2 49,2 C56,2 59,26 66,26 C73,26 76,2 83,2 C90,2 93,26 100,26" stroke="#f0c040" fill="none" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+        <p class="anim-stage-label">Live simulation — PZEM-004T readings cycling through household load scenarios</p>
+
+        <div class="video-links">
+          <strong>🎬 Video References:</strong>
+          <a href="https://www.youtube.com/results?search_query=PZEM-004T+ESP32+energy+meter+dashboard" target="_blank" rel="noopener">PZEM-004T ESP32 Tutorial</a>
+          <a href="https://www.youtube.com/results?search_query=PZEM-004T+Arduino+AC+power+monitor" target="_blank" rel="noopener">AC Power Monitoring</a>
+        </div>
+
+        <h2>What You'll Build</h2>
+        <p>A home energy meter that measures real AC power parameters using the PZEM-004T v3 module, which contains a built-in current transformer (CT) and shunt resistor. The ESP32 communicates with the PZEM over software serial using the Modbus RTU protocol. Readings — voltage, current, active power, power factor, frequency, and cumulative energy in kWh — are displayed on a local SSD1306 OLED. The ESP32 also transmits data to ThingSpeak or Blynk every 15 seconds, creating time-series graphs for energy audit and anomaly detection.</p>
+
+        <h2>Components Required</h2>
+        <ul class="component-list">
+          <li><span>ESP32 Dev Board</span><span>×1</span></li>
+          <li><span>PZEM-004T v3 Module (AC 80–260 V)</span><span>×1</span></li>
+          <li><span>SSD1306 OLED 0.96″ (I2C)</span><span>×1</span></li>
+          <li><span>10 A AC-to-DC 5 V Supply Module</span><span>×1</span></li>
+          <li><span>2-Wire AC Mains Extension Cord</span><span>×1</span></li>
+          <li><span>Plastic Project Enclosure</span><span>×1</span></li>
+          <li><span>10 kΩ Resistor (UART voltage divider)</span><span>×2</span></li>
+        </ul>
+
+        <h2>How It Works</h2>
+        <div class="steps-grid">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h3>Modbus Communication</h3>
+            <p>PZEM-004T uses UART at 9600 baud with a Modbus RTU frame. The <code>PZEM-004T-v30</code> library handles register reads. A 10 kΩ divider on PZEM TX protects the ESP32 3.3 V pin.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h3>Read All Parameters</h3>
+            <p>Call <code>pzem.voltage()</code>, <code>pzem.current()</code>, <code>pzem.power()</code>, <code>pzem.energy()</code>, <code>pzem.pf()</code>, and <code>pzem.frequency()</code> in a 1-second loop. Check for <code>isnan()</code> to detect sensor disconnection.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h3>Display &amp; Alert</h3>
+            <p>Render a multi-page OLED display cycling every 3 seconds. Trigger a buzzer when power exceeds a user-set threshold, helping detect abnormal consumption spikes immediately.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <h3>Cloud Dashboard</h3>
+            <p>Use <code>ThingSpeak.writeFields()</code> to upload 6 channels. Build a MATLAB Visualisation widget to compute daily cost in USD/MYR and alert monthly budget overruns via email.</p>
+          </div>
+        </div>
+
+        <h2>Real-World Applications</h2>
+        <div class="applications-grid">
+          <div class="app-card">🏠<br>Home Energy Audit</div>
+          <div class="app-card">⚡<br>Appliance Profiling</div>
+          <div class="app-card">☀️<br>Solar Monitoring</div>
+          <div class="app-card">🏭<br>Factory Load Mgmt</div>
+          <div class="app-card">💡<br>Smart Metering</div>
+          <div class="app-card">📊<br>Billing Analytics</div>
+        </div>
+      </div>
+
+      <aside class="detail-sidebar">
+        <div class="sidebar-card quick-facts">
+          <h3>Quick Facts</h3>
+          <dl>
+            <dt>Difficulty</dt><dd>🟡 Intermediate</dd>
+            <dt>Build Time</dt><dd>4–5 hours</dd>
+            <dt>Budget</dt><dd>$15 – $30</dd>
+            <dt>MCU</dt><dd>ESP32</dd>
+            <dt>Protocol</dt><dd>UART Modbus RTU</dd>
+          </dl>
+        </div>
+        <div class="sidebar-card">
+          <h3>Skills You'll Learn</h3>
+          <ul>
+            <li>Modbus RTU communication</li>
+            <li>AC power measurement theory</li>
+            <li>ThingSpeak data channels</li>
+            <li>OLED multi-page display</li>
+            <li>Mains safety practices</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Libraries Needed</h3>
+          <ul>
+            <li><strong>PZEM-004T-v30</strong> – sensor driver</li>
+            <li><strong>Adafruit_SSD1306</strong> – OLED</li>
+            <li><strong>ThingSpeak</strong> – cloud</li>
+          </ul>
+        </div>
+        <div class="sidebar-card">
+          <h3>Try Next</h3>
+          <ul>
+            <li><a href="solar-charge-controller.html">Solar Charge Controller</a></li>
+            <li><a href="wifi-weather-station.html">Wi-Fi Weather Station</a></li>
+          </ul>
+        </div>
+        <a href="../projects.html" class="btn btn-secondary back-btn">← All Projects</a>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer-bottom">
+    <div class="container">
+      <p>© 2025 Studgine. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script>
+    const scenarios = [
+      { v:220.3, a:1.80, w:396, e:0.42 },
+      { v:218.7, a:3.50, w:766, e:0.43 },
+      { v:222.1, a:5.90, w:1308,e:0.44 },
+      { v:219.8, a:0.42, w:92,  e:0.44 },
+      { v:221.4, a:8.20, w:1817,e:0.46 },
+    ];
+    let si = 0;
+    const R = 29, CIRC = 2 * Math.PI * R;
+
+    function pct(val, mx) { return Math.round(CIRC * (1 - val/mx)); }
+
+    function update(sc) {
+      document.getElementById('gV').style.strokeDashoffset = pct(sc.v, 250);
+      document.getElementById('gA').style.strokeDashoffset = pct(sc.a, 15);
+      document.getElementById('gW').style.strokeDashoffset = pct(sc.w, 3000);
+      document.getElementById('tV').textContent = Math.round(sc.v) + 'V';
+      document.getElementById('tA').textContent = sc.a.toFixed(1) + 'A';
+      document.getElementById('tW').textContent = Math.round(sc.w) + 'W';
+      document.getElementById('oV').textContent = 'V: ' + sc.v.toFixed(1) + ' V';
+      document.getElementById('oA').textContent = 'I: ' + sc.a.toFixed(2) + ' A';
+      document.getElementById('oE').textContent = 'E: ' + sc.e.toFixed(2) + ' kWh';
+    }
+    setInterval(() => {
+      si = (si + 1) % scenarios.length;
+      update(scenarios[si]);
+    }, 2500);
+    update(scenarios[0]);
+  </script>
+</body>
+</html>

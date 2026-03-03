@@ -1,0 +1,285 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire-Fighting Robot – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a flame-sensor guided wheeled robot that autonomously locates and extinguishes fires with a small fan. Arduino robotics project, $20–$40 budget." />
+  <meta name="keywords" content="fire fighting robot, Arduino robot, flame sensor, motor control, autonomous robot, robot project" />
+  <link rel="canonical" href="fire-fighting-robot.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#100808 0%,#2a1010 100%);border-radius:12px;padding:24px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;position:relative;overflow:hidden;}
+    .robot-body{width:70px;height:50px;background:#2a2a5a;border-radius:8px;border:2px solid #5a5aaa;position:relative;transition:transform 0.6s ease,left 0.6s ease;display:flex;align-items:center;justify-content:center;}
+    .robot-eye{width:8px;height:8px;border-radius:50%;background:#1e90ff;box-shadow:0 0 6px #1e90ff;margin:2px;}
+    .robot-wheel{width:12px;height:12px;border-radius:50%;background:#888;border:2px solid #555;position:absolute;bottom:-8px;}
+    .robot-wheel.l{left:8px;}
+    .robot-wheel.r{right:8px;}
+    .fan-anim{font-size:18px;position:absolute;top:-14px;animation:fanSpin 0.2s linear infinite;display:none;}
+    @keyframes fanSpin{to{transform:rotate(360deg)}}
+    .flame{font-size:32px;position:absolute;right:30px;bottom:20px;animation:flicker 0.3s alternate infinite;}
+    @keyframes flicker{0%{transform:scale(1) rotate(-3deg)}100%{transform:scale(1.2) rotate(3deg)}}
+    .robot-wrap{position:relative;width:300px;height:80px;display:flex;align-items:center;}
+    .track{width:100%;height:3px;background:#333;position:absolute;bottom:10px;}
+    .robot-on-track{position:absolute;bottom:12px;transition:left 1s ease;}
+    .status-strip{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+    .st-badge{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 12px;font-family:monospace;font-size:12px;color:#f5a623;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Fire-Fighting Robot</h1>
+      <p>Flame sensors guide a wheeled robot autonomously toward a fire source where a small fan extinguishes it — combining motor control, sensor fusion, and priority logic.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Fire-Fighting Robot</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div class="robot-wrap">
+                  <div class="track"></div>
+                  <div class="robot-on-track" id="robotEl" style="left:10px;">
+                    <div class="robot-body">
+                      <div class="robot-eye"></div><div class="robot-eye"></div>
+                      <div class="fan-anim" id="fanEl">🌀</div>
+                      <div class="robot-wheel l"></div>
+                      <div class="robot-wheel r"></div>
+                    </div>
+                  </div>
+                  <div class="flame" id="flameEl">🔥</div>
+                </div>
+                <div class="status-strip">
+                  <div class="st-badge" id="flameL">FL Sensor: 980</div>
+                  <div class="st-badge" id="flameC">FC Sensor: 850</div>
+                  <div class="st-badge" id="flameR">FR Sensor: 920</div>
+                  <div class="st-badge" id="actionBadge">Action: Searching</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+fire+fighting+robot+flame+sensor+L298N" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>The Fire-Fighting Robot autonomously searches for flame sources and deploys a fan to extinguish them. Three IR flame sensors (left, centre, right) detect 760–1100 nm infrared light emitted by fire. The robot's L298N motor driver steers toward whichever sensor reports the highest IR intensity — a simple but effective heat-seeking algorithm.</p>
+              <p>When the centre sensor detects close proximity (&lt;20 cm), the robot stops and activates a DC fan motor to blow out the flame. You'll learn differential drive kinematics, proportional steering, sensor-priority arbitration, and real-time actuator switching.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎛️</span><div><span class="comp-name">Arduino Uno</span><span class="comp-note"> — Main controller</span></div></li>
+                <li><span class="comp-icon">🔥</span><div><span class="comp-name">IR Flame Sensors ×3</span><span class="comp-note"> — Left, centre, right (analog output)</span></div></li>
+                <li><span class="comp-icon">⚙️</span><div><span class="comp-name">L298N Dual H-Bridge Motor Driver</span><span class="comp-note"> — Controls 2 DC motors</span></div></li>
+                <li><span class="comp-icon">🚗</span><div><span class="comp-name">DC Gear Motors ×2 + Wheels</span><span class="comp-note"> — Differential drive chassis</span></div></li>
+                <li><span class="comp-icon">💨</span><div><span class="comp-name">5 V DC Fan (or pump)</span><span class="comp-note"> — Fire extinguisher mechanism</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">7.4 V Li-Po Battery (2S)</span><span class="comp-note"> — Robot power supply</span></div></li>
+                <li><span class="comp-icon">🤖</span><div><span class="comp-name">2WD Robot Chassis Kit</span><span class="comp-note"> — Acrylic or aluminium frame</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Flame Sensor Reading</h4><p>Analog flame sensors return ~1023 in darkness and drop toward 0 when detecting fire. Read all three sensors (A0, A1, A2) and detect fire if any reading &lt; threshold (e.g., 300). The sensor with the lowest reading points toward the flame source.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Steering Algorithm</h4><p>If Left &lt; Right and Left &lt; Centre: turn left. If Right &lt; Left and Right &lt; Centre: turn right. If Centre has lowest value: go forward. If all three sensors above threshold: spin slowly to search. This is a simple priority arbitration pattern.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Extinguish Phase</h4><p>When the centre sensor drops below EXTINGUISH_THRESHOLD (≈100) the robot stops all motors and fires the fan relay for 3 seconds. After extinguishing, back up 10 cm and resume searching to check if fire is out.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Motor Control with L298N</h4><p>Set direction via IN1/IN2 (left motor) and IN3/IN4 (right motor). Speed via PWM on ENA/ENB. Use analogWrite(ENA, 180) for forward, lower values for turns. Short the motor enable jumpers if fixed full speed is preferred.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#define FL  A0  // Left flame sensor
+#define FC  A1  // Centre flame sensor
+#define FR  A2  // Right flame sensor
+#define FAN_PIN  8
+#define THRESHOLD 300
+#define EXTINGUISH 100
+
+void loop() {
+  int l = analogRead(FL);
+  int c = analogRead(FC);
+  int r = analogRead(FR);
+
+  if (c &lt; EXTINGUISH) {
+    stopMotors();
+    digitalWrite(FAN_PIN, HIGH);
+    delay(3000);
+    digitalWrite(FAN_PIN, LOW);
+    reverse(500); // back up
+    return;
+  }
+
+  if (l &lt; THRESHOLD || c &lt; THRESHOLD || r &lt; THRESHOLD) {
+    if(l &lt; r &amp;&amp; l &lt; c)      turnLeft(150);
+    else if(r &lt; l &amp;&amp; r &lt; c)  turnRight(150);
+    else                     moveForward(180);
+  } else {
+    spinSearch(100); // rotate to find fire
+  }
+}
+
+void moveForward(int spd) {
+  analogWrite(ENA,spd); analogWrite(ENB,spd);
+  digitalWrite(IN1,HIGH); digitalWrite(IN2,LOW);
+  digitalWrite(IN3,HIGH); digitalWrite(IN4,LOW);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🏭 Industrial Fire Patrol</span>
+                <span class="app-tag">🏠 Home Safety Demo</span>
+                <span class="app-tag">💧 Water Pump Upgrade</span>
+                <span class="app-tag">🗺️ Maze Navigation</span>
+                <span class="app-tag">📡 Bluetooth Override</span>
+                <span class="app-tag">📸 Camera-Based Detection</span>
+                <span class="app-tag">🔔 SMS Alert on Detection</span>
+                <span class="app-tag">🤖 Swarm Fire Patrol</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $20 – $40</li>
+                <li><strong>Build Time:</strong> 5 – 8 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno + L298N</li>
+                <li><strong>Drive:</strong> 2-wheel differential</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>Differential drive kinematics</li>
+                <li>IR flame sensor reading</li>
+                <li>Priority-based steering logic</li>
+                <li>H-bridge PWM motor control</li>
+                <li>Timed actuator sequencing</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">No external libraries</span><span class="lib-desc"> — Pure Arduino GPIO &amp; analog read</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="obstacle-avoidance-robot.html">Obstacle Avoidance Robot</a></li>
+                <li><a href="fire-detector-alarm.html">Fire Detector Alarm</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let pos = 10; let approaching = true;
+    const robot = document.getElementById('robotEl');
+    const flame = document.getElementById('flameEl');
+    const fan   = document.getElementById('fanEl');
+    setInterval(() => {
+      if (approaching) {
+        pos = Math.min(pos + 12, 210);
+        if (pos >= 210) { approaching = false; fan.style.display='block'; setTimeout(()=>{fan.style.display='none';flame.textContent='💨';setTimeout(()=>{flame.textContent='🔥';pos=10;approaching=true;},1500);},2000); }
+      }
+      robot.style.left = pos + 'px';
+      const dist = 240 - pos;
+      const c = Math.max(50, 300 - Math.floor((240-pos)*1.2));
+      document.getElementById('flameC').textContent = 'FC Sensor: ' + c;
+      document.getElementById('flameL').textContent = 'FL Sensor: ' + (c+80);
+      document.getElementById('flameR').textContent = 'FR Sensor: ' + (c+60);
+      document.getElementById('actionBadge').textContent = c < 100 ? 'Action: EXTINGUISH' : c < 300 ? 'Action: Forward' : 'Action: Searching';
+    }, 500);
+  </script>
+</body>
+</html>

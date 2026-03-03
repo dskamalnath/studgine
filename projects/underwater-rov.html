@@ -1,0 +1,179 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Underwater ROV – Advanced Project | Studgine</title>
+  <meta name="description" content="Waterproof Raspberry Pi ROV with 3-axis BLDC thrusters, camera, and tethered Ethernet control via a game-controller interface." />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:#000b14;border-radius:12px;padding:20px;min-height:180px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative;overflow:hidden;}
+    .rov-info{font-family:monospace;font-size:9px;color:#00aacc;display:flex;flex-direction:column;gap:3px;}
+    .thruster-row{display:flex;align-items:center;gap:4px;font-size:8px;color:#00aacc;}
+    .thr-bar{width:40px;height:5px;background:#001a28;border-radius:2px;overflow:hidden;}
+    .thr-fill{height:100%;background:#00ccff;border-radius:2px;transition:width 0.3s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand"><img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+                <div class="rov-info">
+                  <div>DEPTH: <span id="rovDepth">1.2</span>m</div>
+                  <div>PITCH: <span id="rovPitch">+2</span>°</div>
+                  <div>ROLL:  <span id="rovRoll">0</span>°</div>
+                  <div>TEMP:  <span id="rovTemp">14.2</span>°C</div>
+                  <div style="margin-top:3px;">THRUSTERS</div>
+                  <div class="thruster-row">FWD<div class="thr-bar"><div class="thr-fill" id="tFwd" style="width:65%;"></div></div></div>
+                  <div class="thruster-row">LAT<div class="thr-bar"><div class="thr-fill" id="tLat" style="width:30%;background:#44ccff;"></div></div></div>
+                  <div class="thruster-row">VRT<div class="thr-bar"><div class="thr-fill" id="tVrt" style="width:50%;background:#00ffaa;"></div></div></div>
+                  <div style="color:#00ff88;margin-top:2px;">VIDEO: LIVE</div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links"><span class="video-links-label">Watch tutorials:</span><a href="https://www.youtube.com/results?search_query=DIY+underwater+ROV+Raspberry+Pi+brushless+motor+waterproof" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a></div>
+            </div>
+
+            <div class="detail-block"><h2>📖 Introduction</h2><p>Remotely Operated Vehicles (ROVs) for underwater exploration require waterproof electronics, thrust-vectored propulsion, and a reliable control link. This project uses Schedule 80 PVC pipe fittings waterproofed with O-rings and silicone to house a Raspberry Pi Zero 2W. Three T200 brushless thrusters (or bilge pump motors) provide forward/backward, lateral, and vertical movement. A 100m Ethernet CAT5e tether carries power from a surface 12V supply and full gigabit control/video bandwidth — far more reliable than RF underwater.</p></div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">💧</span><div><span class="comp-name">Waterproof Enclosure (PVC / Acrylic)</span><span class="comp-note"> — Schedule 40 PVC tube 100mm diameter; acrylic end caps; O-ring grooves; cable penetrators (Blue Robotics FXTI)</span></div></li>
+                <li><span class="comp-icon">🌀</span><div><span class="comp-name">3× Brushless Thrusters</span><span class="comp-note"> — Blue Robotics T200 or DIY bilge pump conversions; 2× horizontal (fwd/lateral), 1× vertical; 30A ESC each</span></div></li>
+                <li><span class="comp-icon">📷</span><div><span class="comp-name">Raspberry Pi Zero 2W + Pi Camera v3</span><span class="comp-note"> — Picamera2 MJPEG stream on port 8000; wide-angle 120° lens; 30fps @ 1080p via H.264 encoding</span></div></li>
+                <li><span class="comp-icon">🔗</span><div><span class="comp-name">100m CAT5e Ethernet Tether</span><span class="comp-note"> — Power Over Ethernet (PoE) injector 12V 5A; converts 48V PoE to 12V via DC-DC on ROV; gigabit bandwidth</span></div></li>
+                <li><span class="comp-icon">🕹️</span><div><span class="comp-name">Xbox Controller + Surface Laptop</span><span class="comp-note"> — pygame joystick on surface PC; sends thruster commands to ROV over TCP socket; displays MJPEG stream</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>Waterproofing Design</h4><p>All cable penetrations use Blue Robotics M10 cable penetrators or DIY epoxy-potted PG7 glands. O-ring grooves machined into acrylic end caps (shore 70A O-ring, 2× backup). Pressure test to 3 bar (30m equivalent) with bicycle pump before water entry. Electronics mounted on foam inside tube: RPi Zero 2W, 3× ESC, 5V BEC, MPU-6050 IMU, MS5837 depth sensor (I²C, 300m rated). Desiccant packet absorbs condensation.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>TCP Thruster Control Socket</h4><p>ROV runs Python TCP server on port 5000: receives JSON commands from surface. <code>{"fwd":0.7, "lat":0.0, "vrt":0.3}</code>. Maps to ESC PWM: <code>fwd_pw = 1500 + int(cmd['fwd']*400)</code> (1100–1900µs). Drives ESCs via pigpio servo pulsewidth. Surface client: read Xbox joystick axes via pygame, build command JSON, send every 50ms. Watchdog: ROV stops all thrusters if no command received for 500ms (tether loss safety stop).</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Video Streaming</h4><p>Picamera2 encodes H.264 on Pi Zero 2W hardware encoder: <code>encoder = H264Encoder(bitrate=2000000)</code>. Stream via RTSP or MJPEG over HTTP. Surface: display with VLC (RTSP) or OpenCV MJPEG: <code>cap = cv2.VideoCapture('http://rov.local:8000/stream.mjpg')</code>. Overlay telemetry (depth, pitch, temp) onto video frame using cv2.putText before display. Record directly to MP4 on surface laptop.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>Depth + IMU Telemetry</h4><p>MS5837 I²C depth/pressure sensor: <code>sensor.read(); depth_m = sensor.depth()</code>. MPU-6050: compute pitch/roll from accelerometer + gyro complementary filter for orientation display on surface HUD. Telemetry JSON sent back from ROV via second TCP port every 200ms: depth, temp, pitch, roll, battery voltage. Surface HUD rendered as overlay on video feed with artificial horizon indicator.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code># ROV onboard server (runs on Raspberry Pi Zero 2W)
+import socket, json, pigpio, threading, time
+
+pi = pigpio.pi()
+ESC_FWD, ESC_LAT, ESC_VRT = 18, 19, 20  # GPIO pins
+
+def arm_escs():
+    for pin in [ESC_FWD, ESC_LAT, ESC_VRT]:
+        pi.set_servo_pulsewidth(pin, 1500)  # neutral
+    time.sleep(3)
+
+def set_thrust(fwd=0, lat=0, vrt=0):
+    for pin, val in [(ESC_FWD, fwd), (ESC_LAT, lat), (ESC_VRT, vrt)]:
+        pw = max(1100, min(1900, 1500 + int(val*400)))
+        pi.set_servo_pulsewidth(pin, pw)
+
+arm_escs()
+last_cmd = time.time()
+
+def watchdog():
+    while True:
+        if time.time() - last_cmd > 0.5:
+            set_thrust(0, 0, 0)  # safety stop
+        time.sleep(0.1)
+threading.Thread(target=watchdog, daemon=True).start()
+
+server = socket.socket(); server.bind(('0.0.0.0', 5000)); server.listen(1)
+conn, _ = server.accept()
+while True:
+    data = conn.recv(1024).decode()
+    if data:
+        cmd = json.loads(data)
+        set_thrust(cmd.get('fwd',0), cmd.get('lat',0), cmd.get('vrt',0))
+        last_cmd = time.time()</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🐟 Fish Detection (CV)</span>
+                <span class="app-tag">🧲 Manipulator Arm</span>
+                <span class="app-tag">📊 Water Quality Sensors</span>
+                <span class="app-tag">🌊 Depth-Hold Auto Mode</span>
+                <span class="app-tag">🗺️ Acoustic SLAM Mapping</span>
+                <span class="app-tag">💡 Subsea LED Lighting</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts"><h3>⚡ Quick Facts</h3><ul><li><strong>Difficulty:</strong> Advanced</li><li><strong>Budget:</strong> $70 – $140</li><li><strong>Build Time:</strong> 12 – 20 hours</li><li><strong>Max Depth:</strong> 10m (tested)</li><li><strong>Tether Length:</strong> 100m</li></ul></div>
+            <div class="sidebar-block"><h3>🛠️ Skills You'll Learn</h3><ul class="skills-list"><li>Waterproof electronics enclosure design</li><li>Brushless ESC thruster control</li><li>TCP socket control protocol</li><li>RTSP/MJPEG video streaming</li><li>Power over Ethernet (PoE)</li><li>Depth sensor + IMU telemetry</li></ul></div>
+            <div class="sidebar-block"><h3>📚 Libraries</h3><ul class="libs-list"><li><span class="lib-name">pigpio</span><span class="lib-desc"> — ESC PWM thruster control</span></li><li><span class="lib-name">picamera2</span><span class="lib-desc"> — H.264 video encoding</span></li><li><span class="lib-name">ms5837-python</span><span class="lib-desc"> — Depth/pressure sensor</span></li></ul></div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    let rt=0;
+    function animROV(){
+      rt++;
+      document.getElementById('rovDepth').textContent=(1.2+0.3*Math.sin(rt*0.05)).toFixed(1);
+      document.getElementById('rovPitch').textContent=(2*Math.sin(rt*0.08)>0?'+':'')+Math.round(2*Math.sin(rt*0.08));
+      document.getElementById('rovRoll').textContent=Math.round(1.5*Math.cos(rt*0.06));
+      document.getElementById('tFwd').style.width=Math.round(65+20*Math.sin(rt*0.04))+'%';
+      document.getElementById('tLat').style.width=Math.round(30+25*Math.cos(rt*0.06))+'%';
+      document.getElementById('tVrt').style.width=Math.round(50+15*Math.sin(rt*0.09))+'%';
+      setTimeout(animROV,120);
+    }
+    animROV();
+  </script>
+</body>
+</html>

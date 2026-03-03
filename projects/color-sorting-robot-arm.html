@@ -1,0 +1,340 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Color Sorting Robot Arm – Intermediate Project | Studgine</title>
+  <meta name="description" content="Build a color sorting robot arm with TCS3200 color sensor and servo motors. Detects red, green, blue, yellow objects on a conveyor belt and sorts them into labelled bins." />
+  <meta name="keywords" content="color sorting robot arm Arduino, TCS3200 color sensor servo robot, object sorting robot, Arduino robot arm color detection, servo motor sorting machine" />
+  <link rel="canonical" href="color-sorting-robot-arm.html" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .anim-stage{background:linear-gradient(135deg,#080010 0%,#120020 100%);border-radius:12px;padding:20px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative;overflow:hidden;}
+    .conveyor{position:relative;width:240px;height:22px;background:#2a2020;border-radius:10px;border:2px solid #504040;overflow:hidden;}
+    .conveyor-belt{position:absolute;top:0;left:0;width:200%;height:100%;background:repeating-linear-gradient(90deg,transparent 0,transparent 18px,rgba(255,255,255,0.07) 18px,rgba(255,255,255,0.07) 20px);animation:beltMove 1.2s linear infinite;}
+    @keyframes beltMove{from{transform:translateX(0);}to{transform:translateX(-20px);}}
+    .blob{position:absolute;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;transition:left 0.8s linear;}
+    .arm-base{position:relative;width:20px;height:60px;background:#604080;border-radius:6px 6px 2px 2px;transition:transform 0.5s ease;}
+    .arm-seg{position:absolute;bottom:56px;left:50%;transform-origin:bottom center;width:12px;height:48px;background:#805090;border-radius:6px;transition:transform 0.5s ease;}
+    .gripper{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);width:14px;height:10px;background:#9060a0;border-radius:3px;display:flex;justify-content:space-between;align-items:stretch;}
+    .bins{display:flex;gap:8px;}
+    .bin{width:36px;height:32px;border-radius:4px 4px 0 0;border:2px solid;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:3px;font-size:9px;font-family:monospace;font-weight:700;position:relative;}
+    .bin-fill{position:absolute;bottom:0;left:0;width:100%;border-radius:0 0 2px 2px;transition:height 0.4s;}
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="navbar" role="navigation" aria-label="Main Navigation">
+      <div class="container">
+        <a href="../index.html" class="navbar-brand" aria-label="Studgine Home">
+          <img class="logo-svg" src="../assets/logo2.png" alt="Studgine">
+          <div class="logo-wordmark"><span class="logo-name">STUD<span class="logo-accent">GINE</span></span><span class="logo-tagline">Engineering Platform</span></div>
+        </a>
+        <ul class="navbar-nav" role="list">
+          <li><a href="../index.html" class="nav-link">Home</a></li>
+          <li><a href="../projects.html" class="nav-link active">Projects</a></li>
+          <li><a href="../budget-electronics.html" class="nav-link">Electronics</a></li>
+          <li><a href="../resources.html" class="nav-link">Resources</a></li>
+          <li><a href="../about.html" class="nav-link">About</a></li>
+        </ul>
+        <div class="navbar-cta"><a href="../projects.html" class="btn btn-primary btn-sm">Explore</a><button class="hamburger" aria-label="Toggle mobile menu" aria-expanded="false"><span></span><span></span><span></span></button></div>
+      </div>
+    </nav>
+    <div class="mobile-menu" role="menu"><a href="../index.html" class="nav-link">Home</a><a href="../projects.html" class="nav-link">Projects</a><a href="../resources.html" class="nav-link">Resources</a><a href="../about.html" class="nav-link">About</a><a href="../projects.html" class="btn btn-primary">Get Started Free</a></div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">🟡 Intermediate Project</span>
+      <h1>Color Sorting Robot Arm</h1>
+      <p>Use a TCS3200 RGB frequency sensor and three servo motors to build a robot arm that identifies object colors on a conveyor belt and drops them into matching bins — a fun introduction to embedded machine vision and inverse kinematics.</p>
+    </div>
+  </section>
+
+  <main id="main-content">
+    <section class="section">
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="../index.html">Home</a><span class="sep">›</span>
+          <a href="../projects.html">Projects</a><span class="sep">›</span>
+          <span class="current">Color Sorting Robot Arm</span>
+        </nav>
+
+        <div class="detail-layout">
+          <div class="detail-main">
+
+            <div class="detail-block video-block">
+              <h2>🎬 Project Demo &amp; Illustration</h2>
+              <div class="anim-stage">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+                  <div style="display:flex;align-items:flex-end;gap:12px;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                      <div style="position:relative;height:70px;width:20px;display:flex;align-items:center;justify-content:center;">
+                        <div class="arm-base" id="armBase">
+                          <div class="arm-seg" id="armSeg" style="transform:rotate(-15deg);">
+                            <div class="gripper" id="gripper"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style="font-family:monospace;font-size:9px;color:#a060d0;" id="armStatus">IDLE</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      <div style="position:relative;">
+                        <div class="conveyor"><div class="conveyor-belt"></div><div class="blob" id="blob1" style="left:85%;"></div></div>
+                        <div style="font-family:monospace;font-size:9px;color:#608080;margin-top:2px;">▶ conveyor belt</div>
+                      </div>
+                      <div style="background:#1a0030;border:1px solid #4a2060;border-radius:5px;padding:5px 10px;font-family:monospace;font-size:11px;" id="sensorLog">TCS3200 → scanning...</div>
+                    </div>
+                  </div>
+                  <div class="bins">
+                    <div class="bin" style="border-color:#ff4444;color:#ff4444;" id="binR"><div class="bin-fill" id="fillR" style="height:10%;background:rgba(255,68,68,0.4)"></div>R <span id="cntR">0</span></div>
+                    <div class="bin" style="border-color:#44ff44;color:#44cc44;" id="binG"><div class="bin-fill" id="fillG" style="height:10%;background:rgba(68,255,68,0.4)"></div>G <span id="cntG">0</span></div>
+                    <div class="bin" style="border-color:#4488ff;color:#4488ff;" id="binB"><div class="bin-fill" id="fillB" style="height:10%;background:rgba(68,136,255,0.4)"></div>B <span id="cntB">0</span></div>
+                    <div class="bin" style="border-color:#ffff22;color:#dddd22;" id="binY"><div class="bin-fill" id="fillY" style="height:10%;background:rgba(255,255,34,0.4)"></div>Y <span id="cntY">0</span></div>
+                  </div>
+                </div>
+                <span class="anim-stage-label">Animated Visualization</span>
+              </div>
+              <div class="video-links">
+                <span class="video-links-label">Watch real build tutorials:</span>
+                <a href="https://www.youtube.com/results?search_query=Arduino+color+sorting+robot+arm+TCS3200+servo" target="_blank" rel="noopener" class="video-link-yt">▶ Watch on YouTube</a>
+              </div>
+            </div>
+
+            <div class="detail-block">
+              <h2>📖 Introduction</h2>
+              <p>Industrial color sorting is everywhere — from candy production lines that reject wrong-colored pieces to recycling plants sorting plastics by polymer type. This project captures that same concept at hobby scale using the TCS3200 color-to-frequency sensor chip and three SG90 servo motors.</p>
+              <p>The TCS3200 contains an 8×8 array of photodiodes: 16 with red filters, 16 green, 16 blue, and 16 clear. By driving the S2/S3 select pins, you cycle through R/G/B channels and measure the output frequency — higher frequency means more of that colour in the object. The sorted output frequencies are compared to pre-calibrated reference values to classify objects as red, green, blue, or yellow. A base servo rotates the arm to the correct bin angle, a shoulder servo lowers it, and a gripper servo grips/releases. All sequences interlock so the arm never collides with the belt.</p>
+            </div>
+
+            <div class="detail-block">
+              <h2>🧩 Components Required</h2>
+              <ul class="components-list">
+                <li><span class="comp-icon">🎨</span><div><span class="comp-name">TCS3200 Color Sensor Module</span><span class="comp-note"> — RGB frequency output; S0–S3 for photodiode filter select + frequency scale</span></div></li>
+                <li><span class="comp-icon">🤖</span><div><span class="comp-name">3× SG90 Servo Motors</span><span class="comp-note"> — Base rotation (0–180°) + shoulder lift + gripper open/close</span></div></li>
+                <li><span class="comp-icon">🔧</span><div><span class="comp-name">Arduino Uno / Nano</span><span class="comp-note"> — Controls sensor polling, servo PWM, and state machine logic</span></div></li>
+                <li><span class="comp-icon">🏗️</span><div><span class="comp-name">3D-Printed / Acrylic Arm Frame</span><span class="comp-note"> — STL files available on Thingiverse; acrylic alternative with M3 hardware</span></div></li>
+                <li><span class="comp-icon">🔋</span><div><span class="comp-name">5V 2A External Power Supply</span><span class="comp-note"> — Servos can draw 600 mA each; do NOT power from Arduino 5V pin</span></div></li>
+                <li><span class="comp-icon">📺</span><div><span class="comp-name">16×2 I2C LCD</span><span class="comp-note"> — Displays detected color label + per-bin sort counter</span></div></li>
+              </ul>
+            </div>
+
+            <div class="detail-block">
+              <h2>⚙️ How It Works</h2>
+              <ol class="steps-list">
+                <li class="step-item"><div class="step-number">1</div><div class="step-content"><h4>TCS3200 Color Reading</h4><p>Drive S0=HIGH, S1=HIGH to set frequency output scale to 100%. Set S2/S3 to select filter: S2=LOW S3=LOW → Red; S2=HIGH S3=HIGH → Green; S2=LOW S3=HIGH → Blue. Use <code>pulseIn(OUT_PIN, LOW)</code> to measure the period of the output square wave in microseconds — shorter period = higher frequency = more of that color. Take 10 readings per channel and average to suppress flicker noise. Calibrate white and black card reference values during setup.</p></div></li>
+                <li class="step-item"><div class="step-number">2</div><div class="step-content"><h4>Color Classification Algorithm</h4><p>Normalise raw R/G/B frequencies against calibrated white/black bounds to produce 0–255 analog values per channel. Apply nearest-neighbour classification against stored prototypes: Red (R↑ G↓ B↓), Green (R↓ G↑ B↓), Blue (R↓ G↓ B↑), Yellow (R↑ G↑ B↓). Calculate Euclidean distance in RGB space — closest match wins. For unknown/noisy readings, classify as "SKIP" and allow belt to carry object past arm.</p></div></li>
+                <li class="step-item"><div class="step-number">3</div><div class="step-content"><h4>Servo Arm State Machine</h4><p>Finite state machine with 6 states: WAIT → SENSE → CLASSIFY → PICK → DROP → HOME. WAIT: arm parked at home position, gripper open. SENSE: wait for object to arrive at sensor position (proximity IR trigger). PICK: lower shoulder to pick angle, close gripper, raise. DROP: rotate base to target bin angle, lower, open gripper. HOME: return to home position. Each state waits for servo to settle (100–200 ms delay after each write) before advancing.</p></div></li>
+                <li class="step-item"><div class="step-number">4</div><div class="step-content"><h4>White-Balance Calibration Routine</h4><p>At startup, run calibration: place white card under sensor, press button — Arduino records minFreq (brightest reading) for each channel. Place black card, press button — records maxFreq. These bounds map to 255 and 0 respectively for normalisation. Store calibration in EEPROM (<code>EEPROM.put(addr, calStruct)</code>) so it survives power cycles. A "recalibrate" button in the serial menu lets you redo this any time without reflashing.</p></div></li>
+              </ol>
+            </div>
+
+            <div class="detail-block">
+              <h2>💻 Core Code Snippet</h2>
+              <pre><code>#include &lt;Servo.h&gt;
+#include &lt;Wire.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+
+Servo baseServo, shoulderServo, gripperServo;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+#define S0 4 #define S1 5 #define S2 6 #define S3 7 #define OUT 8
+
+int readColor(bool s2, bool s3) {
+  digitalWrite(S2, s2); digitalWrite(S3, s3);
+  delay(10);
+  long sum = 0;
+  for(int i=0;i&lt;10;i++) sum += pulseIn(OUT, LOW);
+  return sum / 10;
+}
+
+String classifyColor() {
+  int r = readColor(LOW,LOW), g = readColor(HIGH,HIGH), b = readColor(LOW,HIGH);
+  // lower freq = stronger signal; normalize against calibration
+  if(r &lt; g && r &lt; b) return "RED";
+  if(g &lt; r && g &lt; b) return "GREEN";
+  if(b &lt; r && b &lt; g) return "BLUE";
+  if(r &lt; b && g &lt; b) return "YELLOW";
+  return "UNKNOWN";
+}
+
+int binAngles[] = {30, 90, 135, 170}; // R,G,B,Y
+void dropToBin(int angle) {
+  shoulderServo.write(60);    // lower
+  delay(400);
+  baseServo.write(angle);     // rotate
+  delay(500);
+  gripperServo.write(80);     // open
+  delay(300);
+  shoulderServo.write(0);     // raise
+  delay(400);
+  baseServo.write(90);        // home
+}
+
+void loop() {
+  String col = classifyColor();
+  lcd.print(col);
+  int ang = (col=="RED")?30:(col=="GREEN")?90:(col=="BLUE")?135:170;
+  gripperServo.write(170);   // grip
+  delay(500);
+  dropToBin(ang);
+}</code></pre>
+            </div>
+
+            <div class="detail-block">
+              <h2>🌐 Applications &amp; Extensions</h2>
+              <div class="applications-grid">
+                <span class="app-tag">🍬 Candy Color Sorting</span>
+                <span class="app-tag">♻️ Plastic Recycling Sort</span>
+                <span class="app-tag">💊 Pill Sorting Machine</span>
+                <span class="app-tag">🪨 Gemstone Classification</span>
+                <span class="app-tag">🔩 Component Taping</span>
+                <span class="app-tag">🎓 Robotics Lab Demo</span>
+                <span class="app-tag">📈 5-Bin Extended Sort</span>
+                <span class="app-tag">🤖 ML Color Classifier</span>
+              </div>
+            </div>
+
+          </div>
+
+          <aside class="detail-sidebar">
+            <div class="sidebar-block quick-facts">
+              <h3>⚡ Quick Facts</h3>
+              <ul>
+                <li><strong>Difficulty:</strong> Intermediate</li>
+                <li><strong>Budget:</strong> $18 – $32</li>
+                <li><strong>Build Time:</strong> 6 – 9 hours</li>
+                <li><strong>Platform:</strong> Arduino Uno/Nano</li>
+                <li><strong>Sort Rate:</strong> ~8 objects/min</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🛠️ Skills You'll Learn</h3>
+              <ul class="skills-list">
+                <li>TCS3200 frequency reading</li>
+                <li>RGB color normalisation</li>
+                <li>Nearest-neighbour classification</li>
+                <li>Multi-servo state machines</li>
+                <li>EEPROM calibration storage</li>
+                <li>Servo torque / power planning</li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>📚 Libraries Needed</h3>
+              <ul class="libs-list">
+                <li><span class="lib-name">Servo</span><span class="lib-desc"> — Arduino built-in PWM servo control</span></li>
+                <li><span class="lib-name">LiquidCrystal_I2C</span><span class="lib-desc"> — I2C LCD display output</span></li>
+                <li><span class="lib-name">EEPROM</span><span class="lib-desc"> — Persistent calibration storage</span></li>
+              </ul>
+            </div>
+            <div class="sidebar-block">
+              <h3>🔗 Try These Next</h3>
+              <ul class="try-next-list">
+                <li><a href="mini-cnc-drawing-machine.html">Mini CNC Drawing Machine</a></li>
+                <li><a href="../projects.html#advanced">5-DOF Robotic Arm (Advanced)</a></li>
+              </ul>
+            </div>
+            <a href="../projects.html" class="btn btn-secondary back-btn">← Back to Projects</a>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+    <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="footer-logo">STUD<span>GINE</span></a>
+          <p>A student-focused resource platform helping engineering students worldwide discover projects, tools, and scholarships.</p>
+          <div class="social-links" aria-label="Social media links">
+            <a href="#" class="social-link" aria-label="Twitter">&#120143;</a>
+            <a href="#" class="social-link" aria-label="LinkedIn">in</a>
+            <a href="#" class="social-link" aria-label="GitHub">&#9733;</a>
+            <a href="#" class="social-link" aria-label="YouTube">&#9654;</a>
+          </div>
+        </div>
+        <div class="footer-col"><h4>Quick Links</h4><ul>
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../projects.html">Projects</a></li>
+            <li><a href="../budget-electronics.html">Electronics</a></li>
+            <li><a href="../resources.html">Resources</a></li>
+            <li><a href="../about.html">About</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Categories</h4><ul>
+            <li><a href="../projects.html">Beginner Projects</a></li>
+            <li><a href="../projects.html">Advanced Projects</a></li>
+            <li><a href="../budget-electronics.html">Arduino &amp; ESP32</a></li>
+            <li><a href="../resources.html">Scholarships</a></li>
+            <li><a href="../resources.html">Free Tools</a></li>
+          </ul></div>
+        <div class="footer-col"><h4>Support</h4><ul>
+            <li><a href="../about.html">About Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Use</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul></div>
+      </div>
+      <div class="footer-bottom">
+        <p>&#169; 2026 Studgine. Powering Engineering Minds Worldwide.</p>
+        <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+      </div>
+    </div>
+  </footer>
+  <button id="scrollTop" aria-label="Scroll back to top">&#8679;</button><script src="../js/main.js"></script>
+  <script>
+    const colors = ['#ff4444','#44ff44','#4488ff','#ffff33'];
+    const colorNames = ['RED','GREEN','BLUE','YELLOW'];
+    const binIds = ['R','G','B','Y'];
+    const binAngles = [10, 25, 40, 55];
+    const counts = [0,0,0,0];
+    let blobLeft = 95, currentColor = 0, state = 'MOVING';
+
+    function nextBlob() {
+      currentColor = Math.floor(Math.random() * 4);
+      document.getElementById('blob1').style.background = colors[currentColor];
+      document.getElementById('blob1').style.left = '95%';
+      blobLeft = 95;
+      state = 'MOVING';
+    }
+    nextBlob();
+
+    setInterval(() => {
+      if(state === 'MOVING') {
+        blobLeft -= 3;
+        document.getElementById('blob1').style.left = blobLeft + '%';
+        if(blobLeft <= 30) {
+          state = 'SENSING';
+          document.getElementById('sensorLog').textContent = 'TCS3200 → reading...';
+          document.getElementById('armStatus').textContent = 'SENSING';
+        }
+      } else if(state === 'SENSING') {
+        document.getElementById('sensorLog').textContent = 'Detected: ' + colorNames[currentColor];
+        document.getElementById('armStatus').textContent = 'PICKING';
+        document.getElementById('armBase').style.transform = 'rotate(' + ((currentColor - 1.5) * 20) + 'deg)';
+        document.getElementById('armSeg').style.transform = 'rotate(20deg)';
+        state = 'PICKING';
+        setTimeout(() => {
+          blobLeft = -10;
+          document.getElementById('blob1').style.left = blobLeft + '%';
+          document.getElementById('blob1').style.background = 'transparent';
+          state = 'DROPPING';
+          document.getElementById('armStatus').textContent = 'DROPPING';
+          setTimeout(() => {
+            counts[currentColor]++;
+            const id = binIds[currentColor];
+            document.getElementById('cnt' + id).textContent = counts[currentColor];
+            const fill = Math.min(85, 10 + counts[currentColor] * 12);
+            document.getElementById('fill' + id).style.height = fill + '%';
+            document.getElementById('armBase').style.transform = 'rotate(0deg)';
+            document.getElementById('armSeg').style.transform = 'rotate(-15deg)';
+            document.getElementById('armStatus').textContent = 'HOME';
+            state = 'IDLE';
+            setTimeout(nextBlob, 800);
+          }, 700);
+        }, 600);
+      }
+    }, 200);
+  </script>
+</body>
+</html>
